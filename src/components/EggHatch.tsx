@@ -18,6 +18,7 @@ import { parseDndId, placeTile } from '../domain/placement';
 import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
+import { useRoundFeedback } from './useRoundFeedback';
 
 export function EggHatch() {
   const hatch = useGameStore((s) => s.hatch);
@@ -26,6 +27,7 @@ export function EggHatch() {
   const [used, setUsed] = useState<boolean[]>(() => item.answer.map(() => false));
   const [tiles, setTiles] = useState<string[]>(() => shuffle(item.answer));
   const [activeWord, setActiveWord] = useState<string | null>(null);
+  const { feedback, play, locked } = useRoundFeedback();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -40,6 +42,7 @@ export function EggHatch() {
   }
 
   function handleClear(i: number) {
+    if (locked) return;
     const word = placed[i];
     if (word === null) return;
     const next = [...placed];
@@ -60,6 +63,7 @@ export function EggHatch() {
 
   function onDragEnd(e: DragEndEvent) {
     setActiveWord(null);
+    if (locked) return;
     if (!e.over) return;
     const from = parseDndId(String(e.active.id));
     const to = parseDndId(String(e.over.id));
@@ -69,8 +73,8 @@ export function EggHatch() {
     setPlaced(next.placed);
     setUsed(next.used);
     if (next.placed.every((p) => p !== null)) {
-      if (isPlacementCorrect(next.placed, item.answer)) hatch();
-      else reset();
+      const correct = isPlacementCorrect(next.placed, item.answer);
+      play(correct ? 'correct' : 'wrong', () => (correct ? hatch() : reset()));
     }
   }
 
@@ -87,8 +91,21 @@ export function EggHatch() {
           <p className="text-slate-600">Build the sentence to hatch your pet!</p>
           <p className="text-2xl text-slate-700">{item.thaiHint}</p>
         </div>
-        <div className="flex flex-1 items-center justify-center">
+        <div
+          className={`relative flex flex-1 items-center justify-center rounded-xl ${
+            feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
+          }`}
+        >
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+          {feedback && (
+            <div
+              className={`pop-check pointer-events-none absolute text-6xl font-bold ${
+                feedback === 'correct' ? 'text-emerald-500' : 'text-red-500'
+              }`}
+            >
+              {feedback === 'correct' ? '✓' : '✗'}
+            </div>
+          )}
         </div>
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} />

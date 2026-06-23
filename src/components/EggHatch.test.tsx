@@ -1,7 +1,10 @@
 // src/components/EggHatch.test.tsx
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DndContext } from '@dnd-kit/core';
+
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+
 import { EggHatch } from './EggHatch';
 import { useGameStore } from '../state/gameStore';
 
