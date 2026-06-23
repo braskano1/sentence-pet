@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+/* Landscape rotate nudge: hidden by default, shown only on short landscape screens.
+   The .rotate-nudge element also carries Tailwind flex-col/centering classes;
+   display is controlled here so it overrides the default hidden state. */
+.rotate-nudge {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .rotate-nudge {
+    display: flex;
+  }
+}
