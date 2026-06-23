@@ -1,6 +1,20 @@
+// src/components/DrillScreen.tsx
 import { useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { itemsForLevel } from '../data/wordBank';
 import { isPlacementCorrect, shuffle } from '../domain/check';
+import { parseDndId, placeTile } from '../domain/placement';
 import { computeStars } from '../domain/scoring';
 import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
@@ -15,32 +29,20 @@ export function DrillScreen({ level }: { level: number }) {
   const [used, setUsed] = useState<boolean[]>(() => items[0].answer.map(() => false));
   const [tiles, setTiles] = useState<string[]>(() => shuffle(items[0].answer));
   const [mistakes, setMistakes] = useState(0);
+  const [activeWord, setActiveWord] = useState<string | null>(null);
 
   const item = items[index];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   function loadItem(i: number) {
     setPlaced(items[i].slots.map(() => null));
     setUsed(items[i].answer.map(() => false));
     setTiles(shuffle(items[i].answer));
-  }
-
-  function nextEmpty(arr: (string | null)[]): number {
-    return arr.findIndex((p) => p === null);
-  }
-
-  function handlePick(word: string) {
-    const slot = nextEmpty(placed);
-    if (slot === -1) return;
-    // mark first matching unused tile as used so duplicates work
-    const tileIdx = tiles.findIndex((t, i) => t === word && !used[i]);
-    const nextUsed = [...used];
-    if (tileIdx !== -1) nextUsed[tileIdx] = true;
-    const next = [...placed];
-    next[slot] = word;
-    setPlaced(next);
-    setUsed(nextUsed);
-
-    if (nextEmpty(next) === -1) evaluate(next);
   }
 
   function handleClear(slotIndex: number) {
@@ -55,6 +57,24 @@ export function DrillScreen({ level }: { level: number }) {
       nextUsed[ui] = false;
       setUsed(nextUsed);
     }
+  }
+
+  function onDragStart(e: DragStartEvent) {
+    const id = parseDndId(String(e.active.id));
+    if (id?.kind === 'tile') setActiveWord(tiles[id.index]);
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    setActiveWord(null);
+    if (!e.over) return;
+    const from = parseDndId(String(e.active.id));
+    const to = parseDndId(String(e.over.id));
+    if (from?.kind !== 'tile' || to?.kind !== 'slot') return;
+    const next = placeTile({ placed, used }, tiles, from.index, to.index);
+    if (next.placed === placed) return; // no-op (slot filled / tile used)
+    setPlaced(next.placed);
+    setUsed(next.used);
+    if (next.placed.every((p) => p !== null)) evaluate(next.placed);
   }
 
   function evaluate(filled: (string | null)[]) {
@@ -78,20 +98,31 @@ export function DrillScreen({ level }: { level: number }) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-slate-100 p-4">
-      {/* top zone: progress + hint */}
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <p className="text-sm text-slate-500">Sentence {index + 1} of {items.length}</p>
-        <p className="text-2xl text-slate-700">{item.thaiHint}</p>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
+      <div className="flex h-full flex-col bg-slate-100 p-4">
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-sm text-slate-500">Sentence {index + 1} of {items.length}</p>
+          <p className="text-2xl text-slate-700">{item.thaiHint}</p>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+        </div>
+        <div className="pb-2">
+          <WordTray tiles={tiles} used={used} />
+        </div>
       </div>
-      {/* middle zone: slots, centered, grabs slack */}
-      <div className="flex flex-1 items-center justify-center">
-        <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
-      </div>
-      {/* bottom zone: tray pinned in the thumb arc */}
-      <div className="pb-2">
-        <WordTray tiles={tiles.filter((_, i) => !used[i])} onPickWord={handlePick} />
-      </div>
-    </div>
+      <DragOverlay>
+        {activeWord ? (
+          <div className="min-h-12 px-5 py-3 rounded-xl bg-indigo-600 text-white text-lg font-semibold shadow">
+            {activeWord}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
