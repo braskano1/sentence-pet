@@ -565,15 +565,16 @@ describe('DrillScreen', () => {
 });
 ```
 
-- [ ] **Step 3: Run the full suite**
+- [ ] **Step 3: Run the DrillScreen test**
 
-Run: `npm run test`
-Expected: all pass (44 original − the old click-driven DrillScreen/WordTray assertions that were replaced + the new placement/component tests). No failures.
+Run: `npx vitest run src/components/DrillScreen.test.tsx`
+Expected: PASS.
+Note: the **full** suite + build are still RED at this point because `EggHatch.tsx` still uses the old `WordTray` API — that is expected and fixed in Task 6. Do NOT touch EggHatch here.
 
-- [ ] **Step 4: Type-check / build**
+- [ ] **Step 4: Confirm the only remaining breakage is EggHatch**
 
 Run: `npm run build`
-Expected: clean (no TS errors).
+Expected: fails ONLY in `src/components/EggHatch.tsx` (old `WordTray` props). If any other file errors, STOP and report.
 
 - [ ] **Step 5: Commit**
 
@@ -584,7 +585,176 @@ git commit -m "feat: drag-and-drop tile placement in DrillScreen"
 
 ---
 
-### Task 6: Manual verification + doc sync
+### Task 6: Convert EggHatch onboarding to drag-and-drop
+
+`EggHatch.tsx` is the hatch onboarding screen — it builds one L1 sentence with the same tap-to-place mechanic and the old `WordTray` API (`onPickWord` + word-based `usedWords`/`remainingTiles`). Convert it to drag-and-drop, mirroring DrillScreen: index-based `used: boolean[]`, `DndContext`, sensors, `placeTile`, `DragOverlay`, tap-to-clear. On full placement: correct → `hatch()`, wrong → reset and reshuffle. This is the task that brings the full build + suite back to GREEN.
+
+**Files:**
+- Modify: `src/components/EggHatch.tsx`
+- Test: `src/components/EggHatch.test.tsx` (rewrite)
+
+- [ ] **Step 1: Rewrite the implementation** — REPLACE the entire contents of `src/components/EggHatch.tsx` with EXACTLY:
+
+```tsx
+// src/components/EggHatch.tsx
+import { useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { itemsForLevel } from '../data/wordBank';
+import { isPlacementCorrect, shuffle } from '../domain/check';
+import { parseDndId, placeTile } from '../domain/placement';
+import { useGameStore } from '../state/gameStore';
+import { SentenceSlots } from './SentenceSlots';
+import { WordTray } from './WordTray';
+
+export function EggHatch() {
+  const hatch = useGameStore((s) => s.hatch);
+  const item = useMemo(() => itemsForLevel(1)[0], []);
+  const [placed, setPlaced] = useState<(string | null)[]>(() => item.slots.map(() => null));
+  const [used, setUsed] = useState<boolean[]>(() => item.answer.map(() => false));
+  const [tiles, setTiles] = useState<string[]>(() => shuffle(item.answer));
+  const [activeWord, setActiveWord] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  function reset() {
+    setPlaced(item.slots.map(() => null));
+    setUsed(item.answer.map(() => false));
+    setTiles(shuffle(item.answer));
+  }
+
+  function handleClear(i: number) {
+    const word = placed[i];
+    if (word === null) return;
+    const next = [...placed];
+    next[i] = null;
+    setPlaced(next);
+    const ui = used.findIndex((u, k) => u && tiles[k] === word);
+    if (ui !== -1) {
+      const nextUsed = [...used];
+      nextUsed[ui] = false;
+      setUsed(nextUsed);
+    }
+  }
+
+  function onDragStart(e: DragStartEvent) {
+    const id = parseDndId(String(e.active.id));
+    if (id?.kind === 'tile') setActiveWord(tiles[id.index]);
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    setActiveWord(null);
+    if (!e.over) return;
+    const from = parseDndId(String(e.active.id));
+    const to = parseDndId(String(e.over.id));
+    if (from?.kind !== 'tile' || to?.kind !== 'slot') return;
+    const next = placeTile({ placed, used }, tiles, from.index, to.index);
+    if (next.placed === placed) return;
+    setPlaced(next.placed);
+    setUsed(next.used);
+    if (next.placed.every((p) => p !== null)) {
+      if (isPlacementCorrect(next.placed, item.answer)) hatch();
+      else reset();
+    }
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
+      <div className="flex h-full flex-col bg-indigo-50 p-4">
+        <div className="flex flex-col items-center gap-3 pt-2">
+          <div className="text-[clamp(3rem,14vh,5rem)] leading-none">🥚</div>
+          <p className="text-slate-600">Build the sentence to hatch your pet!</p>
+          <p className="text-2xl text-slate-700">{item.thaiHint}</p>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+        </div>
+        <div className="pb-2">
+          <WordTray tiles={tiles} used={used} />
+        </div>
+      </div>
+      <DragOverlay>
+        {activeWord ? (
+          <div className="min-h-12 px-5 py-3 rounded-xl bg-indigo-600 text-white text-lg font-semibold shadow">
+            {activeWord}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+```
+
+- [ ] **Step 2: Rewrite the test** — drag placement can't be simulated in jsdom (zero-size layout), and the hatch trigger lives in `onDragEnd`, so this test covers render only; the correct-sentence→hatch path is verified by the Task 7 manual e2e. REPLACE the entire contents of `src/components/EggHatch.test.tsx` with EXACTLY:
+
+```tsx
+// src/components/EggHatch.test.tsx
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { DndContext } from '@dnd-kit/core';
+import { EggHatch } from './EggHatch';
+import { useGameStore } from '../state/gameStore';
+
+beforeEach(() => useGameStore.getState().resetForTest());
+
+describe('EggHatch', () => {
+  it('renders the egg prompt, hint, and POS slots', () => {
+    render(<EggHatch />);
+    expect(screen.getByText(/Build the sentence to hatch/)).toBeInTheDocument();
+    expect(screen.getAllByText('Pronoun').length).toBeGreaterThan(0);
+  });
+
+  it('renders draggable tiles for the answer words', () => {
+    render(<EggHatch />);
+    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('mounts inside a DndContext without throwing', () => {
+    expect(() =>
+      render(
+        <DndContext>
+          <EggHatch />
+        </DndContext>,
+      ),
+    ).not.toThrow();
+  });
+});
+```
+
+- [ ] **Step 3: Full green gate**
+
+Run: `npm run test && npm run build`
+Expected: ALL tests pass, build clean. (This is the first point since Task 3 where the full suite + build are green again.)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/components/EggHatch.tsx src/components/EggHatch.test.tsx
+git commit -m "feat: drag-and-drop tile placement in EggHatch onboarding"
+```
+
+---
+
+### Task 7: Manual verification + doc sync
 
 **Files:**
 - Modify: `GAME_DESIGN.md` (repo copy — re-add it; it was missing at handoff) and the H: Drive copy `H:\My Drive\01 Current Projects\AI\AI_design_thinking\GAME_DESIGN.md`
@@ -592,7 +762,7 @@ git commit -m "feat: drag-and-drop tile placement in DrillScreen"
 - [ ] **Step 1: Manual e2e on a touch viewport**
 
 Run: `npm run dev` → open http://localhost:5173/ → DevTools device-toolbar, phone-portrait (e.g. iPhone 12).
-Verify: hatch → Play → **drag** a tile into a slot (touch-emulation), it lands; drag fills all → auto-evaluates; wrong answer reshuffles; **tap** a filled slot returns the tile; round of 5 → reward. Confirm no page scroll fights the drag.
+Verify: on the **hatch** screen, **drag** the two tiles into the slots (touch-emulation) → correct → pet hatches → Pet Room. Then Play → **drag** a tile into a slot, it lands; drag fills all → auto-evaluates; wrong answer reshuffles; **tap** a filled slot returns the tile; round of 5 → reward. Confirm no page scroll fights the drag, on both the hatch and drill screens.
 
 - [ ] **Step 2: Update the design doc (both copies, identical edit)**
 
