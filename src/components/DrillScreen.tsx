@@ -15,10 +15,11 @@ import {
 import { itemsForLevel } from '../data/wordBank';
 import { shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';
-import { resolveRound } from '../domain/round';
+import { resolveRound, type RoundAction } from '../domain/round';
 import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
+import { useRoundFeedback } from './useRoundFeedback';
 
 export function DrillScreen({ level }: { level: number }) {
   const items = useMemo(() => itemsForLevel(level), [level]);
@@ -30,6 +31,7 @@ export function DrillScreen({ level }: { level: number }) {
   const [tiles, setTiles] = useState<string[]>(() => shuffle(items[0].answer));
   const [mistakes, setMistakes] = useState(0);
   const [activeWord, setActiveWord] = useState<string | null>(null);
+  const { feedback, play, locked } = useRoundFeedback();
 
   const item = items[index];
 
@@ -46,6 +48,7 @@ export function DrillScreen({ level }: { level: number }) {
   }
 
   function handleClear(slotIndex: number) {
+    if (locked) return;
     const word = placed[slotIndex];
     if (word === null) return;
     const next = [...placed];
@@ -66,6 +69,7 @@ export function DrillScreen({ level }: { level: number }) {
 
   function onDragEnd(e: DragEndEvent) {
     setActiveWord(null);
+    if (locked) return;
     if (!e.over) return;
     const from = parseDndId(String(e.active.id));
     const to = parseDndId(String(e.over.id));
@@ -85,6 +89,10 @@ export function DrillScreen({ level }: { level: number }) {
       total: items.length,
       mistakes,
     });
+    play(action.type === 'retry' ? 'wrong' : 'correct', () => applyAction(action));
+  }
+
+  function applyAction(action: RoundAction) {
     switch (action.type) {
       case 'finish':
         finishRound({ level, stars: action.stars, correctCount: items.length });
@@ -112,8 +120,21 @@ export function DrillScreen({ level }: { level: number }) {
           <p className="text-sm text-slate-500">Sentence {index + 1} of {items.length}</p>
           <p className="text-2xl text-slate-700">{item.thaiHint}</p>
         </div>
-        <div className="flex flex-1 items-center justify-center">
+        <div
+          className={`relative flex flex-1 items-center justify-center rounded-xl ${
+            feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
+          }`}
+        >
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+          {feedback && (
+            <div
+              className={`pop-check pointer-events-none absolute text-6xl font-bold ${
+                feedback === 'correct' ? 'text-emerald-500' : 'text-red-500'
+              }`}
+            >
+              {feedback === 'correct' ? '✓' : '✗'}
+            </div>
+          )}
         </div>
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} />
