@@ -13,9 +13,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { itemsForLevel } from '../data/wordBank';
-import { isPlacementCorrect, shuffle } from '../domain/check';
+import { shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';
-import { computeStars } from '../domain/scoring';
+import { resolveRound } from '../domain/round';
 import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
@@ -78,22 +78,25 @@ export function DrillScreen({ level }: { level: number }) {
   }
 
   function evaluate(filled: (string | null)[]) {
-    if (isPlacementCorrect(filled, item.answer)) {
-      const last = index === items.length - 1;
-      if (last) {
-        finishRound({
-          level,
-          stars: computeStars({ hints: 0, mistakes }),
-          correctCount: items.length,
-        });
-      } else {
-        const ni = index + 1;
-        setIndex(ni);
-        loadItem(ni);
-      }
-    } else {
-      setMistakes((m) => m + 1);
-      loadItem(index); // reshuffle + clear to retry
+    const action = resolveRound({
+      filled,
+      answer: item.answer,
+      index,
+      total: items.length,
+      mistakes,
+    });
+    switch (action.type) {
+      case 'finish':
+        finishRound({ level, stars: action.stars, correctCount: items.length });
+        break;
+      case 'advance':
+        setIndex(action.nextIndex);
+        loadItem(action.nextIndex);
+        break;
+      case 'retry':
+        setMistakes((m) => m + 1);
+        loadItem(index);
+        break;
     }
   }
 
