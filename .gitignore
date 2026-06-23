@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Node 25 native localStorage backing files (created by vitest test runs)
+.vitest-localstorage*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
