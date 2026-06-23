@@ -63,6 +63,7 @@ export function DrillScreen({ level }: { level: number }) {
   }
 
   function onDragStart(e: DragStartEvent) {
+    if (locked) return;
     const id = parseDndId(String(e.active.id));
     if (id?.kind === 'tile') setActiveWord(tiles[id.index]);
   }
@@ -128,6 +129,7 @@ export function DrillScreen({ level }: { level: number }) {
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
           {feedback && (
             <div
+              aria-hidden="true"
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
                 feedback === 'correct' ? 'text-emerald-500' : 'text-red-500'
               }`}

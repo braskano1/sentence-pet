@@ -54,4 +54,16 @@ describe('useRoundFeedback', () => {
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(result.current.feedback).toBeNull();
   });
+
+  it('cancels the pending callback when unmounted mid-hold', () => {
+    const onDone = vi.fn();
+    const { result, unmount } = renderHook(() => useRoundFeedback());
+
+    act(() => result.current.play('correct', onDone));
+    unmount();
+    act(() => {
+      vi.advanceTimersByTime(1100);
+    });
+    expect(onDone).not.toHaveBeenCalled();
+  });
 });
