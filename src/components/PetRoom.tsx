@@ -37,7 +37,7 @@ export function PetRoom() {
                   feed(g);
                   setFeedTrigger((n) => n + 1);
                 }}
-                className="min-h-12 flex-1 rounded-xl bg-orange-500 px-4 py-3 text-base font-semibold text-white shadow"
+                className={`min-h-12 flex-1 rounded-xl ${FOOD_META[g].color} px-4 py-3 text-base font-semibold text-white shadow`}
               >
                 Feed {FOOD_META[g].emoji} ({inventory[g]})
               </button>

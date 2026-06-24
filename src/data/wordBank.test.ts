@@ -30,4 +30,12 @@ describe('WORD_BANK', () => {
     const item = itemsFor('pattern', 1)[0];
     expect(trayWords(item)).toEqual(item.answer);
   });
+
+  it('no item has a distractor that duplicates one of its answer words', () => {
+    for (const item of WORD_BANK) {
+      for (const d of item.distractors ?? []) {
+        expect(item.answer).not.toContain(d);
+      }
+    }
+  });
 });

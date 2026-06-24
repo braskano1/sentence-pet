@@ -130,7 +130,7 @@ export const useGameStore = create<GameState>()(
       migrate: (persisted: unknown) => {
         const st = persisted as { inventory?: Partial<Record<FoodGroup, number>> } | null;
         if (!st) return st as unknown as GameState;
-        return { ...st, inventory: { ...freshInventory(), ...(st.inventory ?? {}) } } as GameState;
+        return { selectedDrill: 'pattern', ...st, inventory: { ...freshInventory(), ...(st.inventory ?? {}) } } as GameState;
       },
     },
   ),

@@ -22,6 +22,8 @@ describe('DrillPicker', () => {
   });
 
   it('Back returns to the pet room', async () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().setScreen('pickDrill');
     render(<DrillPicker />);
     await userEvent.click(screen.getByRole('button', { name: /back/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
