@@ -33,8 +33,3 @@ export function itemsFor(drill: DrillType, level: number): DrillItem[] {
 export function trayWords(item: DrillItem): string[] {
   return [...item.answer, ...(item.distractors ?? [])];
 }
-
-/** Back-compat: existing callers that only want pattern items by level. */
-export function itemsForLevel(level: number): DrillItem[] {
-  return itemsFor('pattern', level);
-}

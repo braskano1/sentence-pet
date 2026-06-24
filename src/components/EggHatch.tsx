@@ -12,7 +12,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { itemsForLevel } from '../data/wordBank';
+import { itemsFor } from '../data/wordBank';
 import { isPlacementCorrect, shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';
 import { useGameStore } from '../state/gameStore';
@@ -22,7 +22,7 @@ import { useRoundFeedback } from './useRoundFeedback';
 
 export function EggHatch() {
   const hatch = useGameStore((s) => s.hatch);
-  const item = useMemo(() => itemsForLevel(1)[0], []);
+  const item = useMemo(() => itemsFor('pattern', 1)[0], []);
   const [placed, setPlaced] = useState<(string | null)[]>(() => item.slots.map(() => null));
   const [used, setUsed] = useState<boolean[]>(() => item.answer.map(() => false));
   const [tiles, setTiles] = useState<string[]>(() => shuffle(item.answer));
