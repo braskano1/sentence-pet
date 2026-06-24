@@ -4,10 +4,12 @@ export type DrillType = 'pattern' | 'wordChoice';
 
 export interface DrillItem {
   id: string;
+  drill: DrillType;     // which drill this item belongs to
   level: number;        // 1..5 (MVP uses 1, 2)
   thaiHint: string;     // shown to the kid as meaning scaffold
   slots: PosLabel[];    // POS labels shown above each slot
   answer: string[];     // correct words, in order (same length as slots)
+  distractors?: string[]; // extra wrong tiles salted into the tray (Word-Choice)
 }
 
 export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward';
