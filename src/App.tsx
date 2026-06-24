@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion';
 import { useGameStore } from './state/gameStore';
 import { AppShell } from './components/AppShell';
 import { EggHatch } from './components/EggHatch';
@@ -20,8 +21,10 @@ function CurrentScreen() {
 
 export default function App() {
   return (
-    <AppShell>
-      <CurrentScreen />
-    </AppShell>
+    <MotionConfig reducedMotion="user">
+      <AppShell>
+        <CurrentScreen />
+      </AppShell>
+    </MotionConfig>
   );
 }
