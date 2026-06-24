@@ -5,6 +5,7 @@ import type { NutritionBars } from '../data/types';
 import { health } from '../domain/pet';
 import { barColor } from '../domain/bars';
 import { useCountUp } from '../effects/useCountUp';
+import { FOOD_GROUPS, FOOD_META } from '../data/food';
 
 function Bar({ label, value, color }: { label: string; value: number; color: string }) {
   const shown = useCountUp(value);
@@ -42,7 +43,14 @@ export function StatBars({ bars, happiness }: { bars: NutritionBars; happiness: 
     <div className="flex flex-col gap-3">
       <Bar label="❤️ Health" value={health(bars)} color="bg-rose-500" />
       <Bar label="😊 Happiness" value={happiness} color="bg-yellow-400" />
-      <Bar label="🥩 Protein" value={bars.protein} color="bg-orange-500" />
+      {FOOD_GROUPS.map((g) => (
+        <Bar
+          key={g}
+          label={`${FOOD_META[g].emoji} ${FOOD_META[g].label}`}
+          value={bars[g]}
+          color={FOOD_META[g].color}
+        />
+      ))}
     </div>
   );
 }
