@@ -140,10 +140,14 @@ return { type: 'advance', nextIndex: index + 1, flags: grade.flags };
 ## 8. What ships free (data-driven, no new logic)
 
 Keyed off `food.ts` / `FOOD_GROUPS` already:
-- DrillPicker grammar card (`screen: 'pickDrill'`).
 - Vitamin bar in `StatBars` (all 4 bars already rendered).
 - Per-group vitamin feed button in `PetRoom` (colour from `FOOD_META.vitamin`).
 - Food routing in `finishRound`; reward emoji in `RewardScreen`.
+
+**One-line, not free:**
+- `DrillPicker` hardcodes its `DRILLS` array (currently `pattern`, `wordChoice`); add a `{ drill: 'grammar', title: 'Grammar' }` entry. The card *rendering* (emoji/label) is then data-driven off `FOOD_META`/`DRILL_FOOD`.
+
+**In-app level reach:** `App.tsx` hardcodes `level={1}`, so only Grammar **L1 (flag mode)** is reachable in the running app this slice — the same L1-only-in-app posture Word-Choice shipped with. **L2 (enforce mode)** ships as authored data and is fully unit-tested (grader + round resolution), but becomes playable only when the deferred level-select UI lands. This is intended: it keeps the enforce half of the dial real and tested without pulling level-progression scope into this slice.
 
 ## 9. Testing
 
