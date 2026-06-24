@@ -125,12 +125,12 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: 2,
       // v1 persisted inventory was { protein } only; backfill the new groups.
+      // migrate runs once per version gap; at v2 the only change is the inventory shape
+      // (v1 stored { protein } only). Backfill any missing food groups without mutating input.
       migrate: (persisted: unknown) => {
         const st = persisted as { inventory?: Partial<Record<FoodGroup, number>> } | null;
-        if (st && st.inventory) {
-          st.inventory = { ...freshInventory(), ...st.inventory };
-        }
-        return st as GameState;
+        if (!st) return st as unknown as GameState;
+        return { ...st, inventory: { ...freshInventory(), ...(st.inventory ?? {}) } } as GameState;
       },
     },
   ),
