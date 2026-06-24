@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { fireConfetti } from '../effects/celebrate';
 import { useCountUp } from '../effects/useCountUp';
+import { FOOD_META } from '../data/food';
 
 export function RewardScreen() {
   const reward = useGameStore((s) => s.lastReward);
@@ -17,6 +18,8 @@ export function RewardScreen() {
   const food = useCountUp(reward?.food ?? 0);
 
   if (!reward) return null;
+
+  const meta = FOOD_META[reward.group] ?? FOOD_META.protein;
 
   const container = {
     hidden: {},
@@ -52,7 +55,7 @@ export function RewardScreen() {
           ))}
         </motion.p>
         <motion.p variants={item} className="text-lg text-slate-700">
-          You earned {food} 🥩 protein
+          You earned {food} {meta.emoji} {meta.label.toLowerCase()}
         </motion.p>
         <motion.p variants={item} className="text-lg text-slate-700">
           +{coins} coins

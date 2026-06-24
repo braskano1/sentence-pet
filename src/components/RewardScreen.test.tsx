@@ -18,16 +18,22 @@ describe('RewardScreen', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows the reward details when a reward is present', () => {
-    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25 } });
+  it('shows the earned food group (protein) when present', () => {
+    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' } });
     render(<RewardScreen />);
     expect(screen.getByText(/Level cleared/)).toBeInTheDocument();
-    expect(screen.getByText(/protein/)).toBeInTheDocument();
+    expect(screen.getByText(/protein/i)).toBeInTheDocument();
     expect(screen.getByText(/coins/)).toBeInTheDocument();
   });
 
+  it('shows veggie for a word-choice reward', () => {
+    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'veggie' } });
+    render(<RewardScreen />);
+    expect(screen.getByText(/veggie/i)).toBeInTheDocument();
+  });
+
   it('navigates to petRoom when Continue is clicked', async () => {
-    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25 } });
+    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' } });
     render(<RewardScreen />);
     await userEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
