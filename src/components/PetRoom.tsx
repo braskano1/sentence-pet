@@ -3,17 +3,20 @@ import { useGameStore } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { StatBars } from './StatBars';
 import { useCountUp } from '../effects/useCountUp';
+import { FOOD_GROUPS, FOOD_META } from '../data/food';
 
 export function PetRoom() {
   const pet = useGameStore((s) => s.pet);
   const inventory = useGameStore((s) => s.inventory);
   const stage = useGameStore((s) => s.stage());
-  const feedAll = useGameStore((s) => s.feedAll);
-  const [feedTrigger, setFeedTrigger] = useState(0);
+  const feed = useGameStore((s) => s.feed);
   const setScreen = useGameStore((s) => s.setScreen);
+  const [feedTrigger, setFeedTrigger] = useState(0);
 
   const xp = useCountUp(pet.xp);
   const coins = useCountUp(pet.coins);
+
+  const available = FOOD_GROUPS.filter((g) => inventory[g] > 0);
 
   return (
     <div className="flex h-full flex-col bg-emerald-50 p-6">
@@ -24,20 +27,26 @@ export function PetRoom() {
         <StatBars bars={pet.bars} happiness={pet.happiness} />
       </div>
       {/* bottom zone: actions pinned in the thumb arc */}
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3">
+        {available.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {available.map((g) => (
+              <button
+                key={g}
+                onClick={() => {
+                  feed(g);
+                  setFeedTrigger((n) => n + 1);
+                }}
+                className="min-h-12 flex-1 rounded-xl bg-orange-500 px-4 py-3 text-base font-semibold text-white shadow"
+              >
+                Feed {FOOD_META[g].emoji} ({inventory[g]})
+              </button>
+            ))}
+          </div>
+        )}
         <button
-          onClick={() => {
-            feedAll();
-            setFeedTrigger((n) => n + 1);
-          }}
-          disabled={inventory.protein === 0}
-          className="min-h-12 flex-1 rounded-xl bg-orange-500 px-6 py-3 text-lg font-semibold text-white shadow disabled:opacity-40"
-        >
-          Feed ({inventory.protein} 🥩)
-        </button>
-        <button
-          onClick={() => setScreen('drill')}
-          className="min-h-12 flex-1 rounded-xl bg-emerald-600 px-6 py-3 text-lg font-semibold text-white shadow"
+          onClick={() => setScreen('pickDrill')}
+          className="min-h-12 w-full rounded-xl bg-emerald-600 px-6 py-3 text-lg font-semibold text-white shadow"
         >
           Play ▶
         </button>
