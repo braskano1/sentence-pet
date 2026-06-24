@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { NutritionBars, PetStage, Screen } from '../data/types';
+import { DRILL_FOOD } from '../data/food';
+import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
 
@@ -18,9 +19,11 @@ interface RewardSummary {
   stars: number;
   food: number;
   coins: number;
+  group: FoodGroup;
 }
 
 interface RoundResult {
+  drill: DrillType;
   level: number;
   stars: number;
   correctCount: number;
@@ -29,13 +32,15 @@ interface RoundResult {
 interface GameState {
   screen: Screen;
   pet: Pet;
-  inventory: { protein: number };
+  inventory: Record<FoodGroup, number>;
+  selectedDrill: DrillType;
   lastReward: RewardSummary | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
+  startDrill: (drill: DrillType) => void;
   finishRound: (r: RoundResult) => void;
-  feedAll: () => void;
+  feed: (group: FoodGroup) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -57,12 +62,17 @@ function freshPet(): Pet {
   };
 }
 
+function freshInventory(): Record<FoodGroup, number> {
+  return { protein: 0, veggie: 0, vitamin: 0, treat: 0 };
+}
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       screen: 'egg',
       pet: freshPet(),
-      inventory: { protein: 0 },
+      inventory: freshInventory(),
+      selectedDrill: 'pattern',
       lastReward: null,
 
       setScreen: (screen) => set({ screen }),
@@ -70,8 +80,11 @@ export const useGameStore = create<GameState>()(
       hatch: () =>
         set((st) => ({ pet: { ...st.pet, hatched: true }, screen: 'petRoom' })),
 
-      finishRound: ({ level, stars, correctCount }) =>
+      startDrill: (drill) => set({ selectedDrill: drill, screen: 'drill' }),
+
+      finishRound: ({ drill, level, stars, correctCount }) =>
         set((st) => {
+          const group = DRILL_FOOD[drill];
           const xpGain = correctCount * xpForLevel(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           const happiness = decayHappiness(st.pet.happiness) + GAME_CONFIG.happiness.onClear +
@@ -84,24 +97,41 @@ export const useGameStore = create<GameState>()(
               happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
               bars: decayBars(st.pet.bars),
             },
-            inventory: { protein: st.inventory.protein + correctCount },
-            lastReward: { level, stars, food: correctCount, coins: coinsGain },
+            inventory: { ...st.inventory, [group]: st.inventory[group] + correctCount },
+            lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             screen: 'reward',
           };
         }),
 
-      feedAll: () =>
+      feed: (group) =>
         set((st) => ({
-          pet: { ...st.pet, bars: feedBar(st.pet.bars, 'protein', st.inventory.protein) },
-          inventory: { protein: 0 },
+          pet: { ...st.pet, bars: feedBar(st.pet.bars, group, st.inventory[group]) },
+          inventory: { ...st.inventory, [group]: 0 },
         })),
 
       stage: () => stageForXp(get().pet.xp, get().pet.hatched),
 
       addXpForTest: (xp) => set((st) => ({ pet: { ...st.pet, xp: st.pet.xp + xp } })),
       resetForTest: () =>
-        set({ screen: 'egg', pet: freshPet(), inventory: { protein: 0 }, lastReward: null }),
+        set({
+          screen: 'egg',
+          pet: freshPet(),
+          inventory: freshInventory(),
+          selectedDrill: 'pattern',
+          lastReward: null,
+        }),
     }),
-    { name: 'sentence-pet' },
+    {
+      name: 'sentence-pet',
+      version: 2,
+      // v1 persisted inventory was { protein } only; backfill the new groups.
+      migrate: (persisted: unknown) => {
+        const st = persisted as { inventory?: Partial<Record<FoodGroup, number>> } | null;
+        if (st && st.inventory) {
+          st.inventory = { ...freshInventory(), ...st.inventory };
+        }
+        return st as GameState;
+      },
+    },
   ),
 );

@@ -22,24 +22,42 @@ describe('gameStore', () => {
     expect(s.screen).toBe('petRoom');
   });
 
-  it('finishRound adds xp, food inventory, coins and decays stats', () => {
+  it('startDrill selects the drill and opens the drill screen', () => {
     useGameStore.getState().hatch();
-    useGameStore.getState().finishRound({ level: 1, stars: 3, correctCount: 5 });
+    useGameStore.getState().startDrill('wordChoice');
     const s = useGameStore.getState();
-    expect(s.pet.xp).toBe(50);                 // 5 correct * (10*level=10)
-    expect(s.inventory.protein).toBe(5);        // 1 food per correct
-    expect(s.pet.coins).toBe(25);               // 10 + 5*3
-    expect(s.pet.bars.protein).toBe(55);        // 60 - 5 decay
-    expect(s.lastReward).toEqual({ level: 1, stars: 3, food: 5, coins: 25 });
+    expect(s.selectedDrill).toBe('wordChoice');
+    expect(s.screen).toBe('drill');
   });
 
-  it('feedAll moves protein inventory into the bar and clears it', () => {
+  it('finishRound (pattern) adds xp, protein food, coins and decays stats', () => {
     useGameStore.getState().hatch();
-    useGameStore.getState().finishRound({ level: 1, stars: 3, correctCount: 5 });
-    useGameStore.getState().feedAll();
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
     const s = useGameStore.getState();
+    expect(s.pet.xp).toBe(50);
+    expect(s.inventory.protein).toBe(5);
+    expect(s.pet.coins).toBe(25);
+    expect(s.pet.bars.protein).toBe(55);
+    expect(s.lastReward).toEqual({ level: 1, stars: 3, food: 5, coins: 25, group: 'protein' });
+  });
+
+  it('finishRound (wordChoice) routes food to the veggie group', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'wordChoice', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.veggie).toBe(5);
     expect(s.inventory.protein).toBe(0);
-    expect(s.pet.bars.protein).toBe(100);       // 55 + 75 capped at 100
+    expect(s.lastReward?.group).toBe('veggie');
+  });
+
+  it('feed(group) moves that food into its bar and clears only that group', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'wordChoice', level: 1, stars: 3, correctCount: 5 });
+    useGameStore.getState().feed('veggie');
+    const s = useGameStore.getState();
+    expect(s.inventory.veggie).toBe(0);
+    expect(s.pet.bars.veggie).toBe(100);
+    expect(s.pet.bars.protein).toBe(55);
   });
 
   it('xp at/over young threshold reports young stage', () => {
