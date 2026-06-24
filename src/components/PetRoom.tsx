@@ -1,6 +1,7 @@
 import { useGameStore } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { StatBars } from './StatBars';
+import { useCountUp } from '../effects/useCountUp';
 
 export function PetRoom() {
   const pet = useGameStore((s) => s.pet);
@@ -9,12 +10,15 @@ export function PetRoom() {
   const feedAll = useGameStore((s) => s.feedAll);
   const setScreen = useGameStore((s) => s.setScreen);
 
+  const xp = useCountUp(pet.xp);
+  const coins = useCountUp(pet.coins);
+
   return (
     <div className="flex h-full flex-col bg-emerald-50 p-6">
       {/* middle zone: pet + stats, centered, grabs slack */}
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <PetSprite stage={stage} />
-        <p className="text-slate-500">XP {pet.xp} · 🪙 {pet.coins}</p>
+        <p className="text-slate-500">XP {xp} · 🪙 {coins}</p>
         <StatBars bars={pet.bars} happiness={pet.happiness} />
       </div>
       {/* bottom zone: actions pinned in the thumb arc */}

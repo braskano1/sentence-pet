@@ -1,4 +1,5 @@
 // src/components/WordTray.tsx
+import { motion } from 'framer-motion';
 import { useDraggable } from '@dnd-kit/core';
 
 interface Props {
@@ -9,16 +10,19 @@ interface Props {
 function Tile({ word, index }: { word: string; index: number }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `tile-${index}` });
   return (
-    <button
+    <motion.button
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      initial={{ opacity: 0, scale: 0.6 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.06, duration: 0.2 }}
       className={`min-h-12 touch-none px-5 py-3 rounded-xl bg-indigo-500 text-white text-lg font-semibold shadow active:scale-95 ${
         isDragging ? 'opacity-30' : ''
       }`}
     >
       {word}
-    </button>
+    </motion.button>
   );
 }
 
