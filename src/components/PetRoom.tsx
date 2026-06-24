@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { StatBars } from './StatBars';
@@ -8,6 +9,7 @@ export function PetRoom() {
   const inventory = useGameStore((s) => s.inventory);
   const stage = useGameStore((s) => s.stage());
   const feedAll = useGameStore((s) => s.feedAll);
+  const [feedTrigger, setFeedTrigger] = useState(0);
   const setScreen = useGameStore((s) => s.setScreen);
 
   const xp = useCountUp(pet.xp);
@@ -17,14 +19,17 @@ export function PetRoom() {
     <div className="flex h-full flex-col bg-emerald-50 p-6">
       {/* middle zone: pet + stats, centered, grabs slack */}
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <PetSprite stage={stage} />
+        <PetSprite stage={stage} feedTrigger={feedTrigger} />
         <p className="text-slate-500">XP {xp} · 🪙 {coins}</p>
         <StatBars bars={pet.bars} happiness={pet.happiness} />
       </div>
       {/* bottom zone: actions pinned in the thumb arc */}
       <div className="flex gap-4">
         <button
-          onClick={feedAll}
+          onClick={() => {
+            feedAll();
+            setFeedTrigger((n) => n + 1);
+          }}
           disabled={inventory.protein === 0}
           className="min-h-12 flex-1 rounded-xl bg-orange-500 px-6 py-3 text-lg font-semibold text-white shadow disabled:opacity-40"
         >
