@@ -26,10 +26,11 @@ describe('DrillScreen', () => {
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('word-choice tray includes distractor tiles (more than the answer)', () => {
+  it('word-choice tray includes the distractor tiles', () => {
     render(<DrillScreen drill="wordChoice" level={1} />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(4);
+    // first wordChoice L1 item: answer ['I','run'] + distractors ['runs','running']
+    expect(screen.getByRole('button', { name: 'runs' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'running' })).toBeInTheDocument();
   });
 
   it('mounts inside a DndContext without throwing', () => {

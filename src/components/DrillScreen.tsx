@@ -43,9 +43,10 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
   );
 
   function loadItem(i: number) {
+    const words = trayWords(items[i]);
     setPlaced(items[i].slots.map(() => null));
-    setTiles(shuffle(trayWords(items[i])));
-    setUsed(trayWords(items[i]).map(() => false));
+    setTiles(shuffle(words));
+    setUsed(words.map(() => false));
   }
 
   function handleClear(slotIndex: number) {
