@@ -14,23 +14,29 @@ describe('DrillScreen', () => {
   });
 
   it('renders the Thai hint and the POS slots for the first item', () => {
-    render(<DrillScreen level={1} />);
+    render(<DrillScreen drill="pattern" level={1} />);
     expect(screen.getByText(/Sentence 1 of 5/)).toBeInTheDocument();
     expect(screen.getAllByText('Pronoun').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Verb').length).toBeGreaterThan(0);
   });
 
   it('renders a draggable tile for each answer word', () => {
-    render(<DrillScreen level={1} />);
+    render(<DrillScreen drill="pattern" level={1} />);
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('word-choice tray includes distractor tiles (more than the answer)', () => {
+    render(<DrillScreen drill="wordChoice" level={1} />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThanOrEqual(4);
   });
 
   it('mounts inside a DndContext without throwing', () => {
     expect(() =>
       render(
         <DndContext>
-          <DrillScreen level={2} />
+          <DrillScreen drill="pattern" level={2} />
         </DndContext>,
       ),
     ).not.toThrow();

@@ -12,7 +12,8 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { itemsForLevel } from '../data/wordBank';
+import { itemsFor, trayWords } from '../data/wordBank';
+import type { DrillType } from '../data/types';
 import { shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';
 import { resolveRound, type RoundAction } from '../domain/round';
@@ -21,14 +22,14 @@ import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
 
-export function DrillScreen({ level }: { level: number }) {
-  const items = useMemo(() => itemsForLevel(level), [level]);
+export function DrillScreen({ drill, level }: { drill: DrillType; level: number }) {
+  const items = useMemo(() => itemsFor(drill, level), [drill, level]);
   const finishRound = useGameStore((s) => s.finishRound);
 
   const [index, setIndex] = useState(0);
   const [placed, setPlaced] = useState<(string | null)[]>(() => items[0].slots.map(() => null));
-  const [used, setUsed] = useState<boolean[]>(() => items[0].answer.map(() => false));
-  const [tiles, setTiles] = useState<string[]>(() => shuffle(items[0].answer));
+  const [tiles, setTiles] = useState<string[]>(() => shuffle(trayWords(items[0])));
+  const [used, setUsed] = useState<boolean[]>(() => trayWords(items[0]).map(() => false));
   const [mistakes, setMistakes] = useState(0);
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
@@ -43,8 +44,8 @@ export function DrillScreen({ level }: { level: number }) {
 
   function loadItem(i: number) {
     setPlaced(items[i].slots.map(() => null));
-    setUsed(items[i].answer.map(() => false));
-    setTiles(shuffle(items[i].answer));
+    setTiles(shuffle(trayWords(items[i])));
+    setUsed(trayWords(items[i]).map(() => false));
   }
 
   function handleClear(slotIndex: number) {
@@ -96,7 +97,7 @@ export function DrillScreen({ level }: { level: number }) {
   function applyAction(action: RoundAction) {
     switch (action.type) {
       case 'finish':
-        finishRound({ level, stars: action.stars, correctCount: items.length });
+        finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
         setIndex(action.nextIndex);
