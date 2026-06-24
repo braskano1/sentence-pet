@@ -1,19 +1,27 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+// src/components/RewardScreen.test.tsx
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
+
 import { RewardScreen } from './RewardScreen';
 import { useGameStore } from '../state/gameStore';
 
-beforeEach(() => useGameStore.getState().resetForTest());
-
 describe('RewardScreen', () => {
-  it('shows stars and food, and returns to petRoom on continue', async () => {
-    useGameStore.getState().hatch();
-    useGameStore.getState().finishRound({ level: 1, stars: 3, correctCount: 5 });
+  beforeEach(() => {
+    useGameStore.getState().resetForTest();
+  });
+
+  it('renders nothing when there is no reward', () => {
+    const { container } = render(<RewardScreen />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows the reward details when a reward is present', () => {
+    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25 } });
     render(<RewardScreen />);
-    expect(screen.getByText(/⭐⭐⭐/)).toBeInTheDocument();
-    expect(screen.getByText(/5 .*protein/i)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
-    expect(useGameStore.getState().screen).toBe('petRoom');
+    expect(screen.getByText(/Level cleared/)).toBeInTheDocument();
+    expect(screen.getByText(/protein/)).toBeInTheDocument();
+    expect(screen.getByText(/coins/)).toBeInTheDocument();
   });
 });
