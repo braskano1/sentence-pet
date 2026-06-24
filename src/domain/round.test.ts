@@ -10,6 +10,12 @@ describe('resolveRound', () => {
     expect(action).toEqual({ type: 'retry' });
   });
 
+  it('a distractor placed in a slot -> retry', () => {
+    // answer is ['I','run']; 'runs' is a Word-Choice distractor
+    const action = resolveRound({ filled: ['I', 'runs'], answer, index: 0, total: 5, mistakes: 0 });
+    expect(action).toEqual({ type: 'retry' });
+  });
+
   it('correct but not last item -> advance to next index', () => {
     const action = resolveRound({ filled: ['I', 'run'], answer, index: 2, total: 5, mistakes: 0 });
     expect(action).toEqual({ type: 'advance', nextIndex: 3 });
