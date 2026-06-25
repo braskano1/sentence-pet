@@ -4,6 +4,7 @@ export const GAME_CONFIG = {
   bars: { start: 60, decayPerRound: 5, max: 100, min: 0 },
   food: { restorePerItem: 15 },
   happiness: { start: 60, decayPerRound: 5, onClear: 10, onThreeStars: 5, max: 100, min: 0 },
+  mood: { happyThreshold: 0.5 }, // happiness >= max * threshold => happy
   round: { size: 5 },
   coins: { base: 10, perStar: 5 },
   xp: {
