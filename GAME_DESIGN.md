@@ -96,6 +96,8 @@ Separates "learn" from "care"; adds economy depth.
 
 **Gacha (Phase B-2, shipped).** Pet-unlocks are now a **gacha egg pull**: spend **60 coins** on a Mystery Egg → roll a weighted rarity → random species + rarity-tiered stats → a new pet joins your collection (duplicates allowed; the active pet is unchanged — switch to it via the collection chips). Rarity tiers: **Common 65% (stats 40–60), Rare 25% (55–75), Epic 8% (72–88), Legendary 2% (85–90)**, persisted on each pet (persist bumped **5→6**; pre-existing pets get a rarity derived from their stats). Reached from a dedicated **Eggs** screen off the PetRoom; the pull plays an egg-crack reveal showing species + rarity + battle stats. Single pull only (no multi-pull/pity yet). Next: **B-3 battle**.
 
+**Pet names + elements (shipped).** Pets can be given a **custom name** (default = the species name, ≤14 chars, editable in the gacha reveal and in the Collection ✎). The four species are an **element type wheel** — **Water > Fire > Air > Leaf > Water** (each strong vs one element, weak vs the one that beats it). Strong/weak matchups show on the Collection detail card; the pure `typeMultiplier` (strong ×1.5, weak ×0.75, neutral ×1.0) is defined now and **applied in battle in Phase B-3**.
+
 ## 8. Architecture — Netlify + Firebase (serverless)
 SQLite + Express DROPPED (don't fit serverless / file persistence). Replaced by Firebase BaaS.
 
