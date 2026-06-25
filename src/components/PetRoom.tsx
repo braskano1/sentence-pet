@@ -4,6 +4,7 @@ import { PetSprite } from './PetSprite';
 import { StatBars } from './StatBars';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_GROUPS, FOOD_META } from '../data/food';
+import { PressButton } from './PressButton';
 
 export function PetRoom() {
   const pet = useGameStore((s) => s.pet);
@@ -31,7 +32,7 @@ export function PetRoom() {
         {available.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {available.map((g) => (
-              <button
+              <PressButton
                 key={g}
                 onClick={() => {
                   feed(g);
@@ -40,16 +41,22 @@ export function PetRoom() {
                 className={`min-h-12 flex-1 rounded-xl ${FOOD_META[g].color} px-4 py-3 text-base font-semibold text-white shadow`}
               >
                 Feed {FOOD_META[g].emoji} ({inventory[g]})
-              </button>
+              </PressButton>
             ))}
           </div>
         )}
-        <button
+        <PressButton
+          onClick={() => setScreen('shop')}
+          className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
+        >
+          Shop 🛒
+        </PressButton>
+        <PressButton
           onClick={() => setScreen('pickDrill')}
           className="min-h-12 w-full rounded-xl bg-emerald-600 px-6 py-3 text-lg font-semibold text-white shadow"
         >
           Play ▶
-        </button>
+        </PressButton>
       </div>
     </div>
   );

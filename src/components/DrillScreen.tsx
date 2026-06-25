@@ -1,5 +1,6 @@
 // src/components/DrillScreen.tsx
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   DndContext,
   DragOverlay,
@@ -155,9 +156,14 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
             </div>
           )}
           {feedback === 'flag' && tip && (
-            <div className="pointer-events-none absolute bottom-2 rounded-xl bg-sky-100 px-4 py-2 text-center text-sm font-semibold text-sky-800 shadow">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="pointer-events-none absolute bottom-2 rounded-xl bg-sky-100 px-4 py-2 text-center text-sm font-semibold text-sky-800 shadow"
+            >
               {tip}
-            </div>
+            </motion.div>
           )}
         </div>
         <div className="pb-2">

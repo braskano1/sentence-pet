@@ -1,5 +1,6 @@
 // src/components/SentenceSlots.tsx
 import { useDroppable } from '@dnd-kit/core';
+import { motion } from 'framer-motion';
 import type { PosLabel } from '../data/types';
 import { capitalizeFirst } from '../domain/sentence';
 
@@ -28,16 +29,30 @@ function Slot({
   const { setNodeRef, isOver } = useDroppable({ id: `slot-${index}` });
   const empty = word === null;
   return (
-    <button
+    <motion.button
       ref={setNodeRef}
       onClick={() => !empty && onClear(index)}
+      animate={{ scale: isOver && empty ? 1.06 : 1 }}
+      transition={{ duration: 0.15 }}
       className={`min-h-12 min-w-20 px-4 py-3 rounded-xl border-2 border-dashed text-lg font-semibold ${
         isOver && empty ? 'border-emerald-500 bg-emerald-50' : 'border-slate-400 bg-white'
       }`}
     >
       <span className="block text-xs text-slate-400">{label}</span>
-      <span className="block text-slate-900">{empty ? ' ' : displayToken(word, index)}</span>
-    </button>
+      {word === null ? (
+        <span className="block text-slate-900"> </span>
+      ) : (
+        <motion.span
+          key={word}
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+          className="block text-slate-900"
+        >
+          {displayToken(word, index)}
+        </motion.span>
+      )}
+    </motion.button>
   );
 }
 

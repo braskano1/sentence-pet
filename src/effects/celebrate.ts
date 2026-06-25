@@ -17,3 +17,10 @@ export function buzz(ms = 60): void {
     navigator.vibrate(ms);
   }
 }
+
+/** Distinct error haptic (double buzz); no-op on unsupported devices. */
+export function buzzError(): void {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate([40, 30, 40]);
+  }
+}

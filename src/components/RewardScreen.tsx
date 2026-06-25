@@ -1,6 +1,7 @@
 // src/components/RewardScreen.tsx
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { PressButton } from './PressButton';
 import { useGameStore } from '../state/gameStore';
 import { fireConfetti } from '../effects/celebrate';
 import { useCountUp } from '../effects/useCountUp';
@@ -61,12 +62,12 @@ export function RewardScreen() {
           +{coins} coins
         </motion.p>
       </motion.div>
-      <button
+      <PressButton
         onClick={() => setScreen('petRoom')}
         className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
       >
         Continue
-      </button>
+      </PressButton>
     </div>
   );
 }
