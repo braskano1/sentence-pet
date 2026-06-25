@@ -92,6 +92,8 @@ Separates "learn" from "care"; adds economy depth.
 ### Decor shop (Phase A, shipped)
 - 7 room backgrounds buyable with coins, tiered **50 / 100 / 150** (Beach, Forest Path, Night Room @50; Forest Room, Sky Room @100; Fire Room, Water Room @150). Equipped behind the pet in PetRoom over a radial scrim (keeps the pet/stats legible on busy art); `activeBackground: null` keeps the free plain-green default. Full-frame 1280w webps (`scripts/prep-decor.sh`, no bg removal). Ownership is a **generic persisted `owned: string[]`** set (id-namespaced `decor:<slug>`) + an `activeBackground` selector — Phase B (pet-unlocks) reuses the same set with `pet:<species>` ids + an `activePet` selector. Persist bumped **3→4** (backfills `owned: []`, `activeBackground: null`).
 
+**Multi-pet foundation (Phase B-1, shipped).** The single pet became a collection: `pets[]` + `activePetId` + an account-level coin wallet. Each pet carries innate battle stats (HP/ATK/DEF/SPD/LUK, rolled 40–90 at creation). The PetRoom has an egg-chip switcher (shown once you own more than one pet) to choose which pet you raise, plus a battle-stats readout. Coins are now a shared wallet (no longer per-pet). Roadmap: **B-2 gacha** (egg pull → random species + rarity-tiered stats, replaces buy-a-species) → **B-3 battle** (team of 3; multiplayer rides the Firebase phase).
+
 ## 8. Architecture — Netlify + Firebase (serverless)
 SQLite + Express DROPPED (don't fit serverless / file persistence). Replaced by Firebase BaaS.
 
