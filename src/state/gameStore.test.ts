@@ -119,8 +119,10 @@ describe('migrate v2 -> v3', () => {
     const migrated = persist.getOptions().migrate(
       { pet: { hatched: true, xp: 0, coins: 5, happiness: 60, bars: { protein: 1 } }, inventory: { protein: 2 } },
       2,
-    ) as { pet: { species: string }; inventory: Record<string, number> };
+    ) as { pet: { species: string; coins: number }; inventory: Record<string, number> };
     expect(migrated.pet.species).toBe('leaf');
-    expect(migrated.inventory.veggie).toBe(0);
+    expect(migrated.pet.coins).toBe(5); // existing pet fields preserved, not clobbered
+    expect(migrated.inventory.protein).toBe(2); // persisted inventory value preserved
+    expect(migrated.inventory.veggie).toBe(0); // missing group backfilled
   });
 });

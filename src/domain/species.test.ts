@@ -14,6 +14,10 @@ describe('pickSpecies', () => {
       expect(SPECIES).toContain(pickSpecies(() => i / 100));
     }
   });
+
+  it('clamps at the rng=1 upper edge instead of returning undefined', () => {
+    expect(pickSpecies(() => 1)).toBe('water');
+  });
 });
 
 describe('moodFor', () => {

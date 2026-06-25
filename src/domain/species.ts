@@ -5,7 +5,7 @@ export const SPECIES: readonly Species[] = ['leaf', 'fire', 'air', 'water'] as c
 
 /** Uniform 1-of-4. `rng` injectable for deterministic tests. */
 export function pickSpecies(rng: () => number = Math.random): Species {
-  return SPECIES[Math.floor(rng() * SPECIES.length)];
+  return SPECIES[Math.min(SPECIES.length - 1, Math.floor(rng() * SPECIES.length))];
 }
 
 /** Happy when happiness reaches the configured fraction of max, else sad. */
