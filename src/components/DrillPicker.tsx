@@ -5,6 +5,7 @@ import type { DrillType } from '../data/types';
 const DRILLS: { drill: DrillType; title: string }[] = [
   { drill: 'pattern', title: 'Pattern' },
   { drill: 'wordChoice', title: 'Word Choice' },
+  { drill: 'grammar', title: 'Grammar' },
 ];
 
 export function DrillPicker() {

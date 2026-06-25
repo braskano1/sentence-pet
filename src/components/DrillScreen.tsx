@@ -31,6 +31,7 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
   const [tiles, setTiles] = useState<string[]>(() => shuffle(trayWords(items[0])));
   const [used, setUsed] = useState<boolean[]>(() => trayWords(items[0]).map(() => false));
   const [mistakes, setMistakes] = useState(0);
+  const [tip, setTip] = useState<string | null>(null);
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
 
@@ -86,13 +87,16 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
 
   function evaluate(filled: (string | null)[]) {
     const action = resolveRound({
+      item,
       filled,
-      answer: item.answer,
       index,
       total: items.length,
       mistakes,
     });
-    play(action.type === 'retry' ? 'wrong' : 'correct', () => applyAction(action));
+    const kind =
+      action.type === 'retry' ? 'wrong' : (action.flags?.length ? 'flag' : 'correct');
+    if (kind === 'flag') setTip(action.type === 'retry' ? null : action.flags!.join(' · '));
+    play(kind, () => applyAction(action));
   }
 
   function applyAction(action: RoundAction) {
@@ -101,6 +105,8 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
         finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
+        if (action.flags.length) setMistakes((m) => m + 1); // flag = one slip
+        setTip(null);
         setIndex(action.nextIndex);
         loadItem(action.nextIndex);
         break;
@@ -137,6 +143,11 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
               }`}
             >
               {feedback === 'correct' ? '✓' : '✗'}
+            </div>
+          )}
+          {feedback === 'flag' && tip && (
+            <div className="pointer-events-none absolute bottom-2 rounded-xl bg-sky-100 px-4 py-2 text-center text-sm font-semibold text-sky-800 shadow">
+              {tip}
             </div>
           )}
         </div>
