@@ -187,9 +187,11 @@ function PowerPanel({ pet }: { pet: PetInstance }) {
   const spec = petSpecialty(pet);
   const specLabel = BATTLE_STAT_LABELS.find(([, k]) => k === spec)?.[0] ?? 'HP';
   return (
-    <div className="flex items-center justify-between gap-4 py-1">
-      <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={150} specialty={spec} />
-      <div className="flex w-24 flex-none flex-col gap-2">
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex flex-1 justify-center">
+        <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={190} specialty={spec} />
+      </div>
+      <div className="flex w-28 flex-none flex-col gap-2">
         <div className="rounded-xl bg-amber-900/10 px-3 py-2">
           <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">Level</div>
           <div className="mt-1 text-xl font-extrabold leading-none text-amber-950">{petLevel(pet)}<span className="text-[10px] font-bold text-amber-900/60"> / 50</span></div>
