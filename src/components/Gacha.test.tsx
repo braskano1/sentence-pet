@@ -33,4 +33,15 @@ describe('Gacha screen', () => {
     fireEvent.click(screen.getByRole('button', { name: /back/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
+
+  it('names the pulled pet from the reveal field', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    render(<Gacha />);
+    fireEvent.click(screen.getByRole('button', { name: /pull/i }));
+    const field = screen.getByRole('textbox', { name: /name your pet/i });
+    fireEvent.change(field, { target: { value: 'Sparky' } });
+    fireEvent.click(screen.getByRole('button', { name: /^name$/i }));
+    const pulled = useGameStore.getState().lastPull!;
+    expect(useGameStore.getState().pets.find((p) => p.id === pulled.id)!.name).toBe('Sparky');
+  });
 });

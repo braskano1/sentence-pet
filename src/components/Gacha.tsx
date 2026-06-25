@@ -7,15 +7,18 @@ import { PressButton } from './PressButton';
 import { EGG_SPRITE, SPRITES } from '../config/sprites';
 import { fireConfetti } from '../effects/celebrate';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
+import { MAX_PET_NAME } from '../domain/petName';
 
 export function Gacha() {
   const coins = useGameStore((s) => s.coins);
   const pullEgg = useGameStore((s) => s.pullEgg);
   const setScreen = useGameStore((s) => s.setScreen);
   const lastPull = useGameStore((s) => s.lastPull);
+  const renamePet = useGameStore((s) => s.renamePet);
   const shownCoins = useCountUp(coins);
   const price = GAME_CONFIG.gacha.eggPrice;
   const [revealed, setRevealed] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
 
   const onPull = () => {
     pullEgg();
@@ -69,6 +72,24 @@ export function Gacha() {
                 <span className="tabular-nums">{pulled.stats[key]}</span>
               </div>
             ))}
+          </div>
+          <div className="mt-1 flex w-full items-center gap-2">
+            <input
+              type="text"
+              aria-label="Name your pet"
+              placeholder="Name your pet"
+              maxLength={MAX_PET_NAME}
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+            <PressButton
+              onClick={() => renamePet(pulled.id, nameDraft)}
+              aria-label="Name"
+              className="rounded-lg bg-violet-500 px-3 py-2 text-sm font-bold text-white"
+            >
+              Name
+            </PressButton>
           </div>
         </div>
       )}
