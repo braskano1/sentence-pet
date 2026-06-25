@@ -37,3 +37,22 @@ export type FoodGroup = keyof NutritionBars;
 export type Species = 'leaf' | 'fire' | 'air' | 'water';
 
 export type PetMood = 'happy' | 'sad';
+
+export interface BattleStats {
+  hp: number;
+  atk: number;
+  def: number;
+  spd: number;
+  luk: number;
+}
+
+/** One owned creature. `coins` is NOT here — it is an account-level wallet. */
+export interface PetInstance {
+  id: string;          // unique; 'starter-leaf' for the seeded/migrated first pet
+  species: Species;
+  hatched: boolean;    // the egg ceremony gates the first pet
+  xp: number;
+  happiness: number;
+  bars: NutritionBars;
+  stats: BattleStats;  // rolled once at creation, immutable thereafter
+}
