@@ -1,12 +1,22 @@
-export type ShopItemKind = 'treat'; // future: 'decor' | 'pet'
+export type ShopItemKind = 'treat' | 'decor';
 
-export interface ShopItem {
+interface ShopItemBase {
   id: string;
   name: string;
-  kind: ShopItemKind;
-  price: number;     // coins
-  happiness: number; // boost applied (treat kind)
+  price: number; // coins
 }
+
+export interface TreatItem extends ShopItemBase {
+  kind: 'treat';
+  happiness: number; // boost applied
+}
+
+export interface DecorItem extends ShopItemBase {
+  kind: 'decor';
+  sprite: string; // imported webp url
+}
+
+export type ShopItem = TreatItem | DecorItem;
 
 export type PurchaseResult =
   | { ok: true; coins: number; happiness: number }
@@ -23,7 +33,7 @@ export function canAfford(coins: number, item: ShopItem): boolean {
  */
 export function purchase(
   state: { coins: number; happiness: number },
-  item: ShopItem,
+  item: TreatItem,
   happinessMax: number,
 ): PurchaseResult {
   if (state.happiness >= happinessMax) return { ok: false, reason: 'happiness-full' };

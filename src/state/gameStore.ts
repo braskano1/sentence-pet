@@ -6,7 +6,7 @@ import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen, Species } f
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
-import type { ShopItem } from '../domain/shop';
+import type { TreatItem } from '../domain/shop';
 import { pickSpecies } from '../domain/species';
 
 interface Pet {
@@ -46,7 +46,7 @@ interface GameState {
   startDrill: (drill: DrillType, level: number) => void;
   finishRound: (r: RoundResult) => void;
   feed: (group: FoodGroup) => void;
-  buyTreat: (item: ShopItem) => void;
+  buyTreat: (item: TreatItem) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
