@@ -3,29 +3,36 @@
 // so it is tree-shaken out of production builds. Pairs with `window.store`
 // (set in main.tsx) for console access.
 import { useState } from 'react';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
 
 function bumpHappiness(delta: number) {
   useGameStore.setState((s) => ({
-    pet: {
-      ...s.pet,
-      happiness: Math.max(
-        GAME_CONFIG.happiness.min,
-        Math.min(GAME_CONFIG.happiness.max, s.pet.happiness + delta),
-      ),
-    },
+    pets: s.pets.map((p) =>
+      p.id === s.activePetId
+        ? {
+            ...p,
+            happiness: Math.max(
+              GAME_CONFIG.happiness.min,
+              Math.min(GAME_CONFIG.happiness.max, p.happiness + delta),
+            ),
+          }
+        : p,
+    ),
   }));
 }
 
 function rerollSpecies() {
-  useGameStore.setState((s) => ({ pet: { ...s.pet, species: pickSpecies() } }));
+  useGameStore.setState((s) => ({
+    pets: s.pets.map((p) => (p.id === s.activePetId ? { ...p, species: pickSpecies() } : p)),
+  }));
 }
 
 export function DevPanel() {
   const [open, setOpen] = useState(false);
-  const pet = useGameStore((s) => s.pet);
+  const pet = useGameStore((s) => selectActivePet(s));
+  const coins = useGameStore((s) => s.coins);
   const stage = useGameStore((s) => s.stage());
   const addXp = useGameStore((s) => s.addXpForTest);
   const addCoins = useGameStore((s) => s.addCoinsForTest);
@@ -54,7 +61,7 @@ export function DevPanel() {
       </div>
       <div className="mb-2 leading-5">
         <div>species: <b>{pet.species}</b> · stage: <b>{stage}</b></div>
-        <div>xp: <b>{pet.xp}</b> · 🪙 <b>{pet.coins}</b></div>
+        <div>xp: <b>{pet.xp}</b> · 🪙 <b>{coins}</b></div>
         <div>😊 <b>{pet.happiness}</b> · hatched: <b>{String(pet.hatched)}</b></div>
       </div>
       <div className="grid grid-cols-3 gap-1">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_GROUPS, FOOD_META } from '../data/food';
@@ -31,7 +31,8 @@ function StatChip({ icon, value, fill }: { icon: string; value: number; fill: st
 }
 
 export function PetRoom() {
-  const pet = useGameStore((s) => s.pet);
+  const activePet = useGameStore((s) => selectActivePet(s));
+  const walletCoins = useGameStore((s) => s.coins);
   const inventory = useGameStore((s) => s.inventory);
   const stage = useGameStore((s) => s.stage());
   const feed = useGameStore((s) => s.feed);
@@ -40,18 +41,18 @@ export function PetRoom() {
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
 
-  const xp = useCountUp(pet.xp);
-  const coins = useCountUp(pet.coins);
+  const xp = useCountUp(activePet.xp);
+  const coins = useCountUp(walletCoins);
   const available = FOOD_GROUPS.filter((g) => inventory[g] > 0);
 
   const stats = [
-    { key: 'health', icon: '❤️', value: health(pet.bars), fill: barColor(health(pet.bars), 'bg-rose-500') },
-    { key: 'happy', icon: '😊', value: pet.happiness, fill: barColor(pet.happiness, 'bg-yellow-400') },
+    { key: 'health', icon: '❤️', value: health(activePet.bars), fill: barColor(health(activePet.bars), 'bg-rose-500') },
+    { key: 'happy', icon: '😊', value: activePet.happiness, fill: barColor(activePet.happiness, 'bg-yellow-400') },
     ...FOOD_GROUPS.map((g) => ({
       key: g,
       icon: FOOD_META[g].emoji,
-      value: pet.bars[g],
-      fill: barColor(pet.bars[g], FOOD_META[g].color),
+      value: activePet.bars[g],
+      fill: barColor(activePet.bars[g], FOOD_META[g].color),
     })),
   ];
 
@@ -78,7 +79,7 @@ export function PetRoom() {
           }}
         />
         <div className="relative drop-shadow-[0_14px_26px_rgba(0,0,0,0.4)]">
-          <PetSprite stage={stage} species={pet.species} happiness={pet.happiness} feedTrigger={feedTrigger} />
+          <PetSprite stage={stage} species={activePet.species} happiness={activePet.happiness} feedTrigger={feedTrigger} />
         </div>
       </div>
 
@@ -90,7 +91,7 @@ export function PetRoom() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="rounded-full bg-amber-900/15 px-3 py-1 text-sm font-extrabold text-amber-950">
-              {PET_NAME[pet.species]} · Lv {STAGE_LEVEL[stage] || 1}
+              {PET_NAME[activePet.species]} · Lv {STAGE_LEVEL[stage] || 1}
             </span>
             <span className="text-xs font-semibold text-amber-900/70 tabular-nums">XP {xp}</span>
           </div>
