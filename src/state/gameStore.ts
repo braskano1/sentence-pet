@@ -225,10 +225,11 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 7,
+      version: 8,
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
       // v5->v6 backfills pet.rarity (derived from stats). v6->v7 backfills pet.name (default '').
+      // v7->v8 backfills pet.growth (zeroed BattleStats for pets that predate the field).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -294,6 +295,15 @@ export const useGameStore = create<GameState>()(
         if (Array.isArray(base.pets)) {
           base.pets = base.pets.map((p) =>
             typeof (p as PetInstance).name === 'string' ? p : { ...p, name: '' },
+          );
+        }
+
+        // v7->v8: backfill growth on any pet that predates the field.
+        if (Array.isArray(base.pets)) {
+          base.pets = base.pets.map((p) =>
+            (p as PetInstance).growth
+              ? p
+              : { ...(p as PetInstance), growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 } },
           );
         }
 

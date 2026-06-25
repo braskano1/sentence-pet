@@ -381,6 +381,24 @@ describe('applyXp / level-up', () => {
   });
 });
 
+describe('migrate -> v8 (growth)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('migrate backfills zeroed growth on pets without it (v7->v8)', () => {
+    const v7 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    };
+    const out = getMigrate()(v7, 7) as { pets: { growth: unknown }[] };
+    expect(out.pets[0].growth).toEqual({ hp: 0, atk: 0, def: 0, spd: 0, luk: 0 });
+  });
+});
+
 describe('migrate -> v6 (rarity)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {
