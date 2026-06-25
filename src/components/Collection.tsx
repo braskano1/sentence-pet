@@ -4,7 +4,7 @@ import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
 import { useCountUp } from '../effects/useCountUp';
-import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petDisplayName, petLevel, petStageSprite } from '../config/petDisplay';
+import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, displayStats, petDisplayName, petLevel, petSpecialty, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
 import type { Rarity } from '../data/types';
@@ -131,13 +131,13 @@ export function Collection() {
             <span>Weak vs {ELEMENT_EMOJI[weakAgainst(active.species)]} {PET_NAME[weakAgainst(active.species)]}</span>
           </p>
 
-          <StatRadar stats={active.stats} color={RARITY_HEX[active.rarity]} />
+          <StatRadar stats={displayStats(active)} color={RARITY_HEX[active.rarity]} specialty={petSpecialty(active)} />
 
           <div className="flex w-full gap-1">
             {BATTLE_STAT_LABELS.map(([label, key]) => (
               <div key={key} className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-1 text-xs font-bold text-amber-950">
                 <span className="text-amber-900/60">{label}</span>
-                <StatNum value={active.stats[key]} />
+                <StatNum value={displayStats(active)[key]} />
               </div>
             ))}
           </div>

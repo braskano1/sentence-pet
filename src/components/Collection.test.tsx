@@ -54,4 +54,18 @@ describe('Collection', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     expect(useGameStore.getState().pets[0].name).toBe('Leafy');
   });
+
+  it('detail card reflects growth in displayed stats', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({
+      pets: s.pets.map((p) => ({
+        ...p, hatched: true,
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 7, atk: 0, def: 0, spd: 0, luk: 0 },
+      })),
+    }));
+    render(<Collection />);
+    // base 50 + growth 7 = 57 shown for HP in the radar label "HP 57" and numeric row
+    expect(screen.getByText(/HP 57/)).toBeTruthy();
+  });
 });
