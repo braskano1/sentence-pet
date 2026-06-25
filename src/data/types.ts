@@ -1,6 +1,6 @@
 export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
 
-export type DrillType = 'pattern' | 'wordChoice' | 'grammar';
+export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 
 /** A tempting grammar near-miss tile tied to a gentle tip (Grammar drill). */
 export interface GrammarTrap {
