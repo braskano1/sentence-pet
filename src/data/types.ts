@@ -21,7 +21,7 @@ export interface DrillItem {
   strictness?: 'flag' | 'enforce'; // Grammar dial; undefined ⇒ exact match (Pattern/WC)
 }
 
-export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward';
+export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop';
 
 export type PetStage = 'egg' | 'baby' | 'young' | 'adult';
 
