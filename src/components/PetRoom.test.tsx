@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { PetRoom } from './PetRoom';
 import { useGameStore } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
-import { makePet, rollStats } from '../domain/pets';
 
 beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -48,15 +47,12 @@ describe('PetRoom', () => {
     expect(bg).toHaveAttribute('src', GAME_CONFIG.shop.decor.find((d) => d.id === 'decor:beach')!.sprite);
   });
 
-  it('shows a chip per owned pet and switches the active pet on tap', async () => {
+  it('My Pets button opens the collection screen', async () => {
     useGameStore.getState().hatch();
-    useGameStore.setState((s) => ({
-      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
-    }));
     render(<PetRoom />);
-    expect(screen.getByRole('button', { name: /sprout \(active\)/i })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /switch to ember/i }));
-    expect(useGameStore.getState().activePetId).toBe('p2');
+    expect(screen.getByRole('button', { name: /my pets/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /my pets/i }));
+    expect(useGameStore.getState().screen).toBe('collection');
   });
 
   it('shows the active pet battle stats', () => {

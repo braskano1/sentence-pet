@@ -6,18 +6,7 @@ import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
 import { EGG_SPRITE, SPRITES } from '../config/sprites';
 import { fireConfetti } from '../effects/celebrate';
-import type { Rarity, Species } from '../data/types';
-
-const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
-const RARITY_STYLE: Record<Rarity, string> = {
-  common: 'bg-slate-200 text-slate-700',
-  rare: 'bg-sky-200 text-sky-800',
-  epic: 'bg-violet-200 text-violet-800',
-  legendary: 'bg-amber-200 text-amber-800',
-};
-const BATTLE_STAT_LABELS = [
-  ['HP', 'hp'], ['ATK', 'atk'], ['DEF', 'def'], ['SPD', 'spd'], ['LUK', 'luk'],
-] as const;
+import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS } from '../config/petDisplay';
 
 export function Gacha() {
   const coins = useGameStore((s) => s.coins);
@@ -70,7 +59,7 @@ export function Gacha() {
             className="h-40 w-auto object-contain drop-shadow-[0_14px_26px_rgba(0,0,0,0.3)]"
           />
           <p className="text-lg font-bold text-slate-700">{PET_NAME[pulled.species]}!</p>
-          <span className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase ${RARITY_STYLE[pulled.rarity]}`}>
+          <span className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase ${RARITY_BADGE[pulled.rarity]}`}>
             {pulled.rarity}
           </span>
           <div role="group" aria-label="Battle stats" className="flex gap-1">
