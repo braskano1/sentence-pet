@@ -8,6 +8,7 @@ import { DECOR_SPRITES } from '../config/decorSprites';
 import { health } from '../domain/pet';
 import { barColor } from '../domain/bars';
 import type { Species } from '../data/types';
+import { ELEMENTAL_EGGS } from '../config/sprites';
 
 /** Friendly, A1-readable pet name per species; level reads off the growth stage. */
 const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
@@ -38,6 +39,9 @@ export function PetRoom() {
   const feed = useGameStore((s) => s.feed);
   const setScreen = useGameStore((s) => s.setScreen);
   const activeBackground = useGameStore((s) => s.activeBackground);
+  const pets = useGameStore((s) => s.pets);
+  const activePetId = useGameStore((s) => s.activePetId);
+  const switchPet = useGameStore((s) => s.switchPet);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
 
@@ -100,10 +104,45 @@ export function PetRoom() {
           </span>
         </div>
 
+        {/* ── collection: tap an egg to switch which pet you are raising ── */}
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {pets.map((p) => {
+            const isActive = p.id === activePetId;
+            return (
+              <PressButton
+                key={p.id}
+                onClick={() => switchPet(p.id)}
+                aria-label={isActive ? `${PET_NAME[p.species]} (active)` : `Switch to ${PET_NAME[p.species]}`}
+                className={`flex shrink-0 flex-col items-center rounded-xl px-2 py-1 ${
+                  isActive ? 'bg-amber-900/25 ring-2 ring-amber-700' : 'bg-amber-900/10'
+                }`}
+              >
+                <img src={ELEMENTAL_EGGS[p.species]} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
+                <span className="text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
+              </PressButton>
+            );
+          })}
+        </div>
+
         <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
           {stats.map((s) => (
             <StatChip key={s.key} icon={s.icon} value={s.value} fill={s.fill} />
           ))}
+        </div>
+
+        {/* ── battle stats (flavor now; powers battle in a later phase) ── */}
+        <div className="mb-4 flex justify-between gap-1" aria-label="Battle stats">
+          {([['HP', 'hp'], ['ATK', 'atk'], ['DEF', 'def'], ['SPD', 'spd'], ['LUK', 'luk']] as const).map(
+            ([label, key]) => (
+              <span
+                key={key}
+                className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-0.5 text-[11px] font-bold text-amber-950"
+              >
+                <span className="text-amber-900/70">{label}</span>
+                <span className="tabular-nums">{activePet.stats[key]}</span>
+              </span>
+            ),
+          )}
         </div>
 
         {available.length > 0 && (
