@@ -21,7 +21,7 @@
 **Green bar (run before the final commit):**
 - `npm test -- --run`
 - `npm run build`
-- `npx tsc --noEmit`
+- `npx tsc -b`
 
 ---
 
@@ -94,7 +94,7 @@ export const DRILL_FOOD: Record<DrillType, FoodGroup> = {
 
 - [ ] **Step 5: Run test + typecheck to verify pass**
 
-Run: `npm test -- --run src/data/food.test.ts && npx tsc --noEmit`
+Run: `npm test -- --run src/data/food.test.ts && npx tsc -b`
 Expected: PASS, and `tsc` clean.
 
 - [ ] **Step 6: Commit**
@@ -691,7 +691,7 @@ const DRILLS: { drill: DrillType; title: string }[] = [
 
 - [ ] **Step 5: Run tests + typecheck to verify pass**
 
-Run: `npm test -- --run src/components/DrillScreen.test.tsx src/components/DrillPicker.test.tsx && npx tsc --noEmit`
+Run: `npm test -- --run src/components/DrillScreen.test.tsx src/components/DrillPicker.test.tsx && npx tsc -b`
 Expected: PASS, `tsc` clean.
 
 - [ ] **Step 6: Commit**
@@ -728,7 +728,7 @@ Run, in order:
 ```bash
 npm test -- --run
 npm run build
-npx tsc --noEmit
+npx tsc -b
 ```
 
 Expected: all tests pass (90 prior + the new grammar tests), build clean, `tsc` clean. If any fail, fix before committing.
