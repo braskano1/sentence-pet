@@ -38,7 +38,9 @@ function setStat(key: keyof BattleStats, value: number) {
 }
 
 function setStage(stage: Exclude<PetStage, 'egg'>) {
-  mapActive((p) => ({ ...p, xp: GAME_CONFIG.xp.evolution[stage] }));
+  // Temporary hardcoded stage thresholds (to be replaced with level-based model)
+  const stageXp = { baby: 0, young: 1000, adult: 3000 };
+  mapActive((p) => ({ ...p, xp: stageXp[stage] }));
 }
 
 function addPet() {

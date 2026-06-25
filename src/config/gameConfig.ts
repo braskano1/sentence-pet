@@ -10,8 +10,9 @@ export const GAME_CONFIG = {
   round: { size: 5 },
   coins: { base: 10, perStar: 5 },
   xp: {
-    perLevelMultiplier: 10, // xp per correct = perLevelMultiplier * level
-    evolution: { baby: 0, young: 1000, adult: 3000 },
+    perLevelMultiplier: 10, // xp earned per correct answer = perLevelMultiplier * drill level
+    maxLevel: 50,
+    curve: { base: 40, growth: 1.5 }, // xpToNext(level) = round(base * level^growth)
   },
   shop: {
     treats: [

@@ -5,7 +5,7 @@ import { DRILL_FOOD } from '../data/food';
 import type { DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
-import { stageForXp, xpForLevel } from '../domain/xp';
+import { stageForXp, xpPerCorrect } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
@@ -116,7 +116,7 @@ export const useGameStore = create<GameState>()(
       finishRound: ({ drill, level, stars, correctCount }) =>
         set((s) => {
           const group = DRILL_FOOD[drill];
-          const xpGain = correctCount * xpForLevel(level);
+          const xpGain = correctCount * xpPerCorrect(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           return {
             pets: updateActive(s, (p) => {

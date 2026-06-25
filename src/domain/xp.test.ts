@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { xpForLevel, stageForXp } from './xp';
+import { xpPerCorrect, stageForXp } from './xp';
 
-describe('xpForLevel', () => {
+describe('xpPerCorrect', () => {
   it('is 10 x level', () => {
-    expect(xpForLevel(1)).toBe(10);
-    expect(xpForLevel(5)).toBe(50);
+    expect(xpPerCorrect(1)).toBe(10);
+    expect(xpPerCorrect(5)).toBe(50);
   });
 });
 

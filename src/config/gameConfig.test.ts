@@ -15,7 +15,8 @@ describe('GAME_CONFIG', () => {
     expect(GAME_CONFIG.coins.base).toBe(10);
     expect(GAME_CONFIG.coins.perStar).toBe(5);
     expect(GAME_CONFIG.xp.perLevelMultiplier).toBe(10);
-    expect(GAME_CONFIG.xp.evolution).toEqual({ baby: 0, young: 1000, adult: 3000 });
+    expect(GAME_CONFIG.xp.maxLevel).toBe(50);
+    expect(GAME_CONFIG.xp.curve).toEqual({ base: 40, growth: 1.5 });
   });
 });
 
