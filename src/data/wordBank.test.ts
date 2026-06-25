@@ -56,7 +56,7 @@ describe('WORD_BANK', () => {
 
   it('trayWords includes trap words after answer + distractors', () => {
     const item = itemsFor('grammar', 1)[0];
-    const expected = [...item.answer, ...(item.traps ?? []).map((t) => t.word)];
+    const expected = [...item.answer, ...(item.distractors ?? []), ...(item.traps ?? []).map((t) => t.word)];
     expect(trayWords(item)).toEqual(expected);
   });
 
