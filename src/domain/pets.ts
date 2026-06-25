@@ -4,9 +4,44 @@ import type { BattleStats, NutritionBars, PetInstance, Rarity, Species } from '.
 const STAT_MIN = 40;
 const STAT_MAX = 90;
 
-/** One stat in [STAT_MIN, STAT_MAX] inclusive. Rarity/price tiering is gacha phase #2. */
+/** One stat in [STAT_MIN, STAT_MAX] inclusive. Starter pet + legacy migration; gacha pulls use rollStatsForRarity. */
 function roll(rng: () => number): number {
   return STAT_MIN + Math.floor(rng() * (STAT_MAX - STAT_MIN + 1));
+}
+
+export interface RarityTier {
+  rarity: Rarity;
+  weight: number;
+  band: readonly [number, number];
+}
+
+/** Inclusive integer in [min,max]. */
+function rollInBand(rng: () => number, min: number, max: number): number {
+  return min + Math.floor(rng() * (max - min + 1));
+}
+
+/** Weighted pick. rng() in [0,1) scaled by total weight; walks cumulative tiers. */
+export function rollRarity(rng: () => number, table: readonly RarityTier[]): Rarity {
+  const total = table.reduce((sum, t) => sum + t.weight, 0);
+  let roll = rng() * total;
+  for (const t of table) {
+    if (roll < t.weight) return t.rarity;
+    roll -= t.weight;
+  }
+  return table[table.length - 1].rarity; // float-safety fallback
+}
+
+/** Each of the five stats rolls flat within the tier's band. */
+export function rollStatsForRarity(rarity: Rarity, rng: () => number, table: readonly RarityTier[]): BattleStats {
+  const tier = table.find((t) => t.rarity === rarity) ?? table[0];
+  const [min, max] = tier.band;
+  return {
+    hp: rollInBand(rng, min, max),
+    atk: rollInBand(rng, min, max),
+    def: rollInBand(rng, min, max),
+    spd: rollInBand(rng, min, max),
+    luk: rollInBand(rng, min, max),
+  };
 }
 
 export function rollStats(rng: () => number): BattleStats {

@@ -1,4 +1,5 @@
 import type { ShopItem } from '../domain/shop';
+import type { RarityTier } from '../domain/pets';
 import { DECOR_SPRITES } from './decorSprites';
 
 export const GAME_CONFIG = {
@@ -36,6 +37,6 @@ export const GAME_CONFIG = {
       { rarity: 'rare',      weight: 25, band: [55, 75] },
       { rarity: 'epic',      weight: 8,  band: [72, 88] },
       { rarity: 'legendary', weight: 2,  band: [85, 90] },
-    ],
+    ] satisfies RarityTier[],
   },
 } as const;

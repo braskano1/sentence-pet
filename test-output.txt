@@ -1,0 +1,131 @@
+
+> sentence-pet@0.0.0 test
+> vitest run --run src/components/DrillPicker.test.tsx
+
+
+ RUN  v4.1.9 D:/ai_projects/AI_design_thinking/sentence-pet
+
+ ❯ src/components/DrillPicker.test.tsx (3 tests | 1 failed) 252ms
+     × shows a card for each drill 48ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/DrillPicker.test.tsx > DrillPicker > shows a card for each drill
+TestingLibraryElementError: Unable to find an element with the text: Mixed. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="flex h-full flex-col bg-indigo-50 p-6"
+    >
+      <div
+        class="flex items-center justify-between pb-4"
+      >
+        <button
+          class="min-h-12 rounded-xl px-4 py-2 font-semibold text-indigo-700"
+        >
+          ← Back
+        </button>
+        <h1
+          class="text-xl font-bold text-indigo-800"
+        >
+          Pick a drill
+        </h1>
+        <span
+          class="w-16"
+        />
+      </div>
+      <div
+        class="flex flex-1 flex-col justify-center gap-4"
+      >
+        <button
+          class="flex min-h-12 items-center gap-4 rounded-2xl bg-white p-6 text-left shadow"
+        >
+          <span
+            class="text-4xl"
+          >
+            🥩
+          </span>
+          <span>
+            <span
+              class="block text-lg font-semibold text-slate-800"
+            >
+              Pattern
+            </span>
+            <span
+              class="text-sm text-slate-500"
+            >
+              Earns 
+              Protein
+            </span>
+          </span>
+        </button>
+        <button
+          class="flex min-h-12 items-center gap-4 rounded-2xl bg-white p-6 text-left shadow"
+        >
+          <span
+            class="text-4xl"
+          >
+            🥦
+          </span>
+          <span>
+            <span
+              class="block text-lg font-semibold text-slate-800"
+            >
+              Word Choice
+            </span>
+            <span
+              class="text-sm text-slate-500"
+            >
+              Earns 
+              Veggie
+            </span>
+          </span>
+        </button>
+        <button
+          class="flex min-h-12 items-center gap-4 rounded-2xl bg-white p-6 text-left shadow"
+        >
+          <span
+            class="text-4xl"
+          >
+            💊
+          </span>
+          <span>
+            <span
+              class="block text-lg font-semibold text-slate-800"
+            >
+              Grammar
+            </span>
+            <span
+              class="text-sm text-slate-500"
+            >
+              Earns 
+              Vitamin
+            </span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/components/DrillPicker.test.tsx:15:19
+     13|     expect(screen.getByText('Word Choice')).toBeInTheDocument();
+     14|     expect(screen.getByText('Grammar')).toBeInTheDocument();
+     15|     expect(screen.getByText('Mixed')).toBeInTheDocument();
+       |                   ^
+     16|   });
+     17|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+   Start at  10:13:34
+   Duration  2.12s (transform 71ms, setup 152ms, import 282ms, tests 252ms, environment 1.22s)
+
