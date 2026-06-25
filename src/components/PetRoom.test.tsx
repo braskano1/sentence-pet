@@ -62,6 +62,15 @@ describe('PetRoom', () => {
     expect(screen.getByText('ATK')).toBeInTheDocument();
     expect(screen.getByText('LUK')).toBeInTheDocument();
   });
+
+  it('shows identity chip with level, the XP bar label, and My Pets button', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true, xp: 40 })) }));
+    render(<PetRoom />);
+    expect(screen.getByText(/Lv 2/)).toBeTruthy();
+    expect(screen.getByText(/XP →/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /my pets/i })).toBeTruthy();
+  });
 });
 
 describe('PetRoom Eggs button', () => {
