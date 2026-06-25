@@ -5,6 +5,7 @@ describe('food mapping', () => {
   it('maps each drill to its food group', () => {
     expect(DRILL_FOOD.pattern).toBe('protein');
     expect(DRILL_FOOD.wordChoice).toBe('veggie');
+    expect(DRILL_FOOD.grammar).toBe('vitamin');
   });
 
   it('has meta for all four food groups', () => {

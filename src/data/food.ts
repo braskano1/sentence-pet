@@ -4,6 +4,7 @@ import type { DrillType, FoodGroup } from './types';
 export const DRILL_FOOD: Record<DrillType, FoodGroup> = {
   pattern: 'protein',
   wordChoice: 'veggie',
+  grammar: 'vitamin',
 };
 
 export interface FoodMeta {
