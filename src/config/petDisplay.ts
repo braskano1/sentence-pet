@@ -1,8 +1,8 @@
 // Shared pet display metadata — names, level labels, rarity styling, sprite/level helpers.
 // Consumed by PetRoom, Gacha, Collection (and the upcoming B-3 battle UI). Keep display
 // concerns here so a new species/rarity is a one-file change.
-import type { BattleStats, PetInstance, Rarity, Species } from '../data/types';
-import { stageForXp } from '../domain/xp';
+import type { BattleStats, PetInstance, PetStage, Rarity, Species } from '../data/types';
+import { levelForXp, stageForXp } from '../domain/xp';
 import { SPRITES } from './sprites';
 
 /** Friendly, A1-readable pet name per species. */
@@ -47,9 +47,38 @@ export const RARITY_HEX: Record<Rarity, string> = {
   legendary: '#f59e0b',
 };
 
+/** Stage name labels for display. */
+export const STAGE_NAME: Record<PetStage, string> = {
+  egg: 'Egg',
+  baby: 'Baby',
+  young: 'Young',
+  adult: 'Adult',
+};
+
+/** Displayed battle stats = creation roll + level-up growth. */
+export function displayStats(pet: PetInstance): BattleStats {
+  const g = pet.growth;
+  const s = pet.stats;
+  return { hp: s.hp + g.hp, atk: s.atk + g.atk, def: s.def + g.def, spd: s.spd + g.spd, luk: s.luk + g.luk };
+}
+
+/** Sum of all displayed stats. */
+export function petPower(pet: PetInstance): number {
+  const d = displayStats(pet);
+  return d.hp + d.atk + d.def + d.spd + d.luk;
+}
+
+/** Highest displayed stat; ties broken by BATTLE_STAT_LABELS order. */
+export function petSpecialty(pet: PetInstance): keyof BattleStats {
+  const d = displayStats(pet);
+  let best: keyof BattleStats = BATTLE_STAT_LABELS[0][1];
+  for (const [, key] of BATTLE_STAT_LABELS) if (d[key] > d[best]) best = key;
+  return best;
+}
+
 /** A pet's current display level. */
 export function petLevel(pet: PetInstance): number {
-  return STAGE_LEVEL[stageForXp(pet.xp, pet.hatched)] || 1;
+  return levelForXp(pet.xp);
 }
 
 /** Display name: the custom name if set, otherwise the species name. */
