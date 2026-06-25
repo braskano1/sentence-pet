@@ -35,14 +35,14 @@ describe('Shop', () => {
 
   it('shows Treats and Decor tabs; treats visible by default', () => {
     render(<Shop />);
-    expect(screen.getByRole('button', { name: /treats/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /decor/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /treats/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /decor/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /snack/i })).toBeInTheDocument();
   });
 
   it('switching to Decor tab shows room cards', async () => {
     render(<Shop />);
-    await userEvent.click(screen.getByRole('button', { name: /^decor$/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /^decor$/i }));
     expect(screen.getByRole('button', { name: /buy beach/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /buy fire room/i })).toBeInTheDocument();
   });
@@ -50,8 +50,15 @@ describe('Shop', () => {
   it('buying a room (with coins) from the Decor tab records ownership', async () => {
     useGameStore.getState().addCoinsForTest(200);
     render(<Shop />);
-    await userEvent.click(screen.getByRole('button', { name: /^decor$/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /^decor$/i }));
     await userEvent.click(screen.getByRole('button', { name: /buy beach/i }));
     expect(useGameStore.getState().owned).toContain('decor:beach');
+  });
+
+  it('exposes the shop tabs as a tablist with selection state', () => {
+    render(<Shop />);
+    expect(screen.getByRole('tablist')).toBeTruthy();
+    const treats = screen.getByRole('tab', { name: /treats/i });
+    expect(treats).toHaveAttribute('aria-selected', 'true');
   });
 });

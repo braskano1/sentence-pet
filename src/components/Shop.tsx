@@ -26,11 +26,13 @@ export function Shop() {
         <p className="text-slate-500">🪙 {shownCoins}</p>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div role="tablist" aria-label="Shop categories" className="mt-3 flex gap-2">
         {(['treats', 'decor'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold capitalize ${
               tab === t ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-600'
