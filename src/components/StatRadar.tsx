@@ -11,11 +11,12 @@ import { useCountUp } from '../effects/useCountUp';
  * numbers roll; a spring scale-in draws the shape outward on first mount. Reduced-motion is
  * honored globally via App's MotionConfig.
  */
-export function StatRadar({ stats, color, size = 180, max = 100 }: {
+export function StatRadar({ stats, color, size = 180, max = 100, specialty }: {
   stats: BattleStats;
   color: string;
   size?: number;
   max?: number;
+  specialty?: keyof BattleStats;
 }) {
   // Eased copies: drive both the morphing polygon and the rolling axis labels.
   const animated: BattleStats = {
@@ -58,10 +59,16 @@ export function StatRadar({ stats, color, size = 180, max = 100 }: {
         transition={{ type: 'spring', stiffness: 180, damping: 16 }}
         style={{ transformOrigin: `${cx}px ${cy}px` }}
       />
+      {BATTLE_STAT_LABELS.map(([, key], i) => {
+        const [dx, dy] = xy(i, Math.max(0.08, animated[key] / max));
+        const isSpec = key === specialty;
+        return <circle key={`d-${key}`} cx={dx} cy={dy} r={isSpec ? 3.5 : 2.4}
+          fill={isSpec ? '#fde68a' : color} stroke={isSpec ? '#b45309' : 'none'} strokeWidth={isSpec ? 2 : 0} />;
+      })}
       {BATTLE_STAT_LABELS.map(([label, key], i) => {
         const [lx, ly] = xy(i, 1.2);
         return (
-          <text key={key} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight={700} fill="#451a03">
+          <text key={key} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight={700} fill={key === specialty ? '#b45309' : '#451a03'}>
             {label} {animated[key]}
           </text>
         );
