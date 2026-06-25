@@ -74,7 +74,7 @@ export function Collection() {
               <PressButton
                 key={p.id}
                 onClick={() => switchPet(p.id)}
-                aria-label={isActive ? `${PET_NAME[p.species]} (active)` : `Raise ${PET_NAME[p.species]}`}
+                aria-label={isActive ? `${petDisplayName(p)} (active)` : `Raise ${petDisplayName(p)}`}
                 className={`flex flex-col items-center rounded-xl p-1.5 ${
                   isActive ? 'bg-amber-200/80 ring-2 ring-amber-500' : 'bg-white/70'
                 }`}
