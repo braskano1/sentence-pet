@@ -184,6 +184,46 @@ describe('decor ownership', () => {
   });
 });
 
+describe('pullEgg action', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('no-ops when coins < eggPrice', () => {
+    const before = useGameStore.getState();
+    before.pullEgg();
+    const after = useGameStore.getState();
+    expect(after.pets).toHaveLength(before.pets.length);
+    expect(after.coins).toBe(before.coins);
+  });
+
+  it('appends a new pet, deducts 60 coins, leaves activePetId unchanged, sets lastPull', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    const activeBefore = useGameStore.getState().activePetId;
+    useGameStore.getState().pullEgg();
+    const s = useGameStore.getState();
+    expect(s.pets).toHaveLength(2);
+    expect(s.coins).toBe(40);
+    expect(s.activePetId).toBe(activeBefore); // joins collection only
+    expect(s.lastPull).not.toBeNull();
+    expect(s.lastPull?.id).toBe(s.pets[1].id);
+    expect(s.lastPull?.hatched).toBe(true);
+  });
+
+  it('gives each pulled pet a unique id', () => {
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().pullEgg();
+    useGameStore.getState().pullEgg();
+    const ids = useGameStore.getState().pets.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('resetForTest clears lastPull', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    useGameStore.getState().pullEgg();
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().lastPull).toBeNull();
+  });
+});
+
 describe('migrate -> v5 (multi-pet)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {

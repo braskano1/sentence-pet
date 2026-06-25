@@ -9,6 +9,7 @@ import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { makePet, rollStats } from '../domain/pets';
+import { pullEgg as pullEggDomain } from '../domain/gacha';
 
 export const STARTER_ID = 'starter-leaf';
 
@@ -41,6 +42,7 @@ interface GameState {
   selectedDrill: DrillType;
   selectedLevel: number;
   lastReward: RewardSummary | null;
+  lastPull: PetInstance | null;
   owned: string[];
   activeBackground: string | null;
   // actions
@@ -51,6 +53,7 @@ interface GameState {
   feed: (group: FoodGroup) => void;
   buyTreat: (item: TreatItem) => void;
   buyDecor: (item: DecorItem) => void;
+  pullEgg: () => void;
   equipBackground: (id: string | null) => void;
   switchPet: (id: string) => void;
   stage: () => PetStage;
@@ -87,6 +90,7 @@ function freshState() {
     selectedDrill: 'pattern' as DrillType,
     selectedLevel: 1,
     lastReward: null,
+    lastPull: null as PetInstance | null,
     owned: [] as string[],
     activeBackground: null as string | null,
   };
@@ -148,6 +152,16 @@ export const useGameStore = create<GameState>()(
           const res = buyDecor({ coins: s.coins, owned: s.owned }, item);
           if (!res.ok) return s; // no-op; UI disables Buy when owned/too poor
           return { coins: res.coins, owned: res.owned };
+        }),
+
+      pullEgg: () =>
+        set((s) => {
+          const res = pullEggDomain(
+            { coins: s.coins },
+            { price: GAME_CONFIG.gacha.eggPrice, id: crypto.randomUUID(), rng, table: GAME_CONFIG.gacha.rarities },
+          );
+          if (!res.ok) return s; // no-op; UI disables Pull when too poor
+          return { pets: [...s.pets, res.pet], coins: res.coins, lastPull: res.pet };
         }),
 
       equipBackground: (id) => set({ activeBackground: id }),
