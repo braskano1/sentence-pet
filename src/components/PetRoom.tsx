@@ -168,16 +168,23 @@ export function PetRoom() {
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
+          <PressButton
+            onClick={() => setScreen('gacha')}
+            aria-label="Eggs"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-violet-800 bg-violet-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+          >
+            Eggs 🥚
+          </PressButton>
           <PressButton
             onClick={() => setScreen('shop')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-6 py-3 text-lg font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
           >
             Shop 🛒
           </PressButton>
           <PressButton
             onClick={() => setScreen('pickDrill')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-6 py-3 text-lg font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
           >
             Play ▶
           </PressButton>

@@ -7,6 +7,7 @@ import { DrillScreen } from './components/DrillScreen';
 import { RewardScreen } from './components/RewardScreen';
 import { DrillPicker } from './components/DrillPicker';
 import { Shop } from './components/Shop';
+import { Gacha } from './components/Gacha';
 import { DevPanel } from './components/DevPanel';
 import type { DrillType } from './data/types';
 
@@ -17,6 +18,7 @@ function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, le
     case 'drill': return { key: 'drill', node: <DrillScreen drill={drill} level={level} /> };
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'shop': return { key: 'shop', node: <Shop /> };
+    case 'gacha': return { key: 'gacha', node: <Gacha /> };
     case 'petRoom':
     default: return { key: 'petRoom', node: <PetRoom /> };
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PetRoom } from './PetRoom';
 import { useGameStore } from '../state/gameStore';
@@ -65,5 +65,14 @@ describe('PetRoom', () => {
     expect(screen.getByText('HP')).toBeInTheDocument();
     expect(screen.getByText('ATK')).toBeInTheDocument();
     expect(screen.getByText('LUK')).toBeInTheDocument();
+  });
+});
+
+describe('PetRoom Eggs button', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  it('routes to the gacha screen', () => {
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('button', { name: /^eggs/i }));
+    expect(useGameStore.getState().screen).toBe('gacha');
   });
 });
