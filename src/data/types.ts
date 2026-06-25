@@ -1,6 +1,13 @@
 export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
 
-export type DrillType = 'pattern' | 'wordChoice';
+export type DrillType = 'pattern' | 'wordChoice' | 'grammar';
+
+/** A tempting grammar near-miss tile tied to a gentle tip (Grammar drill). */
+export interface GrammarTrap {
+  slot: number;   // index into slots[]/answer[] this trap word belongs to
+  word: string;   // the near-miss tile (must differ from every answer word)
+  tip: string;    // gentle Thai-scaffolded nudge shown on a flagged accept
+}
 
 export interface DrillItem {
   id: string;
@@ -10,6 +17,8 @@ export interface DrillItem {
   slots: PosLabel[];    // POS labels shown above each slot
   answer: string[];     // correct words, in order (same length as slots)
   distractors?: string[]; // extra wrong tiles salted into the tray (Word-Choice)
+  traps?: GrammarTrap[];  // near-miss tiles tied to tips (Grammar)
+  strictness?: 'flag' | 'enforce'; // Grammar dial; undefined ⇒ exact match (Pattern/WC)
 }
 
 export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward';

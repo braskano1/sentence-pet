@@ -31,6 +31,7 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
   const [tiles, setTiles] = useState<string[]>(() => shuffle(trayWords(items[0])));
   const [used, setUsed] = useState<boolean[]>(() => trayWords(items[0]).map(() => false));
   const [mistakes, setMistakes] = useState(0);
+  const [tip, setTip] = useState<string | null>(null);
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
 
@@ -86,13 +87,21 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
 
   function evaluate(filled: (string | null)[]) {
     const action = resolveRound({
+      item,
       filled,
-      answer: item.answer,
       index,
       total: items.length,
       mistakes,
     });
-    play(action.type === 'retry' ? 'wrong' : 'correct', () => applyAction(action));
+    if (action.type === 'retry') {
+      setTip(null);
+      play('wrong', () => applyAction(action));
+      return;
+    }
+    // action is advance|finish here, so action.flags is string[] (no narrowing tricks needed)
+    const kind = action.flags.length ? 'flag' : 'correct';
+    setTip(kind === 'flag' ? action.flags.join(' · ') : null);
+    play(kind, () => applyAction(action));
   }
 
   function applyAction(action: RoundAction) {
@@ -101,6 +110,8 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
         finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
+        if (action.flags.length) setMistakes((m) => m + 1); // flag = one slip
+        setTip(null);
         setIndex(action.nextIndex);
         loadItem(action.nextIndex);
         break;
@@ -133,10 +144,19 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
             <div
               aria-hidden="true"
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
-                feedback === 'correct' ? 'text-emerald-500' : 'text-red-500'
+                feedback === 'correct'
+                  ? 'text-emerald-500'
+                  : feedback === 'flag'
+                    ? 'text-sky-500'
+                    : 'text-red-500'
               }`}
             >
-              {feedback === 'correct' ? '✓' : '✗'}
+              {feedback === 'wrong' ? '✗' : '✓'}
+            </div>
+          )}
+          {feedback === 'flag' && tip && (
+            <div className="pointer-events-none absolute bottom-2 rounded-xl bg-sky-100 px-4 py-2 text-center text-sm font-semibold text-sky-800 shadow">
+              {tip}
             </div>
           )}
         </div>

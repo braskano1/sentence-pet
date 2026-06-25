@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { buzz, fireConfetti } from '../effects/celebrate';
 
-export type Feedback = 'correct' | 'wrong' | null;
+export type Feedback = 'correct' | 'wrong' | 'flag' | null;
 
-const HOLD_MS = { correct: 1100, wrong: 700 } as const;
+const HOLD_MS = { correct: 1100, wrong: 700, flag: 1400 } as const;
 
 /**
  * Plays a timed correct/incorrect feedback phase. `play` sets the feedback,
@@ -22,11 +22,11 @@ export function useRoundFeedback() {
     }
   }
 
-  function play(kind: 'correct' | 'wrong', onDone: () => void) {
+  function play(kind: 'correct' | 'wrong' | 'flag', onDone: () => void) {
     clear();
     setFeedback(kind);
-    if (kind === 'correct') fireConfetti();
-    else buzz();
+    if (kind === 'wrong') buzz();
+    else fireConfetti(); // 'correct' and 'flag' are both accepts
     timer.current = setTimeout(() => {
       timer.current = null;
       setFeedback(null);

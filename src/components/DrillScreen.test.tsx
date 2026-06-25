@@ -42,4 +42,20 @@ describe('DrillScreen', () => {
       ),
     ).not.toThrow();
   });
+
+  it('grammar tray includes the agreement trap tile', () => {
+    render(<DrillScreen drill="grammar" level={1} />);
+    // first grammar L1 item: answer ['he','eats'] + trap 'eat'
+    expect(screen.getByRole('button', { name: 'eat' })).toBeInTheDocument();
+  });
+
+  it('mounts for grammar without throwing', () => {
+    expect(() =>
+      render(
+        <DndContext>
+          <DrillScreen drill="grammar" level={1} />
+        </DndContext>,
+      ),
+    ).not.toThrow();
+  });
 });

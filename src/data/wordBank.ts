@@ -23,13 +23,29 @@ export const WORD_BANK: DrillItem[] = [
   { id: 'wc-l1-3', drill: 'wordChoice', level: 1, thaiHint: 'พวกเรานอน', slots: ['Pronoun', 'Verb'], answer: ['we', 'sleep'], distractors: ['sleeps', 'sleeping'] },
   { id: 'wc-l1-4', drill: 'wordChoice', level: 1, thaiHint: 'เธอเดิน', slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'], distractors: ['walk', 'walking'] },
   { id: 'wc-l1-5', drill: 'wordChoice', level: 1, thaiHint: 'พวกเขาเล่น', slots: ['Pronoun', 'Verb'], answer: ['they', 'play'], distractors: ['plays', 'playing'] },
+  // Grammar · Level 1: S+V subject–verb agreement, FLAG mode (accept near-miss + tip)
+  { id: 'gr-l1-1', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'เขากิน', slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'], traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }] },
+  { id: 'gr-l1-2', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'เธอเดิน', slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'], traps: [{ slot: 1, word: 'walk', tip: 'เธอ → she walks 👍' }] },
+  { id: 'gr-l1-3', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'แมววิ่ง', slots: ['Pronoun', 'Verb'], answer: ['it', 'runs'], traps: [{ slot: 1, word: 'run', tip: 'it → it runs 👍' }] },
+  { id: 'gr-l1-4', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'เขานอน', slots: ['Pronoun', 'Verb'], answer: ['he', 'sleeps'], traps: [{ slot: 1, word: 'sleep', tip: 'เขา → he sleeps 👍' }] },
+  { id: 'gr-l1-5', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'เธอเล่น', slots: ['Pronoun', 'Verb'], answer: ['she', 'plays'], traps: [{ slot: 1, word: 'play', tip: 'เธอ → she plays 👍' }] },
+  // Grammar · Level 2: same agreement frames, ENFORCE mode (near-miss rejected -> retry)
+  { id: 'gr-l2-1', drill: 'grammar', level: 2, strictness: 'enforce', thaiHint: 'เขากิน', slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'], traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }] },
+  { id: 'gr-l2-2', drill: 'grammar', level: 2, strictness: 'enforce', thaiHint: 'เธอเดิน', slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'], traps: [{ slot: 1, word: 'walk', tip: 'เธอ → she walks 👍' }] },
+  { id: 'gr-l2-3', drill: 'grammar', level: 2, strictness: 'enforce', thaiHint: 'แมววิ่ง', slots: ['Pronoun', 'Verb'], answer: ['it', 'runs'], traps: [{ slot: 1, word: 'run', tip: 'it → it runs 👍' }] },
+  { id: 'gr-l2-4', drill: 'grammar', level: 2, strictness: 'enforce', thaiHint: 'เขานอน', slots: ['Pronoun', 'Verb'], answer: ['he', 'sleeps'], traps: [{ slot: 1, word: 'sleep', tip: 'เขา → he sleeps 👍' }] },
+  { id: 'gr-l2-5', drill: 'grammar', level: 2, strictness: 'enforce', thaiHint: 'เธอเล่น', slots: ['Pronoun', 'Verb'], answer: ['she', 'plays'], traps: [{ slot: 1, word: 'play', tip: 'เธอ → she plays 👍' }] },
 ];
 
 export function itemsFor(drill: DrillType, level: number): DrillItem[] {
   return WORD_BANK.filter((i) => i.drill === drill && i.level === level);
 }
 
-/** Tiles for an item's tray: the answer words plus any distractors (component shuffles). */
+/** Tiles for an item's tray: answer words, then distractors, then trap words. */
 export function trayWords(item: DrillItem): string[] {
-  return [...item.answer, ...(item.distractors ?? [])];
+  return [
+    ...item.answer,
+    ...(item.distractors ?? []),
+    ...(item.traps ?? []).map((t) => t.word),
+  ];
 }

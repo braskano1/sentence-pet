@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isPlacementCorrect, shuffle } from './check';
+import { gradePlacement } from './grade';
 
 describe('isPlacementCorrect', () => {
   it('true when placed words equal answer in order', () => {
@@ -27,4 +28,20 @@ describe('shuffle', () => {
     shuffle(input);
     expect(input).toEqual(['a', 'b', 'c']);
   });
+});
+
+describe('isPlacementCorrect equals grader ideal for trap-less items', () => {
+  const cases: (string | null)[][] = [
+    ['I', 'run'],
+    ['run', 'I'],
+    ['I', null],
+    ['I'],
+  ];
+  for (const placed of cases) {
+    it(`agrees on ${JSON.stringify(placed)}`, () => {
+      const legacy = isPlacementCorrect(placed, ['I', 'run']);
+      const graded = gradePlacement(placed, { answer: ['I', 'run'] }).status === 'ideal';
+      expect(graded).toBe(legacy);
+    });
+  }
 });
