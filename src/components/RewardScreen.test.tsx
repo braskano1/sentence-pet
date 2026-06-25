@@ -38,4 +38,14 @@ describe('RewardScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
+
+  it('shows level-up callout with toLevel and gained stat when lastLevelUp is set', () => {
+    useGameStore.setState({
+      lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
+      lastLevelUp: { toLevel: 3, gained: ['atk'] },
+    });
+    render(<RewardScreen />);
+    expect(screen.getByText(/Lv 3/)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 ATK/)).toBeInTheDocument();
+  });
 });

@@ -1,23 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PetRoom } from './PetRoom';
 import { useGameStore } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
-import { makePet, rollStats } from '../domain/pets';
 
 beforeEach(() => useGameStore.getState().resetForTest());
 
 describe('PetRoom', () => {
-  it('a feed button consumes that food group into its bar', async () => {
-    useGameStore.getState().hatch();
-    useGameStore.getState().finishRound({ drill: 'wordChoice', level: 1, stars: 3, correctCount: 5 });
-    useGameStore.getState().setScreen('petRoom');
-    render(<PetRoom />);
-    await userEvent.click(screen.getByRole('button', { name: /feed/i }));
-    expect(useGameStore.getState().inventory.veggie).toBe(0);
-  });
-
   it('Play opens the drill picker', async () => {
     useGameStore.getState().hatch();
     render(<PetRoom />);
@@ -48,22 +38,100 @@ describe('PetRoom', () => {
     expect(bg).toHaveAttribute('src', GAME_CONFIG.shop.decor.find((d) => d.id === 'decor:beach')!.sprite);
   });
 
-  it('shows a chip per owned pet and switches the active pet on tap', async () => {
+  it('My Pets button opens the collection screen', async () => {
     useGameStore.getState().hatch();
-    useGameStore.setState((s) => ({
-      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), hatched: true })],
-    }));
     render(<PetRoom />);
-    expect(screen.getByRole('button', { name: /sprout \(active\)/i })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /switch to ember/i }));
-    expect(useGameStore.getState().activePetId).toBe('p2');
+    expect(screen.getByRole('button', { name: /my pets/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /my pets/i }));
+    expect(useGameStore.getState().screen).toBe('collection');
   });
 
-  it('shows the active pet battle stats', () => {
+  it('shows identity chip with level, the XP bar label, and My Pets button', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true, xp: 40 })) }));
+    render(<PetRoom />);
+    expect(screen.getByText(/Lv 2/)).toBeTruthy();
+    expect(screen.getByText(/XP →/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /my pets/i })).toBeTruthy();
+  });
+
+  it('Care tab shows happiness and a feed button per owned food; feeding calls the store', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })), inventory: { ...s.inventory, protein: 3 } }));
+    render(<PetRoom />);
+    expect(screen.getByText(/Happiness/i)).toBeTruthy();
+    const feedProtein = screen.getByRole('button', { name: /feed protein/i });
+    fireEvent.click(feedProtein);
+    expect(useGameStore.getState().inventory.protein).toBe(0);
+  });
+
+  it('switches to the Power tab', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    expect(screen.getByRole('tabpanel')).toBeTruthy();
+  });
+
+  it('Power tab shows level/power/specialty rail', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    expect(screen.getByText('Level')).toBeTruthy();
+    expect(screen.getByText(/Specialty/i)).toBeTruthy();
+    expect(screen.getByText(/\/ 50/)).toBeTruthy();
+  });
+});
+
+describe('PetRoom Eggs button', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  it('routes to the gacha screen', () => {
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('button', { name: /^eggs/i }));
+    expect(useGameStore.getState().screen).toBe('gacha');
+  });
+});
+
+describe('PetRoom tab keyboard navigation', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('ArrowRight on Care tab moves focus to Power tab and activates it', () => {
     useGameStore.getState().hatch();
     render(<PetRoom />);
-    expect(screen.getByText('HP')).toBeInTheDocument();
-    expect(screen.getByText('ATK')).toBeInTheDocument();
-    expect(screen.getByText('LUK')).toBeInTheDocument();
+    const careTab = screen.getByRole('tab', { name: /care/i });
+    fireEvent.keyDown(careTab, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /power/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /care/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('ArrowLeft on Power tab wraps back to Care tab', () => {
+    useGameStore.getState().hatch();
+    render(<PetRoom />);
+    // Switch to power first
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    const powerTab = screen.getByRole('tab', { name: /power/i });
+    fireEvent.keyDown(powerTab, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /care/i })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+describe('PetRoom feed button disabled state', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('feed protein button is disabled when inventory protein is 0', () => {
+    useGameStore.getState().hatch();
+    // Default inventory has 0 protein
+    render(<PetRoom />);
+    const feedBtn = screen.getByRole('button', { name: /feed protein/i });
+    expect(feedBtn).toBeDisabled();
+  });
+
+  it('feed protein button is enabled when inventory protein > 0', () => {
+    useGameStore.getState().hatch();
+    useGameStore.setState((s) => ({ inventory: { ...s.inventory, protein: 3 } }));
+    render(<PetRoom />);
+    const feedBtn = screen.getByRole('button', { name: /feed protein/i });
+    expect(feedBtn).not.toBeDisabled();
   });
 });
