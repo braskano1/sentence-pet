@@ -45,6 +45,12 @@ export function PetRoom() {
           </div>
         )}
         <button
+          onClick={() => setScreen('shop')}
+          className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
+        >
+          Shop 🛒
+        </button>
+        <button
           onClick={() => setScreen('pickDrill')}
           className="min-h-12 w-full rounded-xl bg-emerald-600 px-6 py-3 text-lg font-semibold text-white shadow"
         >

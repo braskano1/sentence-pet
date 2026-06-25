@@ -22,4 +22,11 @@ describe('PetRoom', () => {
     await userEvent.click(screen.getByRole('button', { name: /play/i }));
     expect(useGameStore.getState().screen).toBe('pickDrill');
   });
+
+  it('Shop button navigates to shop', async () => {
+    useGameStore.getState().hatch();
+    render(<PetRoom />);
+    await userEvent.click(screen.getByRole('button', { name: /shop/i }));
+    expect(useGameStore.getState().screen).toBe('shop');
+  });
 });
