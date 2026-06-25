@@ -4,6 +4,7 @@ import type { Rarity } from '../data/types';
 
 const seq = (vals: number[]) => { let i = 0; return () => vals[i++ % vals.length]; };
 
+// Mirrors GAME_CONFIG.gacha (eggPrice + rarities) — kept separate for deterministic isolation.
 const TABLE = [
   { rarity: 'common' as Rarity,    weight: 65, band: [40, 60] as [number, number] },
   { rarity: 'rare' as Rarity,      weight: 25, band: [55, 75] as [number, number] },

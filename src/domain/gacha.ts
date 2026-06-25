@@ -1,6 +1,7 @@
 import type { PetInstance, Species } from '../data/types';
 import { makePet, rollRarity, rollStatsForRarity, type RarityTier } from './pets';
 
+// Order is the species-index contract for the uniform pull below — tests pin it; do not reorder.
 const SPECIES: readonly Species[] = ['leaf', 'fire', 'air', 'water'];
 
 export type PullEggResult =
