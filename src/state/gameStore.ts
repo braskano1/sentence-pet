@@ -235,9 +235,10 @@ export const useGameStore = create<GameState>()(
         }
 
         // v5->v6: backfill rarity on any pet that predates the field.
+        // Skip pets already tagged, and defensively skip any (corrupt) pet missing stats.
         if (Array.isArray(base.pets)) {
           base.pets = base.pets.map((p) =>
-            (p as PetInstance).rarity
+            (p as PetInstance).rarity || !(p as PetInstance).stats
               ? p
               : { ...p, rarity: rarityForStats((p as PetInstance).stats, GAME_CONFIG.gacha.rarities) },
           );
