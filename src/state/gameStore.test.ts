@@ -351,6 +351,18 @@ describe('renamePet action', () => {
     useGameStore.getState().renamePet('nope', 'X');
     expect(useGameStore.getState().pets.map((p) => p.name)).toEqual(before);
   });
+
+  it('renames a non-active pet by id (leaves the active pet untouched)', () => {
+    useGameStore.setState((s) => ({
+      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
+    }));
+    // active is still the starter (pets[0]); rename the second pet
+    useGameStore.getState().renamePet('p2', 'Blaze');
+    const pets = useGameStore.getState().pets;
+    expect(pets.find((p) => p.id === 'p2')!.name).toBe('Blaze');
+    expect(pets[0].name).toBe(''); // active starter unchanged
+    expect(useGameStore.getState().activePetId).toBe(STARTER_ID);
+  });
 });
 
 describe('migrate -> v6 (rarity)', () => {
