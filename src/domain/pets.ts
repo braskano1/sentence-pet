@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { BattleStats, NutritionBars, PetInstance, Species } from '../data/types';
+import type { BattleStats, NutritionBars, PetInstance, Rarity, Species } from '../data/types';
 
 const STAT_MIN = 40;
 const STAT_MAX = 90;
@@ -26,6 +26,7 @@ export function makePet(args: {
   id: string;
   species: Species;
   stats: BattleStats;
+  rarity: Rarity;
   hatched?: boolean;
 }): PetInstance {
   return {
@@ -36,5 +37,6 @@ export function makePet(args: {
     happiness: GAME_CONFIG.happiness.start,
     bars: freshBars(),
     stats: args.stats,
+    rarity: args.rarity,
   };
 }

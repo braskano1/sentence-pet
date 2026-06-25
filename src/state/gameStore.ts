@@ -70,7 +70,7 @@ function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetIns
 }
 
 function freshPet(): PetInstance {
-  return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), hatched: false });
+  return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {
@@ -204,6 +204,7 @@ export const useGameStore = create<GameState>()(
             id: STARTER_ID,
             species: legacy.species ?? 'leaf',
             stats: rollStats(rng),
+            rarity: 'common',
             hatched: legacy.hatched ?? false,
           });
           const migrated: PetInstance = {

@@ -36,6 +36,8 @@ export type FoodGroup = keyof NutritionBars;
 
 export type Species = 'leaf' | 'fire' | 'air' | 'water';
 
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
 export type PetMood = 'happy' | 'sad';
 
 export interface BattleStats {
@@ -55,4 +57,5 @@ export interface PetInstance {
   happiness: number;
   bars: NutritionBars;
   stats: BattleStats;  // rolled once at creation, immutable thereafter
+  rarity: Rarity;      // rolled once at creation (or derived in migrate), immutable thereafter
 }

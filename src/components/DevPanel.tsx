@@ -44,7 +44,7 @@ function setStage(stage: Exclude<PetStage, 'egg'>) {
 function addPet() {
   useGameStore.setState((s) => {
     const id = crypto.randomUUID();
-    const pet = makePet({ id, species: pickSpecies(), stats: rollStats(rng), hatched: true });
+    const pet = makePet({ id, species: pickSpecies(), stats: rollStats(rng), rarity: 'common', hatched: true });
     return { pets: [...s.pets, pet], activePetId: id };
   });
 }

@@ -28,4 +28,14 @@ export const GAME_CONFIG = {
       { id: 'decor:water-room',  name: 'Water Room',  kind: 'decor', price: 150, sprite: DECOR_SPRITES['decor:water-room'] },
     ] satisfies ShopItem[],
   },
+  gacha: {
+    eggPrice: 60,
+    // weights sum to 100; band = inclusive [min,max] each of the 5 stats rolls within.
+    rarities: [
+      { rarity: 'common',    weight: 65, band: [40, 60] },
+      { rarity: 'rare',      weight: 25, band: [55, 75] },
+      { rarity: 'epic',      weight: 8,  band: [72, 88] },
+      { rarity: 'legendary', weight: 2,  band: [85, 90] },
+    ],
+  },
 } as const;

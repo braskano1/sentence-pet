@@ -51,7 +51,7 @@ describe('PetRoom', () => {
   it('shows a chip per owned pet and switches the active pet on tap', async () => {
     useGameStore.getState().hatch();
     useGameStore.setState((s) => ({
-      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), hatched: true })],
+      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
     }));
     render(<PetRoom />);
     expect(screen.getByRole('button', { name: /sprout \(active\)/i })).toBeInTheDocument();

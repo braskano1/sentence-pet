@@ -90,7 +90,7 @@ describe('gameStore', () => {
   describe('switchPet', () => {
     it('switches the active pet when the id exists', () => {
       useGameStore.setState((s) => ({
-        pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), hatched: true })],
+        pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
       }));
       useGameStore.getState().switchPet('p2');
       expect(useGameStore.getState().activePetId).toBe('p2');
@@ -105,7 +105,7 @@ describe('gameStore', () => {
 
   it('pets level independently — xp goes only to the active pet', () => {
     useGameStore.setState((s) => ({
-      pets: [...s.pets, makePet({ id: 'p2', species: 'water', stats: rollStats(() => 0.5), hatched: true })],
+      pets: [...s.pets, makePet({ id: 'p2', species: 'water', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
     }));
     useGameStore.getState().switchPet('p2');
     useGameStore.getState().addXpForTest(100);
