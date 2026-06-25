@@ -97,3 +97,32 @@ describe('gameStore', () => {
     });
   });
 });
+
+describe('species', () => {
+  it('freshPet defaults to leaf before hatch', () => {
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().pet.species).toBe('leaf');
+  });
+
+  it('hatch assigns a valid species', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().hatch();
+    expect(['leaf', 'fire', 'air', 'water']).toContain(useGameStore.getState().pet.species);
+  });
+});
+
+describe('migrate v2 -> v3', () => {
+  it('backfills species=leaf and keeps inventory backfill', () => {
+    const persist = (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist;
+    const migrated = persist.getOptions().migrate(
+      { pet: { hatched: true, xp: 0, coins: 5, happiness: 60, bars: { protein: 1 } }, inventory: { protein: 2 } },
+      2,
+    ) as { pet: { species: string; coins: number }; inventory: Record<string, number> };
+    expect(migrated.pet.species).toBe('leaf');
+    expect(migrated.pet.coins).toBe(5); // existing pet fields preserved, not clobbered
+    expect(migrated.inventory.protein).toBe(2); // persisted inventory value preserved
+    expect(migrated.inventory.veggie).toBe(0); // missing group backfilled
+  });
+});

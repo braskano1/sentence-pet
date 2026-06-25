@@ -23,7 +23,7 @@ export function PetRoom() {
     <div className="flex h-full flex-col bg-emerald-50 p-6">
       {/* middle zone: pet + stats, centered, grabs slack */}
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <PetSprite stage={stage} feedTrigger={feedTrigger} />
+        <PetSprite stage={stage} species={pet.species} happiness={pet.happiness} feedTrigger={feedTrigger} />
         <p className="text-slate-500">XP {xp} · 🪙 {coins}</p>
         <StatBars bars={pet.bars} happiness={pet.happiness} />
       </div>

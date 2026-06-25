@@ -86,6 +86,9 @@ Separates "learn" from "care"; adds economy depth.
 ### Shop (treats shipped)
 - Shop screen reachable from PetRoom; sells 3 happiness-treat tiers (Snack 15→+15, Treat 30→+35, Feast 60→+80). Instant-apply, clamps happiness to 100. Coins now have a sink. Decor + pet-unlocks deferred (need art + a 2→3 persist bump for an owned-items set).
 
+### Art integrated (Phase 0, shipped)
+- Emoji pets replaced with real art for **4 elemental species** (leaf, fire, air, water), each baby/young/adult + happy/sad expression (swaps at 50% happiness). Egg hatches into a **uniformly-random** species (persisted; backfilled to leaf for pre-existing saves). Persist bumped **2→3**. Sprites are bg-cut webps (`scripts/prep-sprites.sh`); the 4 elemental eggs are imported and reserved as Phase B shop icons. Roadmap from here: **A** decor shop → **B** pet-unlocks (buy/switch species) → **C** L3–L5 content.
+
 ## 8. Architecture — Netlify + Firebase (serverless)
 SQLite + Express DROPPED (don't fit serverless / file persistence). Replaced by Firebase BaaS.
 

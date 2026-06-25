@@ -33,3 +33,7 @@ export interface NutritionBars {
 }
 
 export type FoodGroup = keyof NutritionBars;
+
+export type Species = 'leaf' | 'fire' | 'air' | 'water';
+
+export type PetMood = 'happy' | 'sad';
