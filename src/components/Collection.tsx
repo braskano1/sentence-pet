@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
 import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petDisplayName, petLevel, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
+import { MAX_PET_NAME } from '../domain/petName';
 
 /**
  * The pet collection: a detail panel for the active pet (portrait, rarity, stat radar +
@@ -13,6 +15,9 @@ export function Collection() {
   const active = useGameStore(selectActivePet);
   const switchPet = useGameStore((s) => s.switchPet);
   const setScreen = useGameStore((s) => s.setScreen);
+  const renamePet = useGameStore((s) => s.renamePet);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
 
   return (
     <div className="flex h-full flex-col bg-amber-50">
@@ -39,12 +44,39 @@ export function Collection() {
             className="h-28 w-28 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.25)]"
           />
           <div className="flex items-center gap-2">
-            <span className="text-lg font-extrabold text-amber-950">{petDisplayName(active)}</span>
-            {active.name.trim() && <span className="text-[10px] font-semibold text-amber-900/50">({PET_NAME[active.species]})</span>}
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${RARITY_BADGE[active.rarity]}`}>
-              {active.rarity}
-            </span>
-            <span className="text-xs font-semibold text-amber-900/60">Lv {petLevel(active)}</span>
+            {editing ? (
+              <>
+                <input
+                  type="text"
+                  aria-label="Pet name"
+                  maxLength={MAX_PET_NAME}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  className="min-w-0 flex-1 rounded-lg border border-amber-900/30 bg-amber-50 px-2 py-1 text-base"
+                />
+                <PressButton
+                  onClick={() => { renamePet(active.id, draft); setEditing(false); }}
+                  aria-label="Save"
+                  className="rounded-lg bg-amber-600 px-2 py-1 text-sm font-bold text-white"
+                >
+                  Save
+                </PressButton>
+              </>
+            ) : (
+              <>
+                <span className="text-lg font-extrabold text-amber-950">{petDisplayName(active)}</span>
+                {active.name.trim() && <span className="text-[10px] font-semibold text-amber-900/50">({PET_NAME[active.species]})</span>}
+                <PressButton
+                  onClick={() => { setDraft(active.name); setEditing(true); }}
+                  aria-label="Rename"
+                  className="rounded-md bg-amber-900/15 px-2 py-0.5 text-sm"
+                >
+                  ✎
+                </PressButton>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${RARITY_BADGE[active.rarity]}`}>{active.rarity}</span>
+                <span className="text-xs font-semibold text-amber-900/60">Lv {petLevel(active)}</span>
+              </>
+            )}
           </div>
 
           <p className="text-xs font-semibold text-amber-900/70">

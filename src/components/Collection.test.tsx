@@ -45,4 +45,13 @@ describe('Collection', () => {
     const weak = screen.getByText(/weak vs/i);
     expect(weak.textContent).toMatch(/breeze/i);
   });
+
+  it('renames the active pet via the pencil + Save', () => {
+    useGameStore.getState().hatch();
+    render(<Collection />);
+    fireEvent.click(screen.getByRole('button', { name: /rename/i }));
+    fireEvent.change(screen.getByRole('textbox', { name: /pet name/i }), { target: { value: 'Leafy' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(useGameStore.getState().pets[0].name).toBe('Leafy');
+  });
 });
