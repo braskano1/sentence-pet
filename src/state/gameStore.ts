@@ -2,14 +2,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
-import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen } from '../data/types';
+import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen, Species } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { ShopItem } from '../domain/shop';
+import { pickSpecies } from '../domain/species';
 
 interface Pet {
   hatched: boolean;
+  species: Species;
   xp: number;
   coins: number;
   happiness: number;
@@ -55,6 +57,7 @@ interface GameState {
 function freshPet(): Pet {
   return {
     hatched: false,
+    species: 'leaf',
     xp: 0,
     coins: 0,
     happiness: GAME_CONFIG.happiness.start,
@@ -84,7 +87,7 @@ export const useGameStore = create<GameState>()(
       setScreen: (screen) => set({ screen }),
 
       hatch: () =>
-        set((st) => ({ pet: { ...st.pet, hatched: true }, screen: 'petRoom' })),
+        set((st) => ({ pet: { ...st.pet, hatched: true, species: pickSpecies() }, screen: 'petRoom' })),
 
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
@@ -142,14 +145,19 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 2,
-      // v1 persisted inventory was { protein } only; backfill the new groups.
-      // migrate runs once per version gap; at v2 the only change is the inventory shape
-      // (v1 stored { protein } only). Backfill any missing food groups without mutating input.
+      version: 3,
+      // v1->v2 backfilled inventory groups; v2->v3 adds pet.species (backfill 'leaf').
       migrate: (persisted: unknown) => {
-        const st = persisted as { inventory?: Partial<Record<FoodGroup, number>> } | null;
+        const st = persisted as
+          | { inventory?: Partial<Record<FoodGroup, number>>; pet?: Partial<Pet> }
+          | null;
         if (!st) return st as unknown as GameState;
-        return { selectedDrill: 'pattern', ...st, inventory: { ...freshInventory(), ...(st.inventory ?? {}) } } as GameState;
+        return {
+          selectedDrill: 'pattern',
+          ...st,
+          inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
+          pet: { ...freshPet(), ...(st.pet ?? {}), species: st.pet?.species ?? 'leaf' },
+        } as GameState;
       },
     },
   ),
