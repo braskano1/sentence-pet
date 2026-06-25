@@ -87,6 +87,7 @@ export function makePet(args: {
     happiness: GAME_CONFIG.happiness.start,
     bars: freshBars(),
     stats: args.stats,
+    growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
     rarity: args.rarity,
     name: args.name ?? '',
   };

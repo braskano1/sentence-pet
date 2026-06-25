@@ -57,6 +57,7 @@ export interface PetInstance {
   happiness: number;
   bars: NutritionBars;
   stats: BattleStats;  // rolled once at creation, immutable thereafter
+  growth: BattleStats; // points allocated by level-ups (+1 random per level); display = stats + growth
   rarity: Rarity;      // rolled once at creation (or derived in migrate), immutable thereafter
   name: string;        // custom name; '' falls back to the species name (see petDisplayName)
 }

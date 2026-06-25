@@ -50,6 +50,11 @@ describe('makePet', () => {
     const p = makePet({ id: 'y', species: 'leaf', stats: rollStats(() => 0.5), rarity: 'common', hatched: true });
     expect(p.hatched).toBe(true);
   });
+
+  it('makePet initializes zeroed growth', () => {
+    const p = makePet({ id: 'x', species: 'fire', stats: rollStats(() => 0), rarity: 'common' });
+    expect(p.growth).toEqual({ hp: 0, atk: 0, def: 0, spd: 0, luk: 0 });
+  });
 });
 
 describe('rollRarity', () => {
