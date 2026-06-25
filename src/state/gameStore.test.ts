@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore } from './gameStore';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -71,5 +72,28 @@ describe('gameStore', () => {
     useGameStore.getState().hatch();
     useGameStore.getState().addXpForTest(1000);
     expect(useGameStore.getState().stage()).toBe('young');
+  });
+
+  describe('buyTreat', () => {
+    const snack = GAME_CONFIG.shop.treats[0]; // price 15, +15 happiness
+
+    it('spends coins and raises happiness', () => {
+      const s = useGameStore.getState();
+      s.resetForTest();
+      s.addCoinsForTest(100);
+      useGameStore.getState().buyTreat(snack);
+      const pet = useGameStore.getState().pet;
+      expect(pet.coins).toBe(85);
+      expect(pet.happiness).toBe(GAME_CONFIG.happiness.start + 15); // 60 + 15 = 75
+    });
+
+    it('is a no-op when unaffordable', () => {
+      const s = useGameStore.getState();
+      s.resetForTest(); // coins 0
+      useGameStore.getState().buyTreat(snack);
+      const pet = useGameStore.getState().pet;
+      expect(pet.coins).toBe(0);
+      expect(pet.happiness).toBe(GAME_CONFIG.happiness.start);
+    });
   });
 });

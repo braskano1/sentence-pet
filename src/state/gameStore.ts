@@ -5,6 +5,8 @@ import { DRILL_FOOD } from '../data/food';
 import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
+import { purchase } from '../domain/shop';
+import type { ShopItem } from '../domain/shop';
 
 interface Pet {
   hatched: boolean;
@@ -42,9 +44,11 @@ interface GameState {
   startDrill: (drill: DrillType, level: number) => void;
   finishRound: (r: RoundResult) => void;
   feed: (group: FoodGroup) => void;
+  buyTreat: (item: ShopItem) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
+  addCoinsForTest: (coins: number) => void;
   resetForTest: () => void;
 }
 
@@ -111,9 +115,21 @@ export const useGameStore = create<GameState>()(
           inventory: { ...st.inventory, [group]: 0 },
         })),
 
+      buyTreat: (item) =>
+        set((st) => {
+          const res = purchase(
+            { coins: st.pet.coins, happiness: st.pet.happiness },
+            item,
+            GAME_CONFIG.happiness.max,
+          );
+          if (!res.ok) return st; // no-op; UI disables the button, this is defensive
+          return { pet: { ...st.pet, coins: res.coins, happiness: res.happiness } };
+        }),
+
       stage: () => stageForXp(get().pet.xp, get().pet.hatched),
 
       addXpForTest: (xp) => set((st) => ({ pet: { ...st.pet, xp: st.pet.xp + xp } })),
+      addCoinsForTest: (coins) => set((st) => ({ pet: { ...st.pet, coins: st.pet.coins + coins } })),
       resetForTest: () =>
         set({
           screen: 'egg',
