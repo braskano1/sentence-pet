@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Shop } from './Shop';
 import { useGameStore } from '../state/gameStore';
@@ -57,8 +57,31 @@ describe('Shop', () => {
 
   it('exposes the shop tabs as a tablist with selection state', () => {
     render(<Shop />);
-    expect(screen.getByRole('tablist')).toBeTruthy();
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
     const treats = screen.getByRole('tab', { name: /treats/i });
     expect(treats).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('arrow keys move selection and focus between tabs (roving tabindex)', () => {
+    render(<Shop />);
+    const treats = screen.getByRole('tab', { name: /treats/i });
+    treats.focus();
+    fireEvent.keyDown(treats, { key: 'ArrowRight' });
+    const decor = screen.getByRole('tab', { name: /decor/i });
+    expect(decor).toHaveAttribute('aria-selected', 'true');
+    expect(decor).toHaveFocus();
+  });
+
+  it('the active tab has tabIndex 0 and the inactive tab tabIndex -1', () => {
+    render(<Shop />);
+    expect(screen.getByRole('tab', { name: /treats/i })).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('tab', { name: /decor/i })).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('renders the selected panel as a tabpanel labelled by its tab', () => {
+    render(<Shop />);
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveAttribute('aria-labelledby', 'shop-tab-treats');
+    expect(panel).toHaveAttribute('id', 'shop-panel-treats');
   });
 });
