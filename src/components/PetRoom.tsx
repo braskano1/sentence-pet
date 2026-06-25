@@ -187,12 +187,21 @@ function PowerPanel({ pet }: { pet: PetInstance }) {
   const spec = petSpecialty(pet);
   const specLabel = BATTLE_STAT_LABELS.find(([, k]) => k === spec)?.[0] ?? 'HP';
   return (
-    <div className="flex items-center gap-2">
-      <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={160} specialty={spec} />
-      <div className="flex w-24 flex-none flex-col gap-1.5">
-        <div className="rounded-xl bg-amber-900/10 px-2 py-1.5"><div className="text-[8px] font-extrabold uppercase text-amber-900/70">Level</div><div className="text-lg font-extrabold text-amber-950">{petLevel(pet)}<span className="text-[9px] text-amber-900/70"> / 50</span></div></div>
-        <div className="rounded-xl bg-amber-900/10 px-2 py-1.5"><div className="text-[8px] font-extrabold uppercase text-amber-900/70">⚔ Power</div><div className="text-lg font-extrabold text-amber-950 tabular-nums">{petPower(pet)}</div></div>
-        <div className="rounded-xl bg-amber-900/10 px-2 py-1.5"><div className="text-[8px] font-extrabold uppercase text-amber-900/70">★ Specialty</div><div className="text-base font-extrabold text-amber-700">{specLabel}</div></div>
+    <div className="flex items-center justify-between gap-4 py-1">
+      <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={150} specialty={spec} />
+      <div className="flex w-24 flex-none flex-col gap-2">
+        <div className="rounded-xl bg-amber-900/10 px-3 py-2">
+          <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">Level</div>
+          <div className="mt-1 text-xl font-extrabold leading-none text-amber-950">{petLevel(pet)}<span className="text-[10px] font-bold text-amber-900/60"> / 50</span></div>
+        </div>
+        <div className="rounded-xl bg-amber-900/10 px-3 py-2">
+          <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">⚔ Power</div>
+          <div className="mt-1 text-xl font-extrabold leading-none text-amber-950 tabular-nums">{petPower(pet)}</div>
+        </div>
+        <div className="rounded-xl bg-amber-900/10 px-3 py-2">
+          <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">★ Specialty</div>
+          <div className="mt-1 text-base font-extrabold leading-none text-amber-700">{specLabel}</div>
+        </div>
       </div>
     </div>
   );
