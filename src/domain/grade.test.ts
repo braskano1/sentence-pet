@@ -67,4 +67,22 @@ describe('gradePlacement', () => {
     const g = gradePlacement(['he'], flagItem);
     expect(g).toEqual({ status: 'wrong', passes: false, flags: [] });
   });
+
+  it('Mixed item (enforce, S+V+O): exact passes, trap flagged-no-pass, distractor wrong', () => {
+    const mixedItem: Pick<DrillItem, 'answer' | 'traps' | 'strictness'> = {
+      answer: ['I', 'eat', 'rice'],
+      traps: [{ slot: 1, word: 'eats', tip: 'ฉัน → I eat 👍' }],
+      strictness: 'enforce',
+    };
+    // exact -> ideal, passes
+    expect(gradePlacement(['I', 'eat', 'rice'], mixedItem)).toEqual({
+      status: 'ideal', passes: true, flags: [],
+    });
+    // agreement trap in its slot -> flagged but enforce blocks the pass
+    expect(gradePlacement(['I', 'eats', 'rice'], mixedItem)).toEqual({
+      status: 'flagged', passes: false, flags: ['ฉัน → I eat 👍'],
+    });
+    // distractor placed in the object slot -> wrong
+    expect(gradePlacement(['I', 'eat', 'bread'], mixedItem).status).toBe('wrong');
+  });
 });
