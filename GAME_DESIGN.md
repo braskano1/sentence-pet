@@ -170,6 +170,8 @@ Each drill uses the 5 rungs as the sentence frame; only its own dial ramps L1→
 | Grammar | rungs; strictness *flag* → *enforce* |
 | Mixed | rungs; all dials on |
 
+> **Grammar dial (shipped):** realised as a per-item `strictness: 'flag' | 'enforce'`. L1 = flag (near-miss subject–verb agreement is accepted: food drops + gentle Thai tip + one-star dock); L2 = enforce (near-miss rejected → retry). Engine: `src/domain/grade.ts` `gradePlacement`. In-app only L1 is reachable until level-select lands; L2 is authored + unit-tested.
+
 ### Pass & stars
 - **Clear a level = 5/5 correct** (retry within the round until all 5 right).
 - **Stars measure hints + mistakes used:** 3⭐ = no hints + no wrong taps; fewer stars as hints/errors accrue. Replay for 3⭐ = mastery hook.
