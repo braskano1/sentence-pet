@@ -31,9 +31,9 @@ export function StatRadar({ stats, color, size = 180, max = 100, specialty }: {
 
   const cx = size / 2;
   const cy = size / 2;
-  const R = size * 0.3; // grid + data radius (smaller, leaves a margin ring for labels)
-  const PAD = size * 0.24; // viewBox breathing room so two-line labels never clip
-  const LABEL_R = 1.5; // label distance as a multiple of R (outside the outer ring)
+  const R = size * 0.36; // grid + data radius (dominant shape)
+  const PAD = size * 0.18; // viewBox breathing room so two-line labels never clip
+  const LABEL_R = 1.32; // label distance as a multiple of R (just outside the outer ring)
   const n = BATTLE_STAT_LABELS.length;
   const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
   const xy = (i: number, r: number): [number, number] => [cx + Math.cos(angle(i)) * R * r, cy + Math.sin(angle(i)) * R * r];

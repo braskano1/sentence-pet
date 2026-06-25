@@ -189,7 +189,7 @@ function PowerPanel({ pet }: { pet: PetInstance }) {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex flex-1 justify-center">
-        <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={190} specialty={spec} />
+        <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={200} specialty={spec} />
       </div>
       <div className="flex w-28 flex-none flex-col gap-2">
         <div className="rounded-xl bg-amber-900/10 px-3 py-2">
