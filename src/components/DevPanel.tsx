@@ -8,6 +8,7 @@ import { useGameStore, selectActivePet } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
 import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
+import { totalXpForLevel, STAGE_LEVEL } from '../domain/xp';
 import type { BattleStats, PetStage, PetInstance } from '../data/types';
 
 const rng = () => Math.random();
@@ -38,9 +39,7 @@ function setStat(key: keyof BattleStats, value: number) {
 }
 
 function setStage(stage: Exclude<PetStage, 'egg'>) {
-  // Temporary hardcoded stage thresholds (to be replaced with level-based model)
-  const stageXp = { baby: 0, young: 1000, adult: 3000 };
-  mapActive((p) => ({ ...p, xp: stageXp[stage] }));
+  mapActive((p) => ({ ...p, xp: totalXpForLevel(STAGE_LEVEL[stage]) }));
 }
 
 function addPet() {

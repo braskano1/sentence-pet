@@ -83,7 +83,7 @@ describe('gameStore', () => {
 
   it('xp at/over young threshold reports young stage for the active pet', () => {
     useGameStore.getState().hatch();
-    useGameStore.getState().addXpForTest(1000);
+    useGameStore.getState().addXpForTest(15123); // totalXpForLevel(16)
     expect(useGameStore.getState().stage()).toBe('young');
   });
 

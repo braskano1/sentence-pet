@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { xpPerCorrect, stageForXp, xpToNext, totalXpForLevel, levelForXp, xpProgress } from './xp';
+import { xpPerCorrect, stageForXp, stageForLevel, STAGE_LEVEL, xpToNext, totalXpForLevel, levelForXp, xpProgress } from './xp';
 
 describe('xpPerCorrect', () => {
   it('is 10 x level', () => {
@@ -9,19 +9,38 @@ describe('xpPerCorrect', () => {
 });
 
 describe('stageForXp', () => {
-  it('is baby from 0 up to <1000', () => {
+  it('is baby from 0 until young threshold', () => {
     expect(stageForXp(0, true)).toBe('baby');
-    expect(stageForXp(999, true)).toBe('baby');
+    expect(stageForXp(totalXpForLevel(16) - 1, true)).toBe('baby');
   });
-  it('is young from 1000 up to <3000', () => {
-    expect(stageForXp(1000, true)).toBe('young');
-    expect(stageForXp(2999, true)).toBe('young');
+  it('is young from young threshold until adult threshold', () => {
+    expect(stageForXp(totalXpForLevel(16), true)).toBe('young');
+    expect(stageForXp(totalXpForLevel(36) - 1, true)).toBe('young');
   });
-  it('is adult at 3000+', () => {
-    expect(stageForXp(3000, true)).toBe('adult');
+  it('is adult from adult threshold onward', () => {
+    expect(stageForXp(totalXpForLevel(36), true)).toBe('adult');
   });
   it('is egg while not hatched, regardless of xp', () => {
     expect(stageForXp(5000, false)).toBe('egg');
+  });
+});
+
+describe('stage bands', () => {
+  it('STAGE_LEVEL holds evolution thresholds', () => {
+    expect(STAGE_LEVEL).toEqual({ baby: 1, young: 16, adult: 36 });
+  });
+  it('stageForLevel maps bands', () => {
+    expect(stageForLevel(1)).toBe('baby');
+    expect(stageForLevel(15)).toBe('baby');
+    expect(stageForLevel(16)).toBe('young');
+    expect(stageForLevel(35)).toBe('young');
+    expect(stageForLevel(36)).toBe('adult');
+    expect(stageForLevel(50)).toBe('adult');
+  });
+  it('stageForXp returns egg when not hatched, else composes', () => {
+    expect(stageForXp(999999, false)).toBe('egg');
+    expect(stageForXp(0, true)).toBe('baby');
+    expect(stageForXp(totalXpForLevel(16), true)).toBe('young');
   });
 });
 
