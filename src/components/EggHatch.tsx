@@ -1,5 +1,6 @@
 // src/components/EggHatch.tsx
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   DndContext,
   DragOverlay,
@@ -88,7 +89,13 @@ export function EggHatch() {
     >
       <div className="flex h-full flex-col bg-indigo-50 p-4">
         <div className="flex flex-col items-center gap-3 pt-2">
-          <div className="text-[clamp(3rem,14vh,5rem)] leading-none">🥚</div>
+          <motion.div
+            className="text-[clamp(3rem,14vh,5rem)] leading-none"
+            animate={{ y: [0, -6, 0], scale: [1, 1.03, 1] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+          >
+            🥚
+          </motion.div>
           <p className="text-slate-600">Build the sentence to hatch your pet!</p>
           <p className="text-2xl text-slate-700">{item.thaiHint}</p>
         </div>
