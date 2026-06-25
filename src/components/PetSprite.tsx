@@ -1,20 +1,27 @@
 // src/components/PetSprite.tsx
 import { useEffect, useRef } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
-import type { PetStage } from '../data/types';
-
-const ART: Record<PetStage, string> = {
-  egg: '🥚',
-  baby: '🐣',
-  young: '🐕',
-  adult: '🐕‍🦺',
-};
+import type { PetStage, Species } from '../data/types';
+import { SPRITES, EGG_SPRITE } from '../config/sprites';
+import { moodFor } from '../domain/species';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 /**
- * Pet emoji with: a gentle infinite idle bob, a one-shot bounce when `feedTrigger`
- * increments, and a scale pop when `stage` changes (evolution).
+ * Pet artwork with: a gentle infinite idle bob, a one-shot bounce when `feedTrigger`
+ * increments, and a scale pop when `stage` changes (evolution). Sprite is chosen by
+ * (species, stage) and swaps happy/sad by happiness.
  */
-export function PetSprite({ stage, feedTrigger = 0 }: { stage: PetStage; feedTrigger?: number }) {
+export function PetSprite({
+  stage,
+  species,
+  happiness,
+  feedTrigger = 0,
+}: {
+  stage: PetStage;
+  species: Species;
+  happiness: number;
+  feedTrigger?: number;
+}) {
   const controls = useAnimationControls();
   const prevStage = useRef(stage);
   const prevFeed = useRef(feedTrigger);
@@ -35,19 +42,21 @@ export function PetSprite({ stage, feedTrigger = 0 }: { stage: PetStage; feedTri
     }
   }, [stage, controls]);
 
+  const mood = moodFor(happiness, GAME_CONFIG.happiness.max);
+  const isEgg = stage === 'egg';
+  const src = isEgg ? EGG_SPRITE : SPRITES[species][stage][mood];
+  const alt = isEgg ? 'pet-egg' : `pet-${species}-${stage}-${mood}`;
+
   return (
-    <motion.div
-      className="select-none leading-none text-[clamp(4rem,18vh,8rem)]"
-      aria-label={`pet-${stage}`}
-      animate={controls}
-      initial={false}
-    >
-      <motion.div
+    <motion.div className="select-none" animate={controls} initial={false}>
+      <motion.img
+        src={src}
+        alt={alt}
+        draggable={false}
+        className="h-[clamp(6rem,26vh,12rem)] w-auto object-contain"
         animate={{ y: [0, -6, 0], scale: [1, 1.03, 1] }}
         transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-      >
-        {ART[stage]}
-      </motion.div>
+      />
     </motion.div>
   );
 }
