@@ -296,3 +296,44 @@ describe('migrate -> v5 (multi-pet)', () => {
     expect(m.coins).toBe(42);
   });
 });
+
+describe('migrate -> v6 (rarity)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills rarity from stats on a v5 save (derive from min stat)', () => {
+    const v5 = {
+      pets: [{ id: STARTER_ID, species: 'water', xp: 3, hatched: true,
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 80, atk: 80, def: 80, spd: 80, luk: 80 } }],
+      activePetId: STARTER_ID, coins: 42,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v5, 5) as { pets: { rarity: string }[] };
+    expect(m.pets[0].rarity).toBe('epic'); // min stat 80 -> epic floor 72
+  });
+
+  it('a v4 single-pet save gets a derived rarity too', () => {
+    const m = getMigrate()(
+      { pet: { hatched: true, species: 'fire', xp: 12, coins: 5 }, inventory: { protein: 2 } },
+      4,
+    ) as { pets: { rarity: string }[] };
+    expect(['common', 'rare', 'epic', 'legendary']).toContain(m.pets[0].rarity);
+  });
+
+  it('a v6 save passes rarity through unchanged', () => {
+    const v6 = {
+      pets: [{ id: STARTER_ID, species: 'leaf', xp: 0, hatched: true, rarity: 'legendary',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v6, 6) as { pets: { rarity: string }[] };
+    expect(m.pets[0].rarity).toBe('legendary');
+  });
+});

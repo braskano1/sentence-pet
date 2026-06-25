@@ -8,7 +8,7 @@ import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
-import { makePet, rollStats } from '../domain/pets';
+import { makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 
 export const STARTER_ID = 'starter-leaf';
@@ -179,9 +179,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 5,
+      version: 6,
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
+      // v5->v6 backfills pet.rarity (derived from stats).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -218,7 +219,7 @@ export const useGameStore = create<GameState>()(
             id: STARTER_ID,
             species: legacy.species ?? 'leaf',
             stats: rollStats(rng),
-            rarity: 'common',
+            rarity: 'common', // overwritten below from the merged stats
             hatched: legacy.hatched ?? false,
           });
           const migrated: PetInstance = {
@@ -226,10 +227,20 @@ export const useGameStore = create<GameState>()(
             xp: legacy.xp ?? 0,
             happiness: legacy.happiness ?? GAME_CONFIG.happiness.start,
             bars: { ...fresh.bars, ...(legacy.bars ?? {}) },
+            rarity: rarityForStats(fresh.stats, GAME_CONFIG.gacha.rarities),
           };
           const next = { ...base, pets: [migrated], activePetId: STARTER_ID, coins: legacy.coins ?? 0 };
           delete (next as { pet?: unknown }).pet;
           return next as unknown as GameState;
+        }
+
+        // v5->v6: backfill rarity on any pet that predates the field.
+        if (Array.isArray(base.pets)) {
+          base.pets = base.pets.map((p) =>
+            (p as PetInstance).rarity
+              ? p
+              : { ...p, rarity: rarityForStats((p as PetInstance).stats, GAME_CONFIG.gacha.rarities) },
+          );
         }
 
         // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).
