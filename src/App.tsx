@@ -7,6 +7,7 @@ import { DrillScreen } from './components/DrillScreen';
 import { RewardScreen } from './components/RewardScreen';
 import { DrillPicker } from './components/DrillPicker';
 import { Shop } from './components/Shop';
+import { DevPanel } from './components/DevPanel';
 import type { DrillType } from './data/types';
 
 function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number) {
@@ -50,6 +51,7 @@ export default function App() {
       <AppShell>
         <CurrentScreen />
       </AppShell>
+      {import.meta.env.DEV && <DevPanel />}
     </MotionConfig>
   );
 }
