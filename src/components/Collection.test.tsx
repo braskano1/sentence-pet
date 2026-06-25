@@ -65,7 +65,7 @@ describe('Collection', () => {
       })),
     }));
     render(<Collection />);
-    // base 50 + growth 7 = 57 shown for HP in the radar label "HP 57" and numeric row
-    expect(screen.getByText(/HP 57/)).toBeTruthy();
+    // base 50 + growth 7 = 57 shown (radar value tspan and/or numeric row)
+    expect(screen.getAllByText('57').length).toBeGreaterThan(0);
   });
 });

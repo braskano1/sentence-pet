@@ -7,7 +7,10 @@ describe('StatRadar', () => {
     const { getByText } = render(
       <StatRadar stats={{ hp: 70, atk: 60, def: 50, spd: 40, luk: 30 }} color="#8b5cf6" specialty="hp" />,
     );
-    expect(getByText(/HP 70/)).toBeTruthy();
-    expect(getByText(/LUK 30/)).toBeTruthy();
+    // labels are two tspans (name over value)
+    expect(getByText('HP')).toBeTruthy();
+    expect(getByText('70')).toBeTruthy();
+    expect(getByText('LUK')).toBeTruthy();
+    expect(getByText('30')).toBeTruthy();
   });
 });
