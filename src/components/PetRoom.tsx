@@ -97,7 +97,7 @@ export function PetRoom() {
         </div>
 
         {/* bubble + pet (keep the existing glow div; place pet lower-center) */}
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-end px-6 pb-2">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-end px-6 pb-14">
           <div className="mb-2"><SpeechBubble name={petDisplayName(activePet)} line={line} /></div>
           <div className="relative drop-shadow-[0_14px_26px_rgba(0,0,0,0.4)]">
             <PetSprite stage={stage} species={activePet.species} happiness={activePet.happiness} feedTrigger={feedTrigger} />
