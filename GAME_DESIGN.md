@@ -84,10 +84,13 @@ Separates "learn" from "care"; adds economy depth.
 - (Cosmetics REMOVED — pets are real animals.)
 
 ### Shop (treats shipped)
-- Shop screen reachable from PetRoom; sells 3 happiness-treat tiers (Snack 15→+15, Treat 30→+35, Feast 60→+80). Instant-apply, clamps happiness to 100. Coins now have a sink. Decor + pet-unlocks deferred (need art + a 2→3 persist bump for an owned-items set).
+- Shop screen reachable from PetRoom; sells 3 happiness-treat tiers (Snack 15→+15, Treat 30→+35, Feast 60→+80). Instant-apply, clamps happiness to 100. Coins now have a sink. (Decor shipped in Phase A — see below; pet-unlocks = Phase B.)
 
 ### Art integrated (Phase 0, shipped)
 - Emoji pets replaced with real art for **4 elemental species** (leaf, fire, air, water), each baby/young/adult + happy/sad expression (swaps at 50% happiness). Egg hatches into a **uniformly-random** species (persisted; backfilled to leaf for pre-existing saves). Persist bumped **2→3**. Sprites are bg-cut webps (`scripts/prep-sprites.sh`); the 4 elemental eggs are imported and reserved as Phase B shop icons. Roadmap from here: **A** decor shop → **B** pet-unlocks (buy/switch species) → **C** L3–L5 content.
+
+### Decor shop (Phase A, shipped)
+- 7 room backgrounds buyable with coins, tiered **50 / 100 / 150** (Beach, Forest Path, Night Room @50; Forest Room, Sky Room @100; Fire Room, Water Room @150). Equipped behind the pet in PetRoom over a radial scrim (keeps the pet/stats legible on busy art); `activeBackground: null` keeps the free plain-green default. Full-frame 1280w webps (`scripts/prep-decor.sh`, no bg removal). Ownership is a **generic persisted `owned: string[]`** set (id-namespaced `decor:<slug>`) + an `activeBackground` selector — Phase B (pet-unlocks) reuses the same set with `pet:<species>` ids + an `activePet` selector. Persist bumped **3→4** (backfills `owned: []`, `activeBackground: null`).
 
 ## 8. Architecture — Netlify + Firebase (serverless)
 SQLite + Express DROPPED (don't fit serverless / file persistence). Replaced by Firebase BaaS.

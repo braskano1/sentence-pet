@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
-import { canAfford, type ShopItem } from '../domain/shop';
+import { canAfford, type TreatItem } from '../domain/shop';
 import { fireConfetti, buzz, buzzError } from '../effects/celebrate';
 
 interface TreatCardProps {
-  item: ShopItem;
+  item: TreatItem;
   coins: number;   // live store coins (for affordability)
   full: boolean;   // happiness at max
   index: number;   // for stagger-in delay

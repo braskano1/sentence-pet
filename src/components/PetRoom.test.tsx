@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PetRoom } from './PetRoom';
 import { useGameStore } from '../state/gameStore';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -29,5 +30,20 @@ describe('PetRoom', () => {
     render(<PetRoom />);
     await userEvent.click(screen.getByRole('button', { name: /shop/i }));
     expect(useGameStore.getState().screen).toBe('shop');
+  });
+
+  it('shows no room background image by default (free default)', () => {
+    useGameStore.getState().resetForTest();
+    render(<PetRoom />);
+    expect(screen.queryByTestId('room-bg')).toBeNull();
+  });
+
+  it('renders the active room background when one is equipped', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().equipBackground('decor:beach');
+    render(<PetRoom />);
+    const bg = screen.getByTestId('room-bg');
+    expect(bg).toBeInTheDocument();
+    expect(bg).toHaveAttribute('src', GAME_CONFIG.shop.decor.find((d) => d.id === 'decor:beach')!.sprite);
   });
 });

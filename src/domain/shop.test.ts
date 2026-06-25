@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { canAfford, purchase, type ShopItem } from './shop';
+import { canAfford, purchase, type ShopItem, type TreatItem, type DecorItem } from './shop';
 
-const snack: ShopItem = { id: 'snack', name: 'Snack', kind: 'treat', price: 15, happiness: 15 };
-const feast: ShopItem = { id: 'feast', name: 'Feast', kind: 'treat', price: 60, happiness: 80 };
+const snack: TreatItem = { id: 'snack', name: 'Snack', kind: 'treat', price: 15, happiness: 15 };
+const feast: TreatItem = { id: 'feast', name: 'Feast', kind: 'treat', price: 60, happiness: 80 };
+
+// compile-time: a decor item is a valid ShopItem and carries a sprite, not happiness
+const _room: ShopItem = { id: 'decor:x', name: 'X', kind: 'decor', price: 50, sprite: 'x.webp' } satisfies DecorItem;
+void _room;
+
 const MAX = 100;
 
 describe('canAfford', () => {

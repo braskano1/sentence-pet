@@ -15,7 +15,7 @@ describe('Shop', () => {
     render(<Shop />);
     expect(screen.getByText('Shop')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /snack/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /treat/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /treat 🪙/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /feast/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
   });
@@ -31,5 +31,27 @@ describe('Shop', () => {
     render(<Shop />);
     await userEvent.click(screen.getByRole('button', { name: /snack/i }));
     expect(useGameStore.getState().pet.coins).toBe(85);
+  });
+
+  it('shows Treats and Decor tabs; treats visible by default', () => {
+    render(<Shop />);
+    expect(screen.getByRole('button', { name: /treats/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /decor/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /snack/i })).toBeInTheDocument();
+  });
+
+  it('switching to Decor tab shows room cards', async () => {
+    render(<Shop />);
+    await userEvent.click(screen.getByRole('button', { name: /^decor$/i }));
+    expect(screen.getByRole('button', { name: /buy beach/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /buy fire room/i })).toBeInTheDocument();
+  });
+
+  it('buying a room (with coins) from the Decor tab records ownership', async () => {
+    useGameStore.getState().addCoinsForTest(200);
+    render(<Shop />);
+    await userEvent.click(screen.getByRole('button', { name: /^decor$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /buy beach/i }));
+    expect(useGameStore.getState().owned).toContain('decor:beach');
   });
 });

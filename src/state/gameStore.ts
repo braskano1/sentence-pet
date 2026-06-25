@@ -6,7 +6,8 @@ import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen, Species } f
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
-import type { ShopItem } from '../domain/shop';
+import type { TreatItem, DecorItem } from '../domain/shop';
+import { buyDecor } from '../domain/decor';
 import { pickSpecies } from '../domain/species';
 
 interface Pet {
@@ -40,13 +41,17 @@ interface GameState {
   selectedDrill: DrillType;
   selectedLevel: number;
   lastReward: RewardSummary | null;
+  owned: string[];
+  activeBackground: string | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
   startDrill: (drill: DrillType, level: number) => void;
   finishRound: (r: RoundResult) => void;
   feed: (group: FoodGroup) => void;
-  buyTreat: (item: ShopItem) => void;
+  buyTreat: (item: TreatItem) => void;
+  buyDecor: (item: DecorItem) => void;
+  equipBackground: (id: string | null) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -83,6 +88,8 @@ export const useGameStore = create<GameState>()(
       selectedDrill: 'pattern',
       selectedLevel: 1,
       lastReward: null,
+      owned: [],
+      activeBackground: null,
 
       setScreen: (screen) => set({ screen }),
 
@@ -129,6 +136,15 @@ export const useGameStore = create<GameState>()(
           return { pet: { ...st.pet, coins: res.coins, happiness: res.happiness } };
         }),
 
+      buyDecor: (item) =>
+        set((st) => {
+          const res = buyDecor({ coins: st.pet.coins, owned: st.owned }, item);
+          if (!res.ok) return st; // no-op; UI disables Buy when owned/too poor
+          return { pet: { ...st.pet, coins: res.coins }, owned: res.owned };
+        }),
+
+      equipBackground: (id) => set({ activeBackground: id }),
+
       stage: () => stageForXp(get().pet.xp, get().pet.hatched),
 
       addXpForTest: (xp) => set((st) => ({ pet: { ...st.pet, xp: st.pet.xp + xp } })),
@@ -141,15 +157,22 @@ export const useGameStore = create<GameState>()(
           selectedDrill: 'pattern',
           selectedLevel: 1,
           lastReward: null,
+          owned: [],
+          activeBackground: null,
         }),
     }),
     {
       name: 'sentence-pet',
-      version: 3,
-      // v1->v2 backfilled inventory groups; v2->v3 adds pet.species (backfill 'leaf').
+      version: 4,
+      // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[] + activeBackground.
       migrate: (persisted: unknown) => {
         const st = persisted as
-          | { inventory?: Partial<Record<FoodGroup, number>>; pet?: Partial<Pet> }
+          | {
+              inventory?: Partial<Record<FoodGroup, number>>;
+              pet?: Partial<Pet>;
+              owned?: string[];
+              activeBackground?: string | null;
+            }
           | null;
         if (!st) return st as unknown as GameState;
         return {
@@ -157,6 +180,8 @@ export const useGameStore = create<GameState>()(
           ...st,
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
           pet: { ...freshPet(), ...(st.pet ?? {}), species: st.pet?.species ?? 'leaf' },
+          owned: st.owned ?? [],
+          activeBackground: st.activeBackground ?? null,
         } as GameState;
       },
     },
