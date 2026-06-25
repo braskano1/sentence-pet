@@ -5,6 +5,7 @@ import { StatBars } from './StatBars';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_GROUPS, FOOD_META } from '../data/food';
 import { PressButton } from './PressButton';
+import { DECOR_SPRITES } from '../config/decorSprites';
 
 export function PetRoom() {
   const pet = useGameStore((s) => s.pet);
@@ -12,6 +13,8 @@ export function PetRoom() {
   const stage = useGameStore((s) => s.stage());
   const feed = useGameStore((s) => s.feed);
   const setScreen = useGameStore((s) => s.setScreen);
+  const activeBackground = useGameStore((s) => s.activeBackground);
+  const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
 
   const xp = useCountUp(pet.xp);
@@ -20,15 +23,35 @@ export function PetRoom() {
   const available = FOOD_GROUPS.filter((g) => inventory[g] > 0);
 
   return (
-    <div className="flex h-full flex-col bg-emerald-50 p-6">
+    <div className={`relative flex h-full flex-col overflow-hidden p-6 ${bgSprite ? '' : 'bg-emerald-50'}`}>
+      {bgSprite && (
+        <>
+          <img
+            data-testid="room-bg"
+            src={bgSprite}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* radial scrim: keeps the transparent-cutout pet + stats legible over busy art */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 45% at 50% 42%, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%)',
+            }}
+          />
+        </>
+      )}
       {/* middle zone: pet + stats, centered, grabs slack */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4">
         <PetSprite stage={stage} species={pet.species} happiness={pet.happiness} feedTrigger={feedTrigger} />
         <p className="text-slate-500">XP {xp} · 🪙 {coins}</p>
         <StatBars bars={pet.bars} happiness={pet.happiness} />
       </div>
       {/* bottom zone: actions pinned in the thumb arc */}
-      <div className="flex flex-col gap-3">
+      <div className="relative z-10 flex flex-col gap-3">
         {available.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {available.map((g) => (
