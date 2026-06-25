@@ -23,10 +23,10 @@ function rollInBand(rng: () => number, min: number, max: number): number {
 /** Weighted pick. rng() in [0,1) scaled by total weight; walks cumulative tiers. */
 export function rollRarity(rng: () => number, table: readonly RarityTier[]): Rarity {
   const total = table.reduce((sum, t) => sum + t.weight, 0);
-  let roll = rng() * total;
+  let cursor = rng() * total;
   for (const t of table) {
-    if (roll < t.weight) return t.rarity;
-    roll -= t.weight;
+    if (cursor < t.weight) return t.rarity;
+    cursor -= t.weight;
   }
   return table[table.length - 1].rarity; // float-safety fallback
 }
