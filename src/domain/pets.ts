@@ -57,10 +57,13 @@ function freshBars(): NutritionBars {
   };
 }
 
-/** Migrate-only: tier a pre-v6 pet by the band floor its weakest stat reaches. */
+/**
+ * Migrate-only: tier a pre-v6 pet by the band floor its weakest stat reaches.
+ * @param table Must be non-empty and ordered weakest -> strongest by band floor.
+ */
 export function rarityForStats(stats: BattleStats, table: readonly RarityTier[]): Rarity {
   const minStat = Math.min(stats.hp, stats.atk, stats.def, stats.spd, stats.luk);
-  // table is ordered weakest->strongest; pick the highest tier whose floor <= minStat.
+  // pick the highest tier whose floor <= minStat (last match wins given the ordering above).
   let result: Rarity = table[0].rarity;
   for (const t of table) {
     if (minStat >= t.band[0]) result = t.rarity;
