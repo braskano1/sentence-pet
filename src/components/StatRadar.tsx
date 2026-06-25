@@ -32,7 +32,7 @@ export function StatRadar({ stats, color, size = 180, max = 100, specialty }: {
   const cx = size / 2;
   const cy = size / 2;
   const R = size * 0.3; // grid + data radius (smaller, leaves a margin ring for labels)
-  const PAD = size * 0.2; // viewBox breathing room so two-line labels never clip
+  const PAD = size * 0.24; // viewBox breathing room so two-line labels never clip
   const LABEL_R = 1.5; // label distance as a multiple of R (outside the outer ring)
   const n = BATTLE_STAT_LABELS.length;
   const angle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
@@ -80,8 +80,8 @@ export function StatRadar({ stats, color, size = 180, max = 100, specialty }: {
         const isSpec = key === specialty;
         return (
           <text key={key} x={lx} y={ly} textAnchor="middle">
-            <tspan x={lx} dy="-2" fontSize="7.5" fontWeight={700} letterSpacing="0.04em" fill={isSpec ? '#b45309' : '#7c5a2e'}>{label}</tspan>
-            <tspan x={lx} dy="11" fontSize="12" fontWeight={800} fill={isSpec ? '#b45309' : '#3d1d04'}>{animated[key]}</tspan>
+            <tspan x={lx} dy="-3" fontSize="11" fontWeight={700} letterSpacing="0.04em" fill={isSpec ? '#b45309' : '#7c5a2e'}>{label}</tspan>
+            <tspan x={lx} dy="17" fontSize="18" fontWeight={800} fill={isSpec ? '#b45309' : '#3d1d04'}>{animated[key]}</tspan>
           </text>
         );
       })}
