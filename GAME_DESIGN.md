@@ -174,6 +174,8 @@ Each drill uses the 5 rungs as the sentence frame; only its own dial ramps L1→
 
 > **Mixed (shipped):** the "boss" — all three dials on per item. L1 = S+V+O frame + 1 distractor (Word-Choice dial) + 1 subject–verb agreement trap (Grammar dial), graded **enforce** (near-miss & distractor reject → retry; no soft-accept). Yields 🍰 treat, making the 4th nutrition bar live. Pure-data slice — reuses `gradePlacement`/`trayWords`, no new engine. L1 (5 items) playable now; L2–L5 await level-select.
 
+> **Level-select (shipped):** free-pick level chips on each drill card; available levels derived from authored content via `levelsFor(drill)` (never offers an empty level). Store gained transient `selectedLevel`; `startDrill(drill, level)` is 2-arg; `App` no longer hardcodes `level={1}`. No gated unlock yet (deferred — needs persisted per-drill progress + a persist version bump). Unlocks in-app playtesting of authored Pattern L2 & Grammar L2.
+
 ### Pass & stars
 - **Clear a level = 5/5 correct** (retry within the round until all 5 right).
 - **Stars measure hints + mistakes used:** 3⭐ = no hints + no wrong taps; fewer stars as hints/errors accrue. Replay for 3⭐ = mastery hook.

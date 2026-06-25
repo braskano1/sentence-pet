@@ -8,11 +8,11 @@ import { RewardScreen } from './components/RewardScreen';
 import { DrillPicker } from './components/DrillPicker';
 import type { DrillType } from './data/types';
 
-function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType) {
+function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
     case 'pickDrill': return { key: 'pickDrill', node: <DrillPicker /> };
-    case 'drill': return { key: 'drill', node: <DrillScreen drill={drill} level={1} /> };
+    case 'drill': return { key: 'drill', node: <DrillScreen drill={drill} level={level} /> };
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'petRoom':
     default: return { key: 'petRoom', node: <PetRoom /> };
@@ -23,7 +23,8 @@ function CurrentScreen() {
   const screen = useGameStore((s) => s.screen);
   const hatched = useGameStore((s) => s.pet.hatched);
   const drill = useGameStore((s) => s.selectedDrill);
-  const { key, node } = screenKeyAndNode(screen, hatched, drill);
+  const level = useGameStore((s) => s.selectedLevel);
+  const { key, node } = screenKeyAndNode(screen, hatched, drill, level);
 
   return (
     <AnimatePresence mode="wait">

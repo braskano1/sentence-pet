@@ -34,11 +34,12 @@ interface GameState {
   pet: Pet;
   inventory: Record<FoodGroup, number>;
   selectedDrill: DrillType;
+  selectedLevel: number;
   lastReward: RewardSummary | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
-  startDrill: (drill: DrillType) => void;
+  startDrill: (drill: DrillType, level: number) => void;
   finishRound: (r: RoundResult) => void;
   feed: (group: FoodGroup) => void;
   stage: () => PetStage;
@@ -73,6 +74,7 @@ export const useGameStore = create<GameState>()(
       pet: freshPet(),
       inventory: freshInventory(),
       selectedDrill: 'pattern',
+      selectedLevel: 1,
       lastReward: null,
 
       setScreen: (screen) => set({ screen }),
@@ -80,7 +82,7 @@ export const useGameStore = create<GameState>()(
       hatch: () =>
         set((st) => ({ pet: { ...st.pet, hatched: true }, screen: 'petRoom' })),
 
-      startDrill: (drill) => set({ selectedDrill: drill, screen: 'drill' }),
+      startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
       finishRound: ({ drill, level, stars, correctCount }) =>
         set((st) => {
@@ -118,6 +120,7 @@ export const useGameStore = create<GameState>()(
           pet: freshPet(),
           inventory: freshInventory(),
           selectedDrill: 'pattern',
+          selectedLevel: 1,
           lastReward: null,
         }),
     }),

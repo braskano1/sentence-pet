@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WORD_BANK, itemsFor, trayWords } from './wordBank';
+import { WORD_BANK, itemsFor, trayWords, levelsFor } from './wordBank';
 
 describe('WORD_BANK', () => {
   it('has 5 pattern items at level 1 and level 2', () => {
@@ -87,5 +87,16 @@ describe('WORD_BANK', () => {
       expect(item.distractors?.length).toBe(1);
       expect(item.slots.length).toBe(3);
     }
+  });
+
+  it('levelsFor returns sorted unique authored levels per drill', () => {
+    expect(levelsFor('pattern')).toEqual([1, 2]);
+    expect(levelsFor('grammar')).toEqual([1, 2]);
+    expect(levelsFor('wordChoice')).toEqual([1]);
+    expect(levelsFor('mixed')).toEqual([1]);
+  });
+
+  it('levelsFor returns [] for a drill with no items', () => {
+    expect(levelsFor('nonexistent' as never)).toEqual([]);
   });
 });

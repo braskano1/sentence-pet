@@ -22,12 +22,19 @@ describe('gameStore', () => {
     expect(s.screen).toBe('petRoom');
   });
 
-  it('startDrill selects the drill and opens the drill screen', () => {
+  it('startDrill selects the drill, sets the level, and opens the drill screen', () => {
     useGameStore.getState().hatch();
-    useGameStore.getState().startDrill('wordChoice');
+    useGameStore.getState().startDrill('grammar', 2);
     const s = useGameStore.getState();
-    expect(s.selectedDrill).toBe('wordChoice');
+    expect(s.selectedDrill).toBe('grammar');
+    expect(s.selectedLevel).toBe(2);
     expect(s.screen).toBe('drill');
+  });
+
+  it('resetForTest restores selectedLevel to 1', () => {
+    useGameStore.getState().startDrill('grammar', 2);
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().selectedLevel).toBe(1);
   });
 
   it('finishRound (pattern) adds xp, protein food, coins and decays stats', () => {

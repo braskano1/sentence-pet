@@ -48,6 +48,12 @@ export function itemsFor(drill: DrillType, level: number): DrillItem[] {
   return WORD_BANK.filter((i) => i.drill === drill && i.level === level);
 }
 
+/** Sorted, unique, ascending list of authored levels for a drill (empty if none). */
+export function levelsFor(drill: DrillType): number[] {
+  return [...new Set(WORD_BANK.filter((i) => i.drill === drill).map((i) => i.level))]
+    .sort((a, b) => a - b);
+}
+
 /** Tiles for an item's tray: answer words, then distractors, then trap words. */
 export function trayWords(item: DrillItem): string[] {
   return [
