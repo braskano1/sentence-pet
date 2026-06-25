@@ -4,7 +4,7 @@ import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
 import { useCountUp } from '../effects/useCountUp';
-import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, displayStats, petDisplayName, petLevel, petSpecialty, petStageSprite } from '../config/petDisplay';
+import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, displayStats, petDisplayName, petLevel, petPower, petSpecialty, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
 import type { Rarity } from '../data/types';
@@ -132,6 +132,22 @@ export function Collection() {
           </p>
 
           <StatRadar stats={displayStats(active)} color={RARITY_HEX[active.rarity]} specialty={petSpecialty(active)} />
+
+          {/* power-tab summary: level / total power / specialty */}
+          <div className="flex w-full gap-2">
+            <div className="flex-1 rounded-xl bg-amber-900/10 px-3 py-2">
+              <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">Level</div>
+              <div className="mt-1 text-xl font-extrabold leading-none text-amber-950">{petLevel(active)}<span className="text-[10px] font-bold text-amber-900/60"> / 50</span></div>
+            </div>
+            <div className="flex-1 rounded-xl bg-amber-900/10 px-3 py-2">
+              <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">⚔ Power</div>
+              <div className="mt-1 text-xl font-extrabold leading-none text-amber-950 tabular-nums">{petPower(active)}</div>
+            </div>
+            <div className="flex-1 rounded-xl bg-amber-900/10 px-3 py-2">
+              <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">★ Specialty</div>
+              <div className="mt-1 text-base font-extrabold leading-none text-amber-700">{BATTLE_STAT_LABELS.find(([, k]) => k === petSpecialty(active))?.[0] ?? 'HP'}</div>
+            </div>
+          </div>
 
           <div className="flex w-full gap-1">
             {BATTLE_STAT_LABELS.map(([label, key]) => (
