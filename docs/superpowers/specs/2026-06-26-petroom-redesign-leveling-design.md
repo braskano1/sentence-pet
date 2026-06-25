@@ -80,6 +80,7 @@ Apply the same display source of truth: real `Lv 1..50`, stage name, **displayed
 ## 5. Pet dialogue (speech bubble)
 
 - **Named bubble** above the pet (`{name}:` eyebrow + line, tail offset toward the pet). Cozy cream bubble, soft shadow, reduced-motion-safe fade/pop in.
+- **Implementation note (post-review):** the bubble is **contextual only** (hunger / happiness / idle), computed deterministically (memoized, fixed RNG) so it doesn't flicker during the wallet count-up. The **level-up celebration** (confetti + haptic + "+1 STAT" callout) lives on the **RewardScreen** — the screen shown right after a round, where the level-up actually happens — driven by the **transient** `lastLevelUp` (excluded from persistence via `partialize`, cleared via `clearLevelUp()` once consumed). This avoids a persisted `lastLevelUp` making the bubble claim "I grew!" forever.
 - **Content = contextual canned lines** (no AI; offline; kid-safe). New pure module `src/domain/petDialogue.ts`:
   - `petDialogue(ctx, rng): string` where `ctx` summarizes state (lowest nutrition group + value, happiness, justFed?, justLeveled? + which stat, nearEvolution?, idle).
   - Priority order: level-up line ("I grew! +1 ATK 💪") > just-fed thanks > hunger (lowest bar) > near-evolution > low-happiness > idle rotation.
