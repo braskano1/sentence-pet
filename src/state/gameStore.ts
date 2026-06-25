@@ -4,6 +4,7 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
 import type { DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
+import { sanitizePetName } from '../domain/petName';
 import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
@@ -59,6 +60,7 @@ interface GameState {
   pullEgg: () => void;
   equipBackground: (id: string | null) => void;
   switchPet: (id: string) => void;
+  renamePet: (id: string, name: string) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -170,6 +172,9 @@ export const useGameStore = create<GameState>()(
       equipBackground: (id) => set({ activeBackground: id }),
 
       switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
+
+      renamePet: (id, name) =>
+        set((s) => ({ pets: s.pets.map((p) => (p.id === id ? { ...p, name: sanitizePetName(name) } : p)) })),
 
       stage: () => {
         const p = selectActivePet(get());

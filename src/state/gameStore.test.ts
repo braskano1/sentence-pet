@@ -330,6 +330,29 @@ describe('migrate -> v7 (name)', () => {
   });
 });
 
+describe('renamePet action', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('sets a sanitized name on the matching pet', () => {
+    const id = useGameStore.getState().pets[0].id;
+    useGameStore.getState().renamePet(id, '  Rocky  ');
+    expect(useGameStore.getState().pets[0].name).toBe('Rocky');
+  });
+
+  it('reverts to empty on a blank name', () => {
+    const id = useGameStore.getState().pets[0].id;
+    useGameStore.getState().renamePet(id, 'Rocky');
+    useGameStore.getState().renamePet(id, '   ');
+    expect(useGameStore.getState().pets[0].name).toBe('');
+  });
+
+  it('no-ops on an unknown id', () => {
+    const before = useGameStore.getState().pets.map((p) => p.name);
+    useGameStore.getState().renamePet('nope', 'X');
+    expect(useGameStore.getState().pets.map((p) => p.name)).toEqual(before);
+  });
+});
+
 describe('migrate -> v6 (rarity)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {
