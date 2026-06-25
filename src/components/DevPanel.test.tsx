@@ -27,4 +27,23 @@ describe('DevPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'reroll' }));
     expect(['leaf', 'fire', 'air', 'water']).toContain(selectActivePet(useGameStore.getState()).species);
   });
+
+  it('+pet adds a pet and makes it active', () => {
+    render(<DevPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'dev' }));
+    const before = useGameStore.getState().pets.length;
+    fireEvent.click(screen.getByRole('button', { name: '+pet' }));
+    const s = useGameStore.getState();
+    expect(s.pets).toHaveLength(before + 1);
+    expect(s.activePetId).toBe(s.pets[s.pets.length - 1].id);
+  });
+
+  it('next cycles the active pet', () => {
+    render(<DevPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'dev' }));
+    fireEvent.click(screen.getByRole('button', { name: '+pet' })); // now 2 pets, active = new
+    const firstActive = useGameStore.getState().activePetId;
+    fireEvent.click(screen.getByRole('button', { name: 'next' }));
+    expect(useGameStore.getState().activePetId).not.toBe(firstActive);
+  });
 });
