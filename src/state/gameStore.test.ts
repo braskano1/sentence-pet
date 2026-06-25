@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, selectActivePet } from './gameStore';
+import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 
@@ -15,7 +15,7 @@ describe('gameStore', () => {
     const s = useGameStore.getState();
     expect(s.screen).toBe('egg');
     expect(s.pets).toHaveLength(1);
-    expect(s.activePetId).toBe('starter-leaf');
+    expect(s.activePetId).toBe(STARTER_ID);
     expect(s.coins).toBe(0);
     expect(active().species).toBe('leaf');
     expect(active().hatched).toBe(false);
@@ -99,7 +99,7 @@ describe('gameStore', () => {
 
     it('is a no-op for an unknown id (invariant: active id always valid)', () => {
       useGameStore.getState().switchPet('nope');
-      expect(useGameStore.getState().activePetId).toBe('starter-leaf');
+      expect(useGameStore.getState().activePetId).toBe(STARTER_ID);
     });
   });
 
@@ -111,7 +111,7 @@ describe('gameStore', () => {
     useGameStore.getState().addXpForTest(100);
     const pets = useGameStore.getState().pets;
     expect(pets.find((p) => p.id === 'p2')!.xp).toBe(100);
-    expect(pets.find((p) => p.id === 'starter-leaf')!.xp).toBe(0);
+    expect(pets.find((p) => p.id === STARTER_ID)!.xp).toBe(0);
   });
 
   describe('buyTreat', () => {
@@ -207,10 +207,10 @@ describe('migrate -> v5 (multi-pet)', () => {
       2,
     ) as V5;
     expect(m.pets).toHaveLength(1);
-    expect(m.pets[0].id).toBe('starter-leaf');
+    expect(m.pets[0].id).toBe(STARTER_ID);
     expect(m.pets[0].species).toBe('leaf'); // backfilled
     expect(m.pets[0].xp).toBe(7);
-    expect(m.activePetId).toBe('starter-leaf');
+    expect(m.activePetId).toBe(STARTER_ID);
     expect(m.coins).toBe(5); // lifted to wallet
     expect(m.pet).toBeUndefined();
     expect(m.inventory.protein).toBe(2);
@@ -241,10 +241,10 @@ describe('migrate -> v5 (multi-pet)', () => {
 
   it('passes an already-v5 save through, keeping pets and wallet', () => {
     const v5 = {
-      pets: [{ id: 'starter-leaf', species: 'water', xp: 3, hatched: true,
+      pets: [{ id: STARTER_ID, species: 'water', xp: 3, hatched: true,
                bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
                stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 } }],
-      activePetId: 'starter-leaf',
+      activePetId: STARTER_ID,
       coins: 42,
       inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
       owned: [],

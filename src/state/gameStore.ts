@@ -10,7 +10,7 @@ import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { makePet, rollStats } from '../domain/pets';
 
-const STARTER_ID = 'starter-leaf';
+export const STARTER_ID = 'starter-leaf';
 
 /** App-side RNG. Kept out of pure domain so domain stays deterministically testable. */
 function rng(): number {
@@ -185,6 +185,7 @@ export const useGameStore = create<GameState>()(
               activeBackground?: string | null;
             }
           | null;
+        // Zustand treats a null migrate return as "reset to initial state".
         if (!st) return st as unknown as GameState;
 
         // Normalize additive fields shared by all versions.
@@ -199,20 +200,25 @@ export const useGameStore = create<GameState>()(
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.
         if (!st.pets && st.pet) {
           const legacy = st.pet;
-          const migrated = makePet({
+          const fresh = makePet({
             id: STARTER_ID,
             species: legacy.species ?? 'leaf',
             stats: rollStats(rng),
             hatched: legacy.hatched ?? false,
           });
-          migrated.xp = legacy.xp ?? 0;
-          migrated.happiness = legacy.happiness ?? GAME_CONFIG.happiness.start;
-          migrated.bars = { ...migrated.bars, ...(legacy.bars ?? {}) };
+          const migrated: PetInstance = {
+            ...fresh,
+            xp: legacy.xp ?? 0,
+            happiness: legacy.happiness ?? GAME_CONFIG.happiness.start,
+            bars: { ...fresh.bars, ...(legacy.bars ?? {}) },
+          };
           const next = { ...base, pets: [migrated], activePetId: STARTER_ID, coins: legacy.coins ?? 0 };
           delete (next as { pet?: unknown }).pet;
           return next as unknown as GameState;
         }
 
+        // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).
+        delete (base as { pet?: unknown }).pet;
         return base as unknown as GameState;
       },
     },
