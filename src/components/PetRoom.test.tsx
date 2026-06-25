@@ -19,6 +19,7 @@ describe('PetRoom', () => {
   it('Play opens the drill picker', async () => {
     useGameStore.getState().hatch();
     render(<PetRoom />);
+    expect(screen.getByRole('img', { name: /^pet-/ })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: /play/i }));
     expect(useGameStore.getState().screen).toBe('pickDrill');
   });
