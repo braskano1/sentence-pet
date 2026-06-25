@@ -1,10 +1,39 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
+import { useCountUp } from '../effects/useCountUp';
 import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petDisplayName, petLevel, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
+import type { Rarity } from '../data/types';
+
+/** A single battle-stat number that rolls when it changes (pet switch). */
+function StatNum({ value }: { value: number }) {
+  const shown = useCountUp(value);
+  return <span className="tabular-nums">{shown}</span>;
+}
+
+/** Rarity pill; epic/legendary get a periodic shine-sweep. */
+function RarityBadge({ rarity }: { rarity: Rarity }) {
+  const shiny = rarity === 'epic' || rarity === 'legendary';
+  return (
+    <span className={`relative overflow-hidden rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${RARITY_BADGE[rarity]}`}>
+      {rarity}
+      {shiny && (
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -skew-x-12"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)' }}
+          initial={{ x: '-130%' }}
+          animate={{ x: '130%' }}
+          transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut', repeatDelay: 1.4 }}
+        />
+      )}
+    </span>
+  );
+}
 
 /**
  * The pet collection: a detail panel for the active pet (portrait, rarity, stat radar +
@@ -34,15 +63,32 @@ export function Collection() {
 
       <div className="flex-1 overflow-y-auto p-5">
         {/* ── detail: active pet, rarity, radar + stat numbers ── */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 22 }}
           className="flex flex-col items-center gap-2 rounded-3xl border-b-4 border-amber-900/20 p-4 shadow"
           style={{ background: 'linear-gradient(180deg,#fcecc9 0%,#f4dba9 100%)' }}
         >
-          <img
-            src={petStageSprite(active)}
-            alt={PET_NAME[active.species]}
-            className="h-28 w-28 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.25)]"
-          />
+          {/* gentle idle float; the sprite cross-fades when the active pet changes */}
+          <motion.div
+            className="h-28"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={active.id}
+                src={petStageSprite(active)}
+                alt={PET_NAME[active.species]}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ duration: 0.25 }}
+                className="h-28 w-28 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.25)]"
+              />
+            </AnimatePresence>
+          </motion.div>
           <div className="flex items-center gap-2">
             {editing ? (
               <>
@@ -73,7 +119,7 @@ export function Collection() {
                 >
                   ✎
                 </PressButton>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${RARITY_BADGE[active.rarity]}`}>{active.rarity}</span>
+                <RarityBadge rarity={active.rarity} />
                 <span className="text-xs font-semibold text-amber-900/60">Lv {petLevel(active)}</span>
               </>
             )}
@@ -91,26 +137,38 @@ export function Collection() {
             {BATTLE_STAT_LABELS.map(([label, key]) => (
               <div key={key} className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-1 text-xs font-bold text-amber-950">
                 <span className="text-amber-900/60">{label}</span>
-                <span className="tabular-nums">{active.stats[key]}</span>
+                <StatNum value={active.stats[key]} />
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* ── roster: tap to raise a different pet ── */}
         <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-wide text-amber-900/60">Roster</p>
         <div className="grid grid-cols-4 gap-2">
-          {pets.map((p) => {
+          {pets.map((p, i) => {
             const isActive = p.id === active.id;
             return (
               <PressButton
                 key={p.id}
                 onClick={() => switchPet(p.id)}
                 aria-label={isActive ? `${petDisplayName(p)} (active)` : `Raise ${petDisplayName(p)}`}
-                className={`flex flex-col items-center rounded-xl p-1.5 ${
-                  isActive ? 'bg-amber-200/80 ring-2 ring-amber-500' : 'bg-white/70'
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
+                whileHover={{ y: -2 }}
+                className={`relative flex flex-col items-center rounded-xl p-1.5 ${
+                  isActive ? 'bg-amber-200/80' : 'bg-white/70'
                 }`}
               >
+                {isActive && (
+                  <motion.span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-amber-500"
+                    animate={{ opacity: [0.45, 1, 0.45] }}
+                    transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                  />
+                )}
                 <span className={`rounded-full p-0.5 ring-2 ${RARITY_RING[p.rarity]}`}>
                   <img src={petStageSprite(p)} alt="" aria-hidden className="h-11 w-11 object-contain" />
                 </span>
