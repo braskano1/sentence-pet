@@ -19,6 +19,9 @@ type GradeItem = Pick<DrillItem, 'answer' | 'traps' | 'strictness'>;
  */
 export function gradePlacement(placed: (string | null)[], item: GradeItem): Grade {
   const { answer, traps, strictness } = item;
+  if (placed.length !== answer.length) {
+    return { status: 'wrong', passes: false, flags: [] };
+  }
   const flags: string[] = [];
   let wrong = false;
 

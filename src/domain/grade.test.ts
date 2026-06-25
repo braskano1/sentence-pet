@@ -57,4 +57,14 @@ describe('gradePlacement', () => {
     expect(gradePlacement(['I', 'run'], patternItem).status).toBe('ideal');
     expect(gradePlacement(['run', 'I'], patternItem).status).toBe('wrong');
   });
+
+  it('placed longer than answer -> wrong (no silent ideal)', () => {
+    const g = gradePlacement(['he', 'eats', 'extra'], flagItem);
+    expect(g).toEqual({ status: 'wrong', passes: false, flags: [] });
+  });
+
+  it('placed shorter than answer -> wrong', () => {
+    const g = gradePlacement(['he'], flagItem);
+    expect(g).toEqual({ status: 'wrong', passes: false, flags: [] });
+  });
 });
