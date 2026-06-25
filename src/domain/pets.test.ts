@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rollStats, makePet, rollRarity, rollStatsForRarity, rarityForStats } from './pets';
+import { rollStats, makePet, rollRarity, rollStatsForRarity, rarityForStats, allocateStatPoints } from './pets';
 import { GAME_CONFIG } from '../config/gameConfig';
 import type { Rarity } from '../data/types';
 
@@ -97,5 +97,20 @@ describe('rarityForStats (migrate heuristic: tier by minimum stat)', () => {
   it('min >= 85 -> legendary', () => expect(rarityForStats(mk(90), RARITIES)).toBe('legendary'));
   it('uses the minimum stat, not the max', () => {
     expect(rarityForStats({ hp: 90, atk: 90, def: 90, spd: 90, luk: 41 }, RARITIES)).toBe('common');
+  });
+});
+
+describe('allocateStatPoints', () => {
+  const zero = { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 };
+  it('adds exactly `count` points across the five stats', () => {
+    let calls = 0;
+    const rng = () => [0, 0.25, 0.45, 0.65, 0.85][calls++]; // -> hp, atk, def, spd, luk
+    const g = allocateStatPoints(zero, 5, rng);
+    expect(g).toEqual({ hp: 1, atk: 1, def: 1, spd: 1, luk: 1 });
+  });
+  it('is immutable and total grows by count', () => {
+    const g = allocateStatPoints(zero, 3, () => 0); // always hp
+    expect(g).toEqual({ hp: 3, atk: 0, def: 0, spd: 0, luk: 0 });
+    expect(zero.hp).toBe(0);
   });
 });

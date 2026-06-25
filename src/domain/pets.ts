@@ -3,6 +3,7 @@ import type { BattleStats, NutritionBars, PetInstance, Rarity, Species } from '.
 
 const STAT_MIN = 40;
 const STAT_MAX = 90;
+const STAT_KEYS = ['hp', 'atk', 'def', 'spd', 'luk'] as const;
 
 /** One stat in [STAT_MIN, STAT_MAX] inclusive. Starter pet + legacy migration; gacha pulls use rollStatsForRarity. */
 function roll(rng: () => number): number {
@@ -91,4 +92,14 @@ export function makePet(args: {
     rarity: args.rarity,
     name: args.name ?? '',
   };
+}
+
+/** Add `count` points to random stats (uniform over the five), returning a new growth object. */
+export function allocateStatPoints(growth: BattleStats, count: number, rng: () => number): BattleStats {
+  const next: BattleStats = { ...growth };
+  for (let i = 0; i < count; i++) {
+    const key = STAT_KEYS[Math.floor(rng() * STAT_KEYS.length)];
+    next[key] += 1;
+  }
+  return next;
 }
