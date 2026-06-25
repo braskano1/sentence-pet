@@ -43,5 +43,7 @@ describe('Gacha screen', () => {
     fireEvent.click(screen.getByRole('button', { name: /^name$/i }));
     const pulled = useGameStore.getState().lastPull!;
     expect(useGameStore.getState().pets.find((p) => p.id === pulled.id)!.name).toBe('Sparky');
+    // reveal headline reflects the new name (lastPull kept in sync)
+    expect(screen.getByText('Sparky!')).toBeInTheDocument();
   });
 });

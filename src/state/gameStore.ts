@@ -174,7 +174,14 @@ export const useGameStore = create<GameState>()(
       switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
 
       renamePet: (id, name) =>
-        set((s) => ({ pets: s.pets.map((p) => (p.id === id ? { ...p, name: sanitizePetName(name) } : p)) })),
+        set((s) => {
+          const clean = sanitizePetName(name);
+          return {
+            pets: s.pets.map((p) => (p.id === id ? { ...p, name: clean } : p)),
+            // keep the gacha-reveal snapshot in sync so its headline reflects the new name
+            lastPull: s.lastPull?.id === id ? { ...s.lastPull, name: clean } : s.lastPull,
+          };
+        }),
 
       stage: () => {
         const p = selectActivePet(get());
