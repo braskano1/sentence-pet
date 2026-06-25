@@ -297,6 +297,39 @@ describe('migrate -> v5 (multi-pet)', () => {
   });
 });
 
+describe('migrate -> v7 (name)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills name="" on a v6 save (pets without a name)', () => {
+    const v6 = {
+      pets: [{ id: STARTER_ID, species: 'leaf', xp: 0, hatched: true, rarity: 'common',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v6, 6) as { pets: { name: string }[] };
+    expect(m.pets[0].name).toBe('');
+  });
+
+  it('a v7 save keeps a custom name', () => {
+    const v7 = {
+      pets: [{ id: STARTER_ID, species: 'fire', xp: 0, hatched: true, rarity: 'epic', name: 'Blaze',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 80, atk: 80, def: 80, spd: 80, luk: 80 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v7, 7) as { pets: { name: string }[] };
+    expect(m.pets[0].name).toBe('Blaze');
+  });
+});
+
 describe('migrate -> v6 (rarity)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {

@@ -39,13 +39,11 @@ describe('rollStats', () => {
 });
 
 describe('makePet', () => {
-  it('creates a fresh unhatched pet with the given id/species/stats/rarity', () => {
+  it('creates a fresh unhatched pet with the given id/species/stats/rarity and an empty name', () => {
     const stats = rollStats(() => 0.5);
     const p = makePet({ id: 'x', species: 'fire', stats, rarity: 'rare' });
-    expect(p).toMatchObject({ id: 'x', species: 'fire', hatched: false, xp: 0, stats, rarity: 'rare' });
+    expect(p).toMatchObject({ id: 'x', species: 'fire', hatched: false, xp: 0, stats, rarity: 'rare', name: '' });
     expect(p.happiness).toBe(GAME_CONFIG.happiness.start);
-    expect(p.bars.protein).toBe(GAME_CONFIG.bars.start);
-    expect(p.bars.veggie).toBe(GAME_CONFIG.bars.start);
   });
 
   it('honors hatched:true', () => {

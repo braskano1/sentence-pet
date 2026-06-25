@@ -182,10 +182,10 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 6,
+      version: 7,
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
-      // v5->v6 backfills pet.rarity (derived from stats).
+      // v5->v6 backfills pet.rarity (derived from stats). v6->v7 backfills pet.name (default '').
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -244,6 +244,13 @@ export const useGameStore = create<GameState>()(
             (p as PetInstance).rarity || !(p as PetInstance).stats
               ? p
               : { ...p, rarity: rarityForStats((p as PetInstance).stats, GAME_CONFIG.gacha.rarities) },
+          );
+        }
+
+        // v6->v7: backfill name on any pet that predates the field.
+        if (Array.isArray(base.pets)) {
+          base.pets = base.pets.map((p) =>
+            typeof (p as PetInstance).name === 'string' ? p : { ...p, name: '' },
           );
         }
 

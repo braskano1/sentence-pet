@@ -76,6 +76,7 @@ export function makePet(args: {
   species: Species;
   stats: BattleStats;
   rarity: Rarity;
+  name?: string;
   hatched?: boolean;
 }): PetInstance {
   return {
@@ -87,5 +88,6 @@ export function makePet(args: {
     bars: freshBars(),
     stats: args.stats,
     rarity: args.rarity,
+    name: args.name ?? '',
   };
 }

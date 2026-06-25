@@ -58,4 +58,5 @@ export interface PetInstance {
   bars: NutritionBars;
   stats: BattleStats;  // rolled once at creation, immutable thereafter
   rarity: Rarity;      // rolled once at creation (or derived in migrate), immutable thereafter
+  name: string;        // custom name; '' falls back to the species name (see petDisplayName)
 }
