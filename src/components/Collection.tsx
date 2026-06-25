@@ -1,7 +1,8 @@
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
-import { BATTLE_STAT_LABELS, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petLevel, petStageSprite } from '../config/petDisplay';
+import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petLevel, petStageSprite } from '../config/petDisplay';
+import { strongAgainst, weakAgainst } from '../domain/elements';
 
 /**
  * The pet collection: a detail panel for the active pet (portrait, rarity, stat radar +
@@ -45,6 +46,12 @@ export function Collection() {
             <span className="text-xs font-semibold text-amber-900/60">Lv {petLevel(active)}</span>
           </div>
 
+          <p className="text-xs font-semibold text-amber-900/70">
+            <span>Strong vs {ELEMENT_EMOJI[strongAgainst(active.species)]} {PET_NAME[strongAgainst(active.species)]}</span>
+            <span className="mx-1 text-amber-900/30">·</span>
+            <span>Weak vs {ELEMENT_EMOJI[weakAgainst(active.species)]} {PET_NAME[weakAgainst(active.species)]}</span>
+          </p>
+
           <StatRadar stats={active.stats} color={RARITY_HEX[active.rarity]} />
 
           <div className="flex w-full gap-1">
@@ -75,6 +82,7 @@ export function Collection() {
                   <img src={petStageSprite(p)} alt="" aria-hidden className="h-11 w-11 object-contain" />
                 </span>
                 <span className="mt-0.5 text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
+                <span className="text-[10px]" aria-hidden="true">{ELEMENT_EMOJI[p.species]}</span>
               </PressButton>
             );
           })}

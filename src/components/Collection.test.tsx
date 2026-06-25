@@ -36,4 +36,13 @@ describe('Collection', () => {
     fireEvent.click(screen.getByRole('button', { name: /back to room/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
+
+  it('shows the element strong/weak line for the active pet', () => {
+    useGameStore.getState().hatch(); // starter is leaf -> strong vs water (Bubble), weak vs air (Breeze)
+    render(<Collection />);
+    const strong = screen.getByText(/strong vs/i);
+    expect(strong.textContent).toMatch(/bubble/i);
+    const weak = screen.getByText(/weak vs/i);
+    expect(weak.textContent).toMatch(/breeze/i);
+  });
 });

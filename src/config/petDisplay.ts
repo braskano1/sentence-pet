@@ -8,6 +8,9 @@ import { SPRITES } from './sprites';
 /** Friendly, A1-readable pet name per species. */
 export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
 
+/** Element glyph per species (UI flavor; species IS the element). */
+export const ELEMENT_EMOJI: Record<Species, string> = { leaf: '🍃', fire: '🔥', air: '💨', water: '💧' };
+
 /** Growth stage → the "level" number shown to the kid. */
 export const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
 
