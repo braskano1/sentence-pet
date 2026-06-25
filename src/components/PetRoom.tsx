@@ -5,29 +5,11 @@ import { useCountUp } from '../effects/useCountUp';
 import { FOOD_GROUPS, FOOD_META } from '../data/food';
 import { PressButton } from './PressButton';
 import { DECOR_SPRITES } from '../config/decorSprites';
-import { health } from '../domain/pet';
-import { barColor } from '../domain/bars';
-import { BATTLE_STAT_LABELS, petDisplayName, STAGE_NAME, ELEMENT_EMOJI, RARITY_RING, petLevel } from '../config/petDisplay';
+import { petDisplayName, STAGE_NAME, ELEMENT_EMOJI, RARITY_RING, petLevel } from '../config/petDisplay';
 import { xpProgress } from '../domain/xp';
 import { petDialogue } from '../domain/petDialogue';
 import { SpeechBubble } from './SpeechBubble';
-
-/** One stat = icon + slim track + value, sitting on the solid warm panel (always legible). */
-function StatChip({ icon, value, fill }: { icon: string; value: number; fill: string }) {
-  const shown = useCountUp(value);
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="w-5 text-center text-base leading-none">{icon}</span>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-amber-950/15">
-        <div
-          className={`h-full rounded-full ${fill} transition-[width] duration-500 ease-out`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-      <span className="w-7 text-right text-xs font-bold tabular-nums text-amber-950">{shown}</span>
-    </div>
-  );
-}
+import type { PetInstance } from '../data/types';
 
 export function PetRoom() {
   const activePet = useGameStore((s) => selectActivePet(s));
@@ -41,9 +23,9 @@ export function PetRoom() {
   const lastLevelUp = useGameStore((s) => s.lastLevelUp);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
+  const [tab, setTab] = useState<'care' | 'power'>('care');
 
   const coins = useCountUp(walletCoins);
-  const available = FOOD_GROUPS.filter((g) => inventory[g] > 0);
 
   const xpp = xpProgress(activePet.xp);
   const level = petLevel(activePet);
@@ -54,17 +36,6 @@ export function PetRoom() {
     justFed: false, leveledTo: lastLevelUp?.toLevel ?? null, gainedStat: lastLevelUp?.gained[0] ?? null,
     nearEvolution: false,
   }, Math.random);
-
-  const stats = [
-    { key: 'health', icon: '❤️', value: health(activePet.bars), fill: barColor(health(activePet.bars), 'bg-rose-500') },
-    { key: 'happy', icon: '😊', value: activePet.happiness, fill: barColor(activePet.happiness, 'bg-yellow-400') },
-    ...FOOD_GROUPS.map((g) => ({
-      key: g,
-      icon: FOOD_META[g].emoji,
-      value: activePet.bars[g],
-      fill: barColor(activePet.bars[g], FOOD_META[g].color),
-    })),
-  ];
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${bgSprite ? '' : 'bg-emerald-50'}`}>
@@ -124,69 +95,59 @@ export function PetRoom() {
         </div>
       </div>
 
-      {/* ── carved warm panel: stats, care + actions live in the world ── */}
+      {/* ── carved warm panel: Care | Power tabs + actions ── */}
       <div
         className="relative z-10 rounded-t-[2rem] border-t-4 border-amber-900/30 px-5 pb-6 pt-4 shadow-[0_-8px_30px_rgba(0,0,0,0.35)]"
         style={{ background: 'linear-gradient(180deg,#fcecc9 0%,#f4dba9 60%,#ebcb91 100%)' }}
       >
-        <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
-          {stats.map((s) => (
-            <StatChip key={s.key} icon={s.icon} value={s.value} fill={s.fill} />
+        <div role="tablist" aria-label="Pet details" className="mb-3 flex gap-1 rounded-xl bg-amber-900/12 p-1">
+          {(['care', 'power'] as const).map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+              className={`flex-1 rounded-lg py-1.5 text-sm font-extrabold ${tab === t ? 'bg-white text-amber-950 shadow' : 'text-amber-900/70'}`}>
+              {t === 'care' ? 'Care' : 'Power ⬡'}
+            </button>
           ))}
         </div>
 
-        {/* ── battle stats (flavor now; powers battle in a later phase) ── */}
-        <div role="group" aria-label="Battle stats" className="mb-4 flex justify-between gap-1">
-          {BATTLE_STAT_LABELS.map(([label, key]) => (
-            <div
-              key={key}
-              className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-0.5 text-[11px] font-bold text-amber-950"
-            >
-              <span className="text-amber-900/70">{label}</span>
-              <span className="tabular-nums">{activePet.stats[key]}</span>
+        {tab === 'care' ? (
+          <div role="tabpanel">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-xl">😊</span>
+              <div className="flex-1">
+                <div className="flex justify-between text-[10px] font-extrabold text-amber-900/70"><span>Happiness</span><span className="tabular-nums">{activePet.happiness}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-amber-950/15"><div className="h-full rounded-full bg-yellow-400" style={{ width: `${activePet.happiness}%` }} /></div>
+              </div>
             </div>
-          ))}
-        </div>
-
-        {available.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {available.map((g) => (
-              <PressButton
-                key={g}
-                onClick={() => {
-                  feed(g);
-                  setFeedTrigger((n) => n + 1);
-                }}
-                className={`min-h-11 flex-1 rounded-xl border-b-4 border-black/20 ${FOOD_META[g].color} px-3 py-2 text-sm font-bold text-white shadow active:translate-y-0.5 active:border-b-2`}
-              >
-                Feed {FOOD_META[g].emoji} ({inventory[g]})
-              </PressButton>
-            ))}
+            <div className="grid grid-cols-4 gap-2">
+              {FOOD_GROUPS.map((g) => {
+                const owned = inventory[g];
+                return (
+                  <div key={g} className="flex flex-col items-center gap-1">
+                    <span className="text-xl">{FOOD_META[g].emoji}</span>
+                    <span className="text-xs font-extrabold tabular-nums text-amber-950">{activePet.bars[g]}</span>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-950/15"><div className={`h-full rounded-full ${FOOD_META[g].color}`} style={{ width: `${activePet.bars[g]}%` }} /></div>
+                    <PressButton aria-label={`Feed ${FOOD_META[g].label}`} disabled={owned === 0}
+                      onClick={() => { feed(g); setFeedTrigger((n) => n + 1); }}
+                      className={`relative w-full rounded-lg py-1 text-xs font-extrabold text-white ${owned === 0 ? 'bg-amber-900/15 text-amber-900/40' : 'border-b-2 border-black/25 bg-green-600'}`}>
+                      ＋<span className="absolute -right-1 -top-1 rounded-full bg-slate-900 px-1 text-[7px] text-white">{owned}</span>
+                    </PressButton>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        ) : (
+          <PowerPanel pet={activePet} />
         )}
 
-        <div className="flex gap-2">
-          <PressButton
-            onClick={() => setScreen('gacha')}
-            aria-label="Eggs"
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-violet-800 bg-violet-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
-          >
-            Eggs 🥚
-          </PressButton>
-          <PressButton
-            onClick={() => setScreen('shop')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
-          >
-            Shop 🛒
-          </PressButton>
-          <PressButton
-            onClick={() => setScreen('pickDrill')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
-          >
-            Play ▶
-          </PressButton>
+        <div className="mt-4 flex gap-2">
+          <PressButton onClick={() => setScreen('gacha')} aria-label="Eggs" className="min-h-12 flex-1 rounded-2xl border-b-4 border-violet-800 bg-violet-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Eggs 🥚</PressButton>
+          <PressButton onClick={() => setScreen('shop')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Shop 🛒</PressButton>
+          <PressButton onClick={() => setScreen('pickDrill')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Play ▶</PressButton>
         </div>
       </div>
     </div>
   );
 }
+
+function PowerPanel({ pet: _pet }: { pet: PetInstance }) { return <div role="tabpanel">Power</div>; }

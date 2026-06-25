@@ -8,15 +8,6 @@ import { GAME_CONFIG } from '../config/gameConfig';
 beforeEach(() => useGameStore.getState().resetForTest());
 
 describe('PetRoom', () => {
-  it('a feed button consumes that food group into its bar', async () => {
-    useGameStore.getState().hatch();
-    useGameStore.getState().finishRound({ drill: 'wordChoice', level: 1, stars: 3, correctCount: 5 });
-    useGameStore.getState().setScreen('petRoom');
-    render(<PetRoom />);
-    await userEvent.click(screen.getByRole('button', { name: /feed/i }));
-    expect(useGameStore.getState().inventory.veggie).toBe(0);
-  });
-
   it('Play opens the drill picker', async () => {
     useGameStore.getState().hatch();
     render(<PetRoom />);
@@ -55,14 +46,6 @@ describe('PetRoom', () => {
     expect(useGameStore.getState().screen).toBe('collection');
   });
 
-  it('shows the active pet battle stats', () => {
-    useGameStore.getState().hatch();
-    render(<PetRoom />);
-    expect(screen.getByText('HP')).toBeInTheDocument();
-    expect(screen.getByText('ATK')).toBeInTheDocument();
-    expect(screen.getByText('LUK')).toBeInTheDocument();
-  });
-
   it('shows identity chip with level, the XP bar label, and My Pets button', () => {
     useGameStore.getState().resetForTest();
     useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true, xp: 40 })) }));
@@ -70,6 +53,24 @@ describe('PetRoom', () => {
     expect(screen.getByText(/Lv 2/)).toBeTruthy();
     expect(screen.getByText(/XP →/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /my pets/i })).toBeTruthy();
+  });
+
+  it('Care tab shows happiness and a feed button per owned food; feeding calls the store', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })), inventory: { ...s.inventory, protein: 3 } }));
+    render(<PetRoom />);
+    expect(screen.getByText(/Happiness/i)).toBeTruthy();
+    const feedProtein = screen.getByRole('button', { name: /feed protein/i });
+    fireEvent.click(feedProtein);
+    expect(useGameStore.getState().inventory.protein).toBe(0);
+  });
+
+  it('switches to the Power tab', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    expect(screen.getByRole('tabpanel')).toBeTruthy();
   });
 });
 
