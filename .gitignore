@@ -18,6 +18,9 @@ dist-ssr
 # Stray test stdout capture (never commit)
 test-output.txt
 
+# Visual-companion brainstorm mockups (impeccable/superpowers)
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
