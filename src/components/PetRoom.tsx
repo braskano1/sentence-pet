@@ -13,6 +13,13 @@ import { ELEMENTAL_EGGS } from '../config/sprites';
 /** Friendly, A1-readable pet name per species; level reads off the growth stage. */
 const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
 const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
+const BATTLE_STAT_LABELS = [
+  ['HP', 'hp'],
+  ['ATK', 'atk'],
+  ['DEF', 'def'],
+  ['SPD', 'spd'],
+  ['LUK', 'luk'],
+] as const;
 
 /** One stat = icon + slim track + value, sitting on the solid warm panel (always legible). */
 function StatChip({ icon, value, fill }: { icon: string; value: number; fill: string }) {
@@ -40,7 +47,6 @@ export function PetRoom() {
   const setScreen = useGameStore((s) => s.setScreen);
   const activeBackground = useGameStore((s) => s.activeBackground);
   const pets = useGameStore((s) => s.pets);
-  const activePetId = useGameStore((s) => s.activePetId);
   const switchPet = useGameStore((s) => s.switchPet);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
@@ -105,9 +111,10 @@ export function PetRoom() {
         </div>
 
         {/* ── collection: tap an egg to switch which pet you are raising ── */}
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-          {pets.map((p) => {
-            const isActive = p.id === activePetId;
+        {pets.length > 1 && (
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+            {pets.map((p) => {
+              const isActive = p.id === activePet.id;
             return (
               <PressButton
                 key={p.id}
@@ -121,8 +128,9 @@ export function PetRoom() {
                 <span className="text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
               </PressButton>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
 
         <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
           {stats.map((s) => (
@@ -131,18 +139,16 @@ export function PetRoom() {
         </div>
 
         {/* ── battle stats (flavor now; powers battle in a later phase) ── */}
-        <div className="mb-4 flex justify-between gap-1" aria-label="Battle stats">
-          {([['HP', 'hp'], ['ATK', 'atk'], ['DEF', 'def'], ['SPD', 'spd'], ['LUK', 'luk']] as const).map(
-            ([label, key]) => (
-              <span
-                key={key}
-                className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-0.5 text-[11px] font-bold text-amber-950"
-              >
-                <span className="text-amber-900/70">{label}</span>
-                <span className="tabular-nums">{activePet.stats[key]}</span>
-              </span>
-            ),
-          )}
+        <div role="group" aria-label="Battle stats" className="mb-4 flex justify-between gap-1">
+          {BATTLE_STAT_LABELS.map(([label, key]) => (
+            <div
+              key={key}
+              className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-0.5 text-[11px] font-bold text-amber-950"
+            >
+              <span className="text-amber-900/70">{label}</span>
+              <span className="tabular-nums">{activePet.stats[key]}</span>
+            </div>
+          ))}
         </div>
 
         {available.length > 0 && (
