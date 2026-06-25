@@ -6,7 +6,7 @@ import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
 import { EGG_SPRITE, SPRITES } from '../config/sprites';
 import { fireConfetti } from '../effects/celebrate';
-import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS } from '../config/petDisplay';
+import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 
 export function Gacha() {
   const coins = useGameStore((s) => s.coins);
@@ -58,7 +58,7 @@ export function Gacha() {
             alt={PET_NAME[pulled.species]}
             className="h-40 w-auto object-contain drop-shadow-[0_14px_26px_rgba(0,0,0,0.3)]"
           />
-          <p className="text-lg font-bold text-slate-700">{PET_NAME[pulled.species]}!</p>
+          <p className="text-lg font-bold text-slate-700">{petDisplayName(pulled)}!</p>
           <span className={`rounded-full px-3 py-1 text-sm font-extrabold uppercase ${RARITY_BADGE[pulled.rarity]}`}>
             {pulled.rarity}
           </span>

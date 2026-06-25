@@ -52,6 +52,11 @@ export function petLevel(pet: PetInstance): number {
   return STAGE_LEVEL[stageForXp(pet.xp, pet.hatched)] || 1;
 }
 
+/** Display name: the custom name if set, otherwise the species name. */
+export function petDisplayName(pet: PetInstance): string {
+  return pet.name.trim() || PET_NAME[pet.species];
+}
+
 /** A pet's happy sprite at its current stage (eggs fall back to the baby sprite). */
 export function petStageSprite(pet: PetInstance): string {
   const stage = stageForXp(pet.xp, pet.hatched);

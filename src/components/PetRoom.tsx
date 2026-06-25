@@ -7,7 +7,7 @@ import { PressButton } from './PressButton';
 import { DECOR_SPRITES } from '../config/decorSprites';
 import { health } from '../domain/pet';
 import { barColor } from '../domain/bars';
-import { PET_NAME, STAGE_LEVEL, BATTLE_STAT_LABELS } from '../config/petDisplay';
+import { STAGE_LEVEL, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 
 /** One stat = icon + slim track + value, sitting on the solid warm panel (always legible). */
 function StatChip({ icon, value, fill }: { icon: string; value: number; fill: string }) {
@@ -88,7 +88,7 @@ export function PetRoom() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="rounded-full bg-amber-900/15 px-3 py-1 text-sm font-extrabold text-amber-950">
-              {PET_NAME[activePet.species]} · Lv {STAGE_LEVEL[stage] || 1}
+              {petDisplayName(activePet)} · Lv {STAGE_LEVEL[stage] || 1}
             </span>
             <span className="text-xs font-semibold text-amber-900/70 tabular-nums">XP {xp}</span>
           </div>

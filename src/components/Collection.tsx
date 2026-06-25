@@ -1,7 +1,7 @@
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { StatRadar } from './StatRadar';
-import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petLevel, petStageSprite } from '../config/petDisplay';
+import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, petDisplayName, petLevel, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
 
 /**
@@ -39,7 +39,8 @@ export function Collection() {
             className="h-28 w-28 object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.25)]"
           />
           <div className="flex items-center gap-2">
-            <span className="text-lg font-extrabold text-amber-950">{PET_NAME[active.species]}</span>
+            <span className="text-lg font-extrabold text-amber-950">{petDisplayName(active)}</span>
+            {active.name.trim() && <span className="text-[10px] font-semibold text-amber-900/50">({PET_NAME[active.species]})</span>}
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${RARITY_BADGE[active.rarity]}`}>
               {active.rarity}
             </span>
@@ -81,7 +82,7 @@ export function Collection() {
                 <span className={`rounded-full p-0.5 ring-2 ${RARITY_RING[p.rarity]}`}>
                   <img src={petStageSprite(p)} alt="" aria-hidden className="h-11 w-11 object-contain" />
                 </span>
-                <span className="mt-0.5 text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
+                <span className="mt-0.5 text-[10px] font-bold text-amber-950">{petDisplayName(p)}</span>
                 <span className="text-[10px]" aria-hidden="true">{ELEMENT_EMOJI[p.species]}</span>
               </PressButton>
             );
