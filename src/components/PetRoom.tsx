@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, type KeyboardEvent } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
@@ -12,6 +12,9 @@ import { petDialogue } from '../domain/petDialogue';
 import { SpeechBubble } from './SpeechBubble';
 import type { PetInstance } from '../data/types';
 
+const TABS = ['care', 'power'] as const;
+type Tab = (typeof TABS)[number];
+
 export function PetRoom() {
   const activePet = useGameStore((s) => selectActivePet(s));
   const walletCoins = useGameStore((s) => s.coins);
@@ -21,22 +24,40 @@ export function PetRoom() {
   const setScreen = useGameStore((s) => s.setScreen);
   const activeBackground = useGameStore((s) => s.activeBackground);
   const pets = useGameStore((s) => s.pets);
-  const lastLevelUp = useGameStore((s) => s.lastLevelUp);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
-  const [tab, setTab] = useState<'care' | 'power'>('care');
+  const [tab, setTab] = useState<Tab>('care');
 
   const coins = useCountUp(walletCoins);
 
   const xpp = xpProgress(activePet.xp);
   const level = petLevel(activePet);
   const lowest = FOOD_GROUPS.reduce((a, g) => (activePet.bars[g] < activePet.bars[a] ? g : a), FOOD_GROUPS[0]);
-  const line = petDialogue({
-    name: petDisplayName(activePet), species: activePet.species, stage,
-    lowestGroup: lowest, lowestValue: activePet.bars[lowest], happiness: activePet.happiness,
-    justFed: false, leveledTo: lastLevelUp?.toLevel ?? null, gainedStat: lastLevelUp?.gained[0] ?? null,
+
+  // Stable dialogue line: recomputes only when meaningful inputs change, not on every animation frame.
+  const line = useMemo(() => petDialogue({
+    name: petDisplayName(activePet),
+    species: activePet.species,
+    stage,
+    lowestGroup: lowest,
+    lowestValue: activePet.bars[lowest],
+    happiness: activePet.happiness,
+    justFed: false,
+    leveledTo: null,
+    gainedStat: null,
     nearEvolution: false,
-  }, Math.random);
+  }, () => 0.5), [activePet.id, lowest, activePet.bars[lowest] <= 30, activePet.happiness >= 70, stage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onTabKey = (e: KeyboardEvent, current: Tab) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const i = TABS.indexOf(current);
+    const next = e.key === 'ArrowRight'
+      ? TABS[(i + 1) % TABS.length]
+      : TABS[(i - 1 + TABS.length) % TABS.length];
+    setTab(next);
+    document.getElementById(`petroom-tab-${next}`)?.focus();
+  };
 
   return (
     <div className={`relative flex h-full flex-col overflow-hidden ${bgSprite ? '' : 'bg-emerald-50'}`}>
@@ -102,8 +123,16 @@ export function PetRoom() {
         style={{ background: 'linear-gradient(180deg,#fcecc9 0%,#f4dba9 60%,#ebcb91 100%)' }}
       >
         <div role="tablist" aria-label="Pet details" className="mb-3 flex gap-1 rounded-xl bg-amber-900/12 p-1">
-          {(['care', 'power'] as const).map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+          {TABS.map((t) => (
+            <button
+              key={t}
+              id={`petroom-tab-${t}`}
+              role="tab"
+              aria-selected={tab === t}
+              aria-controls={`petroom-panel-${t}`}
+              tabIndex={tab === t ? 0 : -1}
+              onClick={() => setTab(t)}
+              onKeyDown={(e) => onTabKey(e, t)}
               className={`flex-1 rounded-lg py-1.5 text-sm font-extrabold ${tab === t ? 'bg-white text-amber-950 shadow' : 'text-amber-900/70'}`}>
               {t === 'care' ? 'Care' : 'Power ⬡'}
             </button>
@@ -111,7 +140,7 @@ export function PetRoom() {
         </div>
 
         {tab === 'care' ? (
-          <div role="tabpanel">
+          <div role="tabpanel" id="petroom-panel-care" aria-labelledby="petroom-tab-care">
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl">😊</span>
               <div className="flex-1">
@@ -138,7 +167,9 @@ export function PetRoom() {
             </div>
           </div>
         ) : (
-          <PowerPanel pet={activePet} />
+          <div role="tabpanel" id="petroom-panel-power" aria-labelledby="petroom-tab-power">
+            <PowerPanel pet={activePet} />
+          </div>
         )}
 
         <div className="mt-4 flex gap-2">
@@ -156,7 +187,7 @@ function PowerPanel({ pet }: { pet: PetInstance }) {
   const spec = petSpecialty(pet);
   const specLabel = BATTLE_STAT_LABELS.find(([, k]) => k === spec)?.[0] ?? 'HP';
   return (
-    <div role="tabpanel" className="flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <StatRadar stats={stats} color={RARITY_HEX[pet.rarity]} size={160} specialty={spec} />
       <div className="flex w-24 flex-none flex-col gap-1.5">
         <div className="rounded-xl bg-amber-900/10 px-2 py-1.5"><div className="text-[8px] font-extrabold uppercase text-amber-900/70">Level</div><div className="text-lg font-extrabold text-amber-950">{petLevel(pet)}<span className="text-[9px] text-amber-900/70"> / 50</span></div></div>

@@ -11,9 +11,6 @@ export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember'
 /** Element glyph per species (UI flavor; species IS the element). */
 export const ELEMENT_EMOJI: Record<Species, string> = { leaf: '🍃', fire: '🔥', air: '💨', water: '💧' };
 
-/** Growth stage → the "level" number shown to the kid. */
-export const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
-
 /** Battle stat display order: [label, key]. */
 export const BATTLE_STAT_LABELS = [
   ['HP', 'hp'],

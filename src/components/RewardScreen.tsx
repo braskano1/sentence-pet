@@ -1,19 +1,38 @@
 // src/components/RewardScreen.tsx
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PressButton } from './PressButton';
 import { useGameStore } from '../state/gameStore';
-import { fireConfetti } from '../effects/celebrate';
+import { fireConfetti, buzz } from '../effects/celebrate';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_META } from '../data/food';
+import { BATTLE_STAT_LABELS } from '../config/petDisplay';
+import type { BattleStats } from '../data/types';
 
 export function RewardScreen() {
   const reward = useGameStore((s) => s.lastReward);
+  const lastLevelUp = useGameStore((s) => s.lastLevelUp);
+  const clearLevelUp = useGameStore((s) => s.clearLevelUp);
   const setScreen = useGameStore((s) => s.setScreen);
+
+  // Capture the level-up info on mount so the callout persists after clearLevelUp() nulls the store.
+  const levelUpRef = useRef(lastLevelUp);
+  if (levelUpRef.current === null && lastLevelUp !== null) {
+    levelUpRef.current = lastLevelUp;
+  }
 
   useEffect(() => {
     if (reward) fireConfetti();
   }, [reward]);
+
+  useEffect(() => {
+    if (lastLevelUp) {
+      fireConfetti();
+      buzz();
+      clearLevelUp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastLevelUp]);
 
   const coins = useCountUp(reward?.coins ?? 0);
   const food = useCountUp(reward?.food ?? 0);
@@ -21,6 +40,7 @@ export function RewardScreen() {
   if (!reward) return null;
 
   const meta = FOOD_META[reward.group] ?? FOOD_META.protein;
+  const levelUp = levelUpRef.current;
 
   const container = {
     hidden: {},
@@ -61,6 +81,26 @@ export function RewardScreen() {
         <motion.p variants={item} className="text-lg text-slate-700">
           +{coins} coins
         </motion.p>
+        {levelUp && (
+          <motion.div
+            variants={item}
+            className="rounded-xl bg-amber-100 px-5 py-3 text-center ring-2 ring-amber-400"
+          >
+            <p className="text-lg font-extrabold text-amber-800">
+              Level up! Lv {levelUp.toLevel}
+            </p>
+            {levelUp.gained.length > 0 && (
+              <p className="mt-1 text-sm font-semibold text-amber-700">
+                {levelUp.gained
+                  .map((k: keyof BattleStats) => {
+                    const label = BATTLE_STAT_LABELS.find(([, key]) => key === k)?.[0] ?? k.toUpperCase();
+                    return `+1 ${label}`;
+                  })
+                  .join('  ')}
+              </p>
+            )}
+          </motion.div>
+        )}
       </motion.div>
       <PressButton
         onClick={() => setScreen('petRoom')}

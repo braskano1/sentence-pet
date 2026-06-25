@@ -92,3 +92,46 @@ describe('PetRoom Eggs button', () => {
     expect(useGameStore.getState().screen).toBe('gacha');
   });
 });
+
+describe('PetRoom tab keyboard navigation', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('ArrowRight on Care tab moves focus to Power tab and activates it', () => {
+    useGameStore.getState().hatch();
+    render(<PetRoom />);
+    const careTab = screen.getByRole('tab', { name: /care/i });
+    fireEvent.keyDown(careTab, { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: /power/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /care/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('ArrowLeft on Power tab wraps back to Care tab', () => {
+    useGameStore.getState().hatch();
+    render(<PetRoom />);
+    // Switch to power first
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    const powerTab = screen.getByRole('tab', { name: /power/i });
+    fireEvent.keyDown(powerTab, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: /care/i })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+describe('PetRoom feed button disabled state', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('feed protein button is disabled when inventory protein is 0', () => {
+    useGameStore.getState().hatch();
+    // Default inventory has 0 protein
+    render(<PetRoom />);
+    const feedBtn = screen.getByRole('button', { name: /feed protein/i });
+    expect(feedBtn).toBeDisabled();
+  });
+
+  it('feed protein button is enabled when inventory protein > 0', () => {
+    useGameStore.getState().hatch();
+    useGameStore.setState((s) => ({ inventory: { ...s.inventory, protein: 3 } }));
+    render(<PetRoom />);
+    const feedBtn = screen.getByRole('button', { name: /feed protein/i });
+    expect(feedBtn).not.toBeDisabled();
+  });
+});

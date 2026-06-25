@@ -62,6 +62,7 @@ interface GameState {
   equipBackground: (id: string | null) => void;
   switchPet: (id: string) => void;
   renamePet: (id: string, name: string) => void;
+  clearLevelUp: () => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -195,6 +196,8 @@ export const useGameStore = create<GameState>()(
 
       switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
 
+      clearLevelUp: () => set({ lastLevelUp: null }),
+
       renamePet: (id, name) =>
         set((s) => {
           const clean = sanitizePetName(name);
@@ -226,6 +229,11 @@ export const useGameStore = create<GameState>()(
     {
       name: 'sentence-pet',
       version: 8,
+      partialize: (s) => {
+        const { lastLevelUp, ...rest } = s;
+        void lastLevelUp; // transient — not persisted
+        return rest as Omit<GameState, 'lastLevelUp'>;
+      },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
       // v5->v6 backfills pet.rarity (derived from stats). v6->v7 backfills pet.name (default '').

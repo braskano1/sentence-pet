@@ -379,6 +379,26 @@ describe('applyXp / level-up', () => {
     expect(totalGrowth).toBe(2);
     expect(useGameStore.getState().lastLevelUp?.toLevel).toBe(3);
   });
+
+  it('clearLevelUp nulls lastLevelUp after a level-up', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addXpForTest(totalXpForLevel(3));
+    expect(useGameStore.getState().lastLevelUp?.toLevel).toBe(3);
+    useGameStore.getState().clearLevelUp();
+    expect(useGameStore.getState().lastLevelUp).toBeNull();
+  });
+
+  it('persisted slice excludes lastLevelUp', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addXpForTest(totalXpForLevel(3));
+    expect(useGameStore.getState().lastLevelUp).not.toBeNull();
+    const getPartialize = (useGameStore as unknown as {
+      persist: { getOptions: () => { partialize?: (s: unknown) => unknown } };
+    }).persist.getOptions().partialize;
+    expect(getPartialize).toBeDefined();
+    const persisted = getPartialize!(useGameStore.getState()) as Record<string, unknown>;
+    expect('lastLevelUp' in persisted).toBe(false);
+  });
 });
 
 describe('migrate -> v8 (growth)', () => {
