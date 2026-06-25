@@ -22,7 +22,7 @@ describe('TreatCard', () => {
     const btn = screen.getByRole('button', { name: /snack/i });
     expect(btn).not.toBeDisabled();
     await userEvent.click(btn);
-    expect(useGameStore.getState().pet.coins).toBe(85);
+    expect(useGameStore.getState().coins).toBe(85);
     expect(confetti).toHaveBeenCalledTimes(1); // confetti gated to a successful buy
   });
 
@@ -32,7 +32,7 @@ describe('TreatCard', () => {
     expect(btn).not.toBeDisabled();
     expect(screen.getByText('Not enough coins')).toBeInTheDocument();
     await userEvent.click(btn);
-    expect(useGameStore.getState().pet.coins).toBe(0);
+    expect(useGameStore.getState().coins).toBe(0);
     expect(confetti).not.toHaveBeenCalled(); // no confetti on a denied buy
   });
 

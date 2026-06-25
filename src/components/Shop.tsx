@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { useCountUp } from '../effects/useCountUp';
 import { TreatCard } from './TreatCard';
@@ -10,8 +10,8 @@ import { isOwned } from '../domain/decor';
 type Tab = 'treats' | 'decor';
 
 export function Shop() {
-  const coins = useGameStore((s) => s.pet.coins);
-  const happiness = useGameStore((s) => s.pet.happiness);
+  const coins = useGameStore((s) => s.coins);
+  const happiness = useGameStore((s) => selectActivePet(s).happiness);
   const owned = useGameStore((s) => s.owned);
   const activeBackground = useGameStore((s) => s.activeBackground);
   const setScreen = useGameStore((s) => s.setScreen);

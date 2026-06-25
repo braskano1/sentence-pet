@@ -30,7 +30,7 @@ describe('Shop', () => {
     useGameStore.getState().addCoinsForTest(100);
     render(<Shop />);
     await userEvent.click(screen.getByRole('button', { name: /snack/i }));
-    expect(useGameStore.getState().pet.coins).toBe(85);
+    expect(useGameStore.getState().coins).toBe(85);
   });
 
   it('shows Treats and Decor tabs; treats visible by default', () => {

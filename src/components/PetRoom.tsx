@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_GROUPS, FOOD_META } from '../data/food';
@@ -8,10 +8,18 @@ import { DECOR_SPRITES } from '../config/decorSprites';
 import { health } from '../domain/pet';
 import { barColor } from '../domain/bars';
 import type { Species } from '../data/types';
+import { ELEMENTAL_EGGS } from '../config/sprites';
 
 /** Friendly, A1-readable pet name per species; level reads off the growth stage. */
 const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
 const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
+const BATTLE_STAT_LABELS = [
+  ['HP', 'hp'],
+  ['ATK', 'atk'],
+  ['DEF', 'def'],
+  ['SPD', 'spd'],
+  ['LUK', 'luk'],
+] as const;
 
 /** One stat = icon + slim track + value, sitting on the solid warm panel (always legible). */
 function StatChip({ icon, value, fill }: { icon: string; value: number; fill: string }) {
@@ -31,27 +39,30 @@ function StatChip({ icon, value, fill }: { icon: string; value: number; fill: st
 }
 
 export function PetRoom() {
-  const pet = useGameStore((s) => s.pet);
+  const activePet = useGameStore((s) => selectActivePet(s));
+  const walletCoins = useGameStore((s) => s.coins);
   const inventory = useGameStore((s) => s.inventory);
   const stage = useGameStore((s) => s.stage());
   const feed = useGameStore((s) => s.feed);
   const setScreen = useGameStore((s) => s.setScreen);
   const activeBackground = useGameStore((s) => s.activeBackground);
+  const pets = useGameStore((s) => s.pets);
+  const switchPet = useGameStore((s) => s.switchPet);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
 
-  const xp = useCountUp(pet.xp);
-  const coins = useCountUp(pet.coins);
+  const xp = useCountUp(activePet.xp);
+  const coins = useCountUp(walletCoins);
   const available = FOOD_GROUPS.filter((g) => inventory[g] > 0);
 
   const stats = [
-    { key: 'health', icon: '❤️', value: health(pet.bars), fill: barColor(health(pet.bars), 'bg-rose-500') },
-    { key: 'happy', icon: '😊', value: pet.happiness, fill: barColor(pet.happiness, 'bg-yellow-400') },
+    { key: 'health', icon: '❤️', value: health(activePet.bars), fill: barColor(health(activePet.bars), 'bg-rose-500') },
+    { key: 'happy', icon: '😊', value: activePet.happiness, fill: barColor(activePet.happiness, 'bg-yellow-400') },
     ...FOOD_GROUPS.map((g) => ({
       key: g,
       icon: FOOD_META[g].emoji,
-      value: pet.bars[g],
-      fill: barColor(pet.bars[g], FOOD_META[g].color),
+      value: activePet.bars[g],
+      fill: barColor(activePet.bars[g], FOOD_META[g].color),
     })),
   ];
 
@@ -78,7 +89,7 @@ export function PetRoom() {
           }}
         />
         <div className="relative drop-shadow-[0_14px_26px_rgba(0,0,0,0.4)]">
-          <PetSprite stage={stage} species={pet.species} happiness={pet.happiness} feedTrigger={feedTrigger} />
+          <PetSprite stage={stage} species={activePet.species} happiness={activePet.happiness} feedTrigger={feedTrigger} />
         </div>
       </div>
 
@@ -90,7 +101,7 @@ export function PetRoom() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="rounded-full bg-amber-900/15 px-3 py-1 text-sm font-extrabold text-amber-950">
-              {PET_NAME[pet.species]} · Lv {STAGE_LEVEL[stage] || 1}
+              {PET_NAME[activePet.species]} · Lv {STAGE_LEVEL[stage] || 1}
             </span>
             <span className="text-xs font-semibold text-amber-900/70 tabular-nums">XP {xp}</span>
           </div>
@@ -99,9 +110,44 @@ export function PetRoom() {
           </span>
         </div>
 
+        {/* ── collection: tap an egg to switch which pet you are raising ── */}
+        {pets.length > 1 && (
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+            {pets.map((p) => {
+              const isActive = p.id === activePet.id;
+            return (
+              <PressButton
+                key={p.id}
+                onClick={() => switchPet(p.id)}
+                aria-label={isActive ? `${PET_NAME[p.species]} (active)` : `Switch to ${PET_NAME[p.species]}`}
+                className={`flex shrink-0 flex-col items-center rounded-xl px-2 py-1 ${
+                  isActive ? 'bg-amber-900/25 ring-2 ring-amber-700' : 'bg-amber-900/10'
+                }`}
+              >
+                <img src={ELEMENTAL_EGGS[p.species]} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
+                <span className="text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
+              </PressButton>
+            );
+            })}
+          </div>
+        )}
+
         <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
           {stats.map((s) => (
             <StatChip key={s.key} icon={s.icon} value={s.value} fill={s.fill} />
+          ))}
+        </div>
+
+        {/* ── battle stats (flavor now; powers battle in a later phase) ── */}
+        <div role="group" aria-label="Battle stats" className="mb-4 flex justify-between gap-1">
+          {BATTLE_STAT_LABELS.map(([label, key]) => (
+            <div
+              key={key}
+              className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-0.5 text-[11px] font-bold text-amber-950"
+            >
+              <span className="text-amber-900/70">{label}</span>
+              <span className="tabular-nums">{activePet.stats[key]}</span>
+            </div>
           ))}
         </div>
 

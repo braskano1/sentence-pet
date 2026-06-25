@@ -2,21 +2,19 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
-import type { DrillType, FoodGroup, NutritionBars, PetStage, Screen, Species } from '../data/types';
+import type { DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { stageForXp, xpForLevel } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
-import { pickSpecies } from '../domain/species';
+import { makePet, rollStats } from '../domain/pets';
 
-interface Pet {
-  hatched: boolean;
-  species: Species;
-  xp: number;
-  coins: number;
-  happiness: number;
-  bars: NutritionBars;
+export const STARTER_ID = 'starter-leaf';
+
+/** App-side RNG. Kept out of pure domain so domain stays deterministically testable. */
+function rng(): number {
+  return Math.random();
 }
 
 interface RewardSummary {
@@ -36,7 +34,9 @@ interface RoundResult {
 
 interface GameState {
   screen: Screen;
-  pet: Pet;
+  pets: PetInstance[];
+  activePetId: string;
+  coins: number; // account-level wallet
   inventory: Record<FoodGroup, number>;
   selectedDrill: DrillType;
   selectedLevel: number;
@@ -52,6 +52,7 @@ interface GameState {
   buyTreat: (item: TreatItem) => void;
   buyDecor: (item: DecorItem) => void;
   equipBackground: (id: string | null) => void;
+  switchPet: (id: string) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -59,130 +60,166 @@ interface GameState {
   resetForTest: () => void;
 }
 
-function freshPet(): Pet {
-  return {
-    hatched: false,
-    species: 'leaf',
-    xp: 0,
-    coins: 0,
-    happiness: GAME_CONFIG.happiness.start,
-    bars: {
-      protein: GAME_CONFIG.bars.start,
-      veggie: GAME_CONFIG.bars.start,
-      vitamin: GAME_CONFIG.bars.start,
-      treat: GAME_CONFIG.bars.start,
-    },
-  };
+/** Active pet. Invariant: activePetId always resolves; fall back to pets[0] defensively. */
+export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string }): PetInstance =>
+  s.pets.find((p) => p.id === s.activePetId) ?? s.pets[0];
+
+/** Immutably replace the active pet via a transform. */
+function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetInstance[] {
+  return s.pets.map((p) => (p.id === s.activePetId ? fn(p) : p));
+}
+
+function freshPet(): PetInstance {
+  return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {
   return { protein: 0, veggie: 0, vitamin: 0, treat: 0 };
 }
 
+function freshState() {
+  return {
+    screen: 'egg' as Screen,
+    pets: [freshPet()],
+    activePetId: STARTER_ID,
+    coins: 0,
+    inventory: freshInventory(),
+    selectedDrill: 'pattern' as DrillType,
+    selectedLevel: 1,
+    lastReward: null,
+    owned: [] as string[],
+    activeBackground: null as string | null,
+  };
+}
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      screen: 'egg',
-      pet: freshPet(),
-      inventory: freshInventory(),
-      selectedDrill: 'pattern',
-      selectedLevel: 1,
-      lastReward: null,
-      owned: [],
-      activeBackground: null,
+      ...freshState(),
 
       setScreen: (screen) => set({ screen }),
 
       hatch: () =>
-        set((st) => ({ pet: { ...st.pet, hatched: true, species: pickSpecies() }, screen: 'petRoom' })),
+        set((s) => ({ pets: updateActive(s, (p) => ({ ...p, hatched: true })), screen: 'petRoom' })),
 
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
       finishRound: ({ drill, level, stars, correctCount }) =>
-        set((st) => {
+        set((s) => {
           const group = DRILL_FOOD[drill];
           const xpGain = correctCount * xpForLevel(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
-          const happiness = decayHappiness(st.pet.happiness) + GAME_CONFIG.happiness.onClear +
-            (stars === 3 ? GAME_CONFIG.happiness.onThreeStars : 0);
           return {
-            pet: {
-              ...st.pet,
-              xp: st.pet.xp + xpGain,
-              coins: st.pet.coins + coinsGain,
-              happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
-              bars: decayBars(st.pet.bars),
-            },
-            inventory: { ...st.inventory, [group]: st.inventory[group] + correctCount },
+            pets: updateActive(s, (p) => {
+              const happiness =
+                decayHappiness(p.happiness) +
+                GAME_CONFIG.happiness.onClear +
+                (stars === 3 ? GAME_CONFIG.happiness.onThreeStars : 0);
+              return {
+                ...p,
+                xp: p.xp + xpGain,
+                happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
+                bars: decayBars(p.bars),
+              };
+            }),
+            coins: s.coins + coinsGain,
+            inventory: { ...s.inventory, [group]: s.inventory[group] + correctCount },
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             screen: 'reward',
           };
         }),
 
       feed: (group) =>
-        set((st) => ({
-          pet: { ...st.pet, bars: feedBar(st.pet.bars, group, st.inventory[group]) },
-          inventory: { ...st.inventory, [group]: 0 },
+        set((s) => ({
+          pets: updateActive(s, (p) => ({ ...p, bars: feedBar(p.bars, group, s.inventory[group]) })),
+          inventory: { ...s.inventory, [group]: 0 },
         })),
 
       buyTreat: (item) =>
-        set((st) => {
-          const res = purchase(
-            { coins: st.pet.coins, happiness: st.pet.happiness },
-            item,
-            GAME_CONFIG.happiness.max,
-          );
-          if (!res.ok) return st; // no-op; UI disables the button, this is defensive
-          return { pet: { ...st.pet, coins: res.coins, happiness: res.happiness } };
+        set((s) => {
+          const active = selectActivePet(s);
+          const res = purchase({ coins: s.coins, happiness: active.happiness }, item, GAME_CONFIG.happiness.max);
+          if (!res.ok) return s; // no-op; UI disables the button, this is defensive
+          return { coins: res.coins, pets: updateActive(s, (p) => ({ ...p, happiness: res.happiness })) };
         }),
 
       buyDecor: (item) =>
-        set((st) => {
-          const res = buyDecor({ coins: st.pet.coins, owned: st.owned }, item);
-          if (!res.ok) return st; // no-op; UI disables Buy when owned/too poor
-          return { pet: { ...st.pet, coins: res.coins }, owned: res.owned };
+        set((s) => {
+          const res = buyDecor({ coins: s.coins, owned: s.owned }, item);
+          if (!res.ok) return s; // no-op; UI disables Buy when owned/too poor
+          return { coins: res.coins, owned: res.owned };
         }),
 
       equipBackground: (id) => set({ activeBackground: id }),
 
-      stage: () => stageForXp(get().pet.xp, get().pet.hatched),
+      switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
 
-      addXpForTest: (xp) => set((st) => ({ pet: { ...st.pet, xp: st.pet.xp + xp } })),
-      addCoinsForTest: (coins) => set((st) => ({ pet: { ...st.pet, coins: st.pet.coins + coins } })),
-      resetForTest: () =>
-        set({
-          screen: 'egg',
-          pet: freshPet(),
-          inventory: freshInventory(),
-          selectedDrill: 'pattern',
-          selectedLevel: 1,
-          lastReward: null,
-          owned: [],
-          activeBackground: null,
-        }),
+      stage: () => {
+        const p = selectActivePet(get());
+        return stageForXp(p.xp, p.hatched);
+      },
+
+      addXpForTest: (xp) => set((s) => ({ pets: updateActive(s, (p) => ({ ...p, xp: p.xp + xp })) })),
+      addCoinsForTest: (coins) => set((s) => ({ coins: s.coins + coins })),
+      resetForTest: () => set(freshState()),
     }),
     {
       name: 'sentence-pet',
-      version: 4,
-      // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[] + activeBackground.
+      version: 5,
+      // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
+      // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
+              pet?: {
+                hatched?: boolean;
+                species?: PetInstance['species'];
+                xp?: number;
+                coins?: number;
+                happiness?: number;
+                bars?: Partial<NutritionBars>;
+              };
+              pets?: PetInstance[];
               inventory?: Partial<Record<FoodGroup, number>>;
-              pet?: Partial<Pet>;
               owned?: string[];
               activeBackground?: string | null;
             }
           | null;
+        // Zustand treats a null migrate return as "reset to initial state".
         if (!st) return st as unknown as GameState;
-        return {
-          selectedDrill: 'pattern',
+
+        // Normalize additive fields shared by all versions.
+        const base = {
+          selectedDrill: 'pattern' as DrillType,
           ...st,
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
-          pet: { ...freshPet(), ...(st.pet ?? {}), species: st.pet?.species ?? 'leaf' },
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
-        } as GameState;
+        };
+
+        // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.
+        if (!st.pets && st.pet) {
+          const legacy = st.pet;
+          const fresh = makePet({
+            id: STARTER_ID,
+            species: legacy.species ?? 'leaf',
+            stats: rollStats(rng),
+            hatched: legacy.hatched ?? false,
+          });
+          const migrated: PetInstance = {
+            ...fresh,
+            xp: legacy.xp ?? 0,
+            happiness: legacy.happiness ?? GAME_CONFIG.happiness.start,
+            bars: { ...fresh.bars, ...(legacy.bars ?? {}) },
+          };
+          const next = { ...base, pets: [migrated], activePetId: STARTER_ID, coins: legacy.coins ?? 0 };
+          delete (next as { pet?: unknown }).pet;
+          return next as unknown as GameState;
+        }
+
+        // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).
+        delete (base as { pet?: unknown }).pet;
+        return base as unknown as GameState;
       },
     },
   ),

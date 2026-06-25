@@ -1,5 +1,5 @@
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import { useGameStore } from './state/gameStore';
+import { useGameStore, selectActivePet } from './state/gameStore';
 import { AppShell } from './components/AppShell';
 import { EggHatch } from './components/EggHatch';
 import { PetRoom } from './components/PetRoom';
@@ -24,7 +24,7 @@ function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, le
 
 function CurrentScreen() {
   const screen = useGameStore((s) => s.screen);
-  const hatched = useGameStore((s) => s.pet.hatched);
+  const hatched = useGameStore((s) => selectActivePet(s).hatched);
   const drill = useGameStore((s) => s.selectedDrill);
   const level = useGameStore((s) => s.selectedLevel);
   const { key, node } = screenKeyAndNode(screen, hatched, drill, level);

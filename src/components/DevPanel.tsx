@@ -1,31 +1,73 @@
 // src/components/DevPanel.tsx
 // Dev-only cheat panel. Rendered by App ONLY when import.meta.env.DEV is true,
 // so it is tree-shaken out of production builds. Pairs with `window.store`
-// (set in main.tsx) for console access.
+// (set in main.tsx) for console access. All mutations are inline setState —
+// no production store API is added for dev tooling.
 import { useState } from 'react';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
+import { makePet, rollStats } from '../domain/pets';
+import type { BattleStats, PetStage, PetInstance } from '../data/types';
+
+const rng = () => Math.random();
+const STAT_KEYS: (keyof BattleStats)[] = ['hp', 'atk', 'def', 'spd', 'luk'];
+
+function clampHappiness(v: number) {
+  return Math.max(GAME_CONFIG.happiness.min, Math.min(GAME_CONFIG.happiness.max, v));
+}
+
+function mapActive(fn: (p: PetInstance) => PetInstance) {
+  useGameStore.setState((s) => ({ pets: s.pets.map((p) => (p.id === s.activePetId ? fn(p) : p)) }));
+}
 
 function bumpHappiness(delta: number) {
-  useGameStore.setState((s) => ({
-    pet: {
-      ...s.pet,
-      happiness: Math.max(
-        GAME_CONFIG.happiness.min,
-        Math.min(GAME_CONFIG.happiness.max, s.pet.happiness + delta),
-      ),
-    },
-  }));
+  mapActive((p) => ({ ...p, happiness: clampHappiness(p.happiness + delta) }));
 }
 
 function rerollSpecies() {
-  useGameStore.setState((s) => ({ pet: { ...s.pet, species: pickSpecies() } }));
+  mapActive((p) => ({ ...p, species: pickSpecies() }));
+}
+
+function rollActiveStats() {
+  mapActive((p) => ({ ...p, stats: rollStats(rng) }));
+}
+
+function setStat(key: keyof BattleStats, value: number) {
+  mapActive((p) => ({ ...p, stats: { ...p.stats, [key]: value } }));
+}
+
+function setStage(stage: Exclude<PetStage, 'egg'>) {
+  mapActive((p) => ({ ...p, xp: GAME_CONFIG.xp.evolution[stage] }));
+}
+
+function addPet() {
+  useGameStore.setState((s) => {
+    const id = crypto.randomUUID();
+    const pet = makePet({ id, species: pickSpecies(), stats: rollStats(rng), hatched: true });
+    return { pets: [...s.pets, pet], activePetId: id };
+  });
+}
+
+function removeActivePet() {
+  useGameStore.setState((s) => {
+    if (s.pets.length <= 1) return s;
+    const remaining = s.pets.filter((p) => p.id !== s.activePetId);
+    return { pets: remaining, activePetId: remaining[0].id };
+  });
+}
+
+function nextPet() {
+  const s = useGameStore.getState();
+  const i = s.pets.findIndex((p) => p.id === s.activePetId);
+  s.switchPet(s.pets[(i + 1) % s.pets.length].id);
 }
 
 export function DevPanel() {
   const [open, setOpen] = useState(false);
-  const pet = useGameStore((s) => s.pet);
+  const pet = useGameStore((s) => selectActivePet(s));
+  const petCount = useGameStore((s) => s.pets.length);
+  const coins = useGameStore((s) => s.coins);
   const stage = useGameStore((s) => s.stage());
   const addXp = useGameStore((s) => s.addXpForTest);
   const addCoins = useGameStore((s) => s.addCoinsForTest);
@@ -47,24 +89,52 @@ export function DevPanel() {
   const btn = 'rounded bg-slate-700 px-2 py-1 text-xs font-mono text-white hover:bg-slate-600';
 
   return (
-    <div className="fixed bottom-2 right-2 z-50 w-56 rounded-lg bg-slate-900/95 p-3 text-xs font-mono text-slate-100 shadow-xl">
+    <div className="fixed bottom-2 right-2 z-50 w-64 rounded-lg bg-slate-900/95 p-3 text-xs font-mono text-slate-100 shadow-xl">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-bold text-fuchsia-300">DEV</span>
         <button type="button" onClick={() => setOpen(false)} className={btn}>×</button>
       </div>
       <div className="mb-2 leading-5">
+        <div>pets: <b>{petCount}</b> · active: <b>{pet.id.slice(0, 8)}</b></div>
         <div>species: <b>{pet.species}</b> · stage: <b>{stage}</b></div>
-        <div>xp: <b>{pet.xp}</b> · 🪙 <b>{pet.coins}</b></div>
+        <div>xp: <b>{pet.xp}</b> · 🪙 <b>{coins}</b></div>
         <div>😊 <b>{pet.happiness}</b> · hatched: <b>{String(pet.hatched)}</b></div>
       </div>
-      <div className="grid grid-cols-3 gap-1">
+
+      <div className="mb-2 grid grid-cols-3 gap-1">
         <button type="button" className={btn} onClick={() => addXp(50)}>+50xp</button>
-        <button type="button" className={btn} onClick={() => addXp(1000)}>young</button>
-        <button type="button" className={btn} onClick={() => addXp(3000)}>adult</button>
+        <button type="button" className={btn} onClick={() => setStage('young')}>young</button>
+        <button type="button" className={btn} onClick={() => setStage('adult')}>adult</button>
+        <button type="button" className={btn} onClick={() => setStage('baby')}>baby</button>
         <button type="button" className={btn} onClick={() => addCoins(100)}>+100🪙</button>
         <button type="button" className={btn} onClick={() => bumpHappiness(-25)}>😊-25</button>
         <button type="button" className={btn} onClick={() => bumpHappiness(25)}>😊+25</button>
         <button type="button" className={btn} onClick={rerollSpecies}>reroll</button>
+        <button type="button" className={btn} onClick={rollActiveStats}>roll stats</button>
+      </div>
+
+      <div className="mb-2 grid grid-cols-3 gap-1">
+        <button type="button" className={btn} onClick={addPet}>+pet</button>
+        <button type="button" className={btn} onClick={nextPet}>next</button>
+        <button type="button" className={btn} onClick={removeActivePet}>−pet</button>
+      </div>
+
+      <div className="mb-2 grid grid-cols-5 gap-1">
+        {STAT_KEYS.map((k) => (
+          <label key={k} className="flex flex-col items-center gap-0.5">
+            <span className="uppercase text-fuchsia-300">{k}</span>
+            <input
+              type="number"
+              aria-label={`set ${k}`}
+              value={pet.stats[k]}
+              onChange={(e) => setStat(k, Number(e.target.value))}
+              className="w-11 rounded bg-slate-700 px-1 py-0.5 text-center text-slate-100"
+            />
+          </label>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-1">
         {!pet.hatched && <button type="button" className={btn} onClick={hatch}>hatch</button>}
         <button type="button" className={`${btn} bg-red-800 hover:bg-red-700`} onClick={reset}>reset</button>
       </div>
