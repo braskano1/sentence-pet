@@ -77,4 +77,15 @@ describe('WORD_BANK', () => {
       }
     }
   });
+
+  it('has 5 mixed items at level 1, each enforce with 1 trap + 1 distractor', () => {
+    const mx = itemsFor('mixed', 1);
+    expect(mx.length).toBe(5);
+    for (const item of mx) {
+      expect(item.strictness).toBe('enforce');
+      expect(item.traps?.length).toBe(1);
+      expect(item.distractors?.length).toBe(1);
+      expect(item.slots.length).toBe(3);
+    }
+  });
 });

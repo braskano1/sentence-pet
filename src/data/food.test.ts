@@ -6,6 +6,7 @@ describe('food mapping', () => {
     expect(DRILL_FOOD.pattern).toBe('protein');
     expect(DRILL_FOOD.wordChoice).toBe('veggie');
     expect(DRILL_FOOD.grammar).toBe('vitamin');
+    expect(DRILL_FOOD.mixed).toBe('treat');
   });
 
   it('has meta for all four food groups', () => {

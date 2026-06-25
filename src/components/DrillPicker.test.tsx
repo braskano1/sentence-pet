@@ -11,6 +11,8 @@ describe('DrillPicker', () => {
     render(<DrillPicker />);
     expect(screen.getByText('Pattern')).toBeInTheDocument();
     expect(screen.getByText('Word Choice')).toBeInTheDocument();
+    expect(screen.getByText('Grammar')).toBeInTheDocument();
+    expect(screen.getByText('Mixed')).toBeInTheDocument();
   });
 
   it('picking a drill starts it', async () => {

@@ -6,6 +6,7 @@ const DRILLS: { drill: DrillType; title: string }[] = [
   { drill: 'pattern', title: 'Pattern' },
   { drill: 'wordChoice', title: 'Word Choice' },
   { drill: 'grammar', title: 'Grammar' },
+  { drill: 'mixed', title: 'Mixed' },
 ];
 
 export function DrillPicker() {

@@ -5,6 +5,7 @@ export const DRILL_FOOD: Record<DrillType, FoodGroup> = {
   pattern: 'protein',
   wordChoice: 'veggie',
   grammar: 'vitamin',
+  mixed: 'treat',
 };
 
 export interface FoodMeta {
