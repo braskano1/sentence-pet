@@ -126,3 +126,74 @@ describe('migrate v2 -> v3', () => {
     expect(migrated.inventory.veggie).toBe(0); // missing group backfilled
   });
 });
+
+describe('decor ownership', () => {
+  const beach = GAME_CONFIG.shop.decor.find((d) => d.id === 'decor:beach')!;
+
+  it('starts with empty owned and null activeBackground', () => {
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().owned).toEqual([]);
+    expect(useGameStore.getState().activeBackground).toBeNull();
+  });
+
+  it('buyDecor with enough coins spends coins and records ownership', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(100);
+    useGameStore.getState().buyDecor(beach);
+    expect(useGameStore.getState().pet.coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['decor:beach']);
+  });
+
+  it('buyDecor without enough coins is a no-op', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(10);
+    useGameStore.getState().buyDecor(beach);
+    expect(useGameStore.getState().pet.coins).toBe(10);
+    expect(useGameStore.getState().owned).toEqual([]);
+  });
+
+  it('buyDecor twice does not double-charge or duplicate', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(100);
+    useGameStore.getState().buyDecor(beach);
+    useGameStore.getState().buyDecor(beach);
+    expect(useGameStore.getState().pet.coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['decor:beach']);
+  });
+
+  it('equipBackground sets and clears the active background', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().equipBackground('decor:beach');
+    expect(useGameStore.getState().activeBackground).toBe('decor:beach');
+    useGameStore.getState().equipBackground(null);
+    expect(useGameStore.getState().activeBackground).toBeNull();
+  });
+});
+
+describe('migrate v3 -> v4', () => {
+  it('backfills owned=[] and activeBackground=null, preserves species backfill', () => {
+    const { persist } = useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    };
+    const migrated = persist.getOptions().migrate(
+      { pet: { hatched: true, species: 'fire', coins: 5 }, inventory: { protein: 2 } },
+      3,
+    ) as { pet: { species: string; coins: number }; owned: string[]; activeBackground: string | null };
+    expect(migrated.owned).toEqual([]);
+    expect(migrated.activeBackground).toBeNull();
+    expect(migrated.pet.species).toBe('fire');
+    expect(migrated.pet.coins).toBe(5);
+  });
+
+  it('preserves already-v4 owned/activeBackground values', () => {
+    const { persist } = useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    };
+    const migrated = persist.getOptions().migrate(
+      { pet: { species: 'leaf' }, owned: ['decor:beach'], activeBackground: 'decor:beach' },
+      4,
+    ) as { owned: string[]; activeBackground: string | null };
+    expect(migrated.owned).toEqual(['decor:beach']);
+    expect(migrated.activeBackground).toBe('decor:beach');
+  });
+});
