@@ -93,9 +93,14 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
       total: items.length,
       mistakes,
     });
-    const kind =
-      action.type === 'retry' ? 'wrong' : (action.flags?.length ? 'flag' : 'correct');
-    if (kind === 'flag') setTip(action.type === 'retry' ? null : action.flags!.join(' · '));
+    if (action.type === 'retry') {
+      setTip(null);
+      play('wrong', () => applyAction(action));
+      return;
+    }
+    // action is advance|finish here, so action.flags is string[] (no narrowing tricks needed)
+    const kind = action.flags.length ? 'flag' : 'correct';
+    setTip(kind === 'flag' ? action.flags.join(' · ') : null);
     play(kind, () => applyAction(action));
   }
 
@@ -139,10 +144,14 @@ export function DrillScreen({ drill, level }: { drill: DrillType; level: number 
             <div
               aria-hidden="true"
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
-                feedback === 'correct' ? 'text-emerald-500' : 'text-red-500'
+                feedback === 'correct'
+                  ? 'text-emerald-500'
+                  : feedback === 'flag'
+                    ? 'text-sky-500'
+                    : 'text-red-500'
               }`}
             >
-              {feedback === 'correct' ? '✓' : '✗'}
+              {feedback === 'wrong' ? '✗' : '✓'}
             </div>
           )}
           {feedback === 'flag' && tip && (
