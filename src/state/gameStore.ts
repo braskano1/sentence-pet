@@ -42,6 +42,9 @@ interface GameState {
   selectedDrill: DrillType;
   selectedLevel: number;
   lastReward: RewardSummary | null;
+  // Last gacha pull, for the reveal. The Gacha screen gates the reveal on its own local
+  // state, so this is intentionally NOT cleared on navigation; persisting it is harmless
+  // (the pet is already in pets[]). Only freshState/resetForTest reset it.
   lastPull: PetInstance | null;
   owned: string[];
   activeBackground: string | null;
