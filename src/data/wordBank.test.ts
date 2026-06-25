@@ -38,4 +38,42 @@ describe('WORD_BANK', () => {
       }
     }
   });
+
+  it('has 5 grammar items at level 1 (flag) and level 2 (enforce)', () => {
+    const l1 = itemsFor('grammar', 1);
+    const l2 = itemsFor('grammar', 2);
+    expect(l1.length).toBe(5);
+    expect(l2.length).toBe(5);
+    expect(l1.every((i) => i.strictness === 'flag')).toBe(true);
+    expect(l2.every((i) => i.strictness === 'enforce')).toBe(true);
+  });
+
+  it('every grammar item has at least one trap', () => {
+    for (const item of itemsFor('grammar', 1).concat(itemsFor('grammar', 2))) {
+      expect(item.traps?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('trayWords includes trap words after answer + distractors', () => {
+    const item = itemsFor('grammar', 1)[0];
+    const expected = [...item.answer, ...(item.traps ?? []).map((t) => t.word)];
+    expect(trayWords(item)).toEqual(expected);
+  });
+
+  it('no item has a trap word that duplicates one of its answer words', () => {
+    for (const item of WORD_BANK) {
+      for (const t of item.traps ?? []) {
+        expect(item.answer).not.toContain(t.word);
+      }
+    }
+  });
+
+  it('every trap slot index is within the item answer range', () => {
+    for (const item of WORD_BANK) {
+      for (const t of item.traps ?? []) {
+        expect(t.slot).toBeGreaterThanOrEqual(0);
+        expect(t.slot).toBeLessThan(item.answer.length);
+      }
+    }
+  });
 });
