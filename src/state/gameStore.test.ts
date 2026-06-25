@@ -90,7 +90,7 @@ describe('gameStore', () => {
   describe('switchPet', () => {
     it('switches the active pet when the id exists', () => {
       useGameStore.setState((s) => ({
-        pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), hatched: true })],
+        pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
       }));
       useGameStore.getState().switchPet('p2');
       expect(useGameStore.getState().activePetId).toBe('p2');
@@ -105,7 +105,7 @@ describe('gameStore', () => {
 
   it('pets level independently — xp goes only to the active pet', () => {
     useGameStore.setState((s) => ({
-      pets: [...s.pets, makePet({ id: 'p2', species: 'water', stats: rollStats(() => 0.5), hatched: true })],
+      pets: [...s.pets, makePet({ id: 'p2', species: 'water', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
     }));
     useGameStore.getState().switchPet('p2');
     useGameStore.getState().addXpForTest(100);
@@ -184,6 +184,46 @@ describe('decor ownership', () => {
   });
 });
 
+describe('pullEgg action', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('no-ops when coins < eggPrice', () => {
+    const before = useGameStore.getState();
+    before.pullEgg();
+    const after = useGameStore.getState();
+    expect(after.pets).toHaveLength(before.pets.length);
+    expect(after.coins).toBe(before.coins);
+  });
+
+  it('appends a new pet, deducts 60 coins, leaves activePetId unchanged, sets lastPull', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    const activeBefore = useGameStore.getState().activePetId;
+    useGameStore.getState().pullEgg();
+    const s = useGameStore.getState();
+    expect(s.pets).toHaveLength(2);
+    expect(s.coins).toBe(40);
+    expect(s.activePetId).toBe(activeBefore); // joins collection only
+    expect(s.lastPull).not.toBeNull();
+    expect(s.lastPull?.id).toBe(s.pets[1].id);
+    expect(s.lastPull?.hatched).toBe(true);
+  });
+
+  it('gives each pulled pet a unique id', () => {
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().pullEgg();
+    useGameStore.getState().pullEgg();
+    const ids = useGameStore.getState().pets.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('resetForTest clears lastPull', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    useGameStore.getState().pullEgg();
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().lastPull).toBeNull();
+  });
+});
+
 describe('migrate -> v5 (multi-pet)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {
@@ -254,5 +294,114 @@ describe('migrate -> v5 (multi-pet)', () => {
     expect(m.pets).toHaveLength(1);
     expect(m.pets[0].species).toBe('water');
     expect(m.coins).toBe(42);
+  });
+});
+
+describe('migrate -> v7 (name)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills name="" on a v6 save (pets without a name)', () => {
+    const v6 = {
+      pets: [{ id: STARTER_ID, species: 'leaf', xp: 0, hatched: true, rarity: 'common',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v6, 6) as { pets: { name: string }[] };
+    expect(m.pets[0].name).toBe('');
+  });
+
+  it('a v7 save keeps a custom name', () => {
+    const v7 = {
+      pets: [{ id: STARTER_ID, species: 'fire', xp: 0, hatched: true, rarity: 'epic', name: 'Blaze',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 80, atk: 80, def: 80, spd: 80, luk: 80 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v7, 7) as { pets: { name: string }[] };
+    expect(m.pets[0].name).toBe('Blaze');
+  });
+});
+
+describe('renamePet action', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('sets a sanitized name on the matching pet', () => {
+    const id = useGameStore.getState().pets[0].id;
+    useGameStore.getState().renamePet(id, '  Rocky  ');
+    expect(useGameStore.getState().pets[0].name).toBe('Rocky');
+  });
+
+  it('reverts to empty on a blank name', () => {
+    const id = useGameStore.getState().pets[0].id;
+    useGameStore.getState().renamePet(id, 'Rocky');
+    useGameStore.getState().renamePet(id, '   ');
+    expect(useGameStore.getState().pets[0].name).toBe('');
+  });
+
+  it('no-ops on an unknown id', () => {
+    const before = useGameStore.getState().pets.map((p) => p.name);
+    useGameStore.getState().renamePet('nope', 'X');
+    expect(useGameStore.getState().pets.map((p) => p.name)).toEqual(before);
+  });
+
+  it('renames a non-active pet by id (leaves the active pet untouched)', () => {
+    useGameStore.setState((s) => ({
+      pets: [...s.pets, makePet({ id: 'p2', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', hatched: true })],
+    }));
+    // active is still the starter (pets[0]); rename the second pet
+    useGameStore.getState().renamePet('p2', 'Blaze');
+    const pets = useGameStore.getState().pets;
+    expect(pets.find((p) => p.id === 'p2')!.name).toBe('Blaze');
+    expect(pets[0].name).toBe(''); // active starter unchanged
+    expect(useGameStore.getState().activePetId).toBe(STARTER_ID);
+  });
+});
+
+describe('migrate -> v6 (rarity)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills rarity from stats on a v5 save (derive from min stat)', () => {
+    const v5 = {
+      pets: [{ id: STARTER_ID, species: 'water', xp: 3, hatched: true,
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 80, atk: 80, def: 80, spd: 80, luk: 80 } }],
+      activePetId: STARTER_ID, coins: 42,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v5, 5) as { pets: { rarity: string }[] };
+    expect(m.pets[0].rarity).toBe('epic'); // min stat 80 -> epic floor 72
+  });
+
+  it('a v4 single-pet save gets a derived rarity too', () => {
+    const m = getMigrate()(
+      { pet: { hatched: true, species: 'fire', xp: 12, coins: 5 }, inventory: { protein: 2 } },
+      4,
+    ) as { pets: { rarity: string }[] };
+    expect(['common', 'rare', 'epic', 'legendary']).toContain(m.pets[0].rarity);
+  });
+
+  it('a v6 save passes rarity through unchanged', () => {
+    const v6 = {
+      pets: [{ id: STARTER_ID, species: 'leaf', xp: 0, hatched: true, rarity: 'legendary',
+               bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
+               stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 } }],
+      activePetId: STARTER_ID, coins: 0,
+      inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: [], activeBackground: null,
+    };
+    const m = getMigrate()(v6, 6) as { pets: { rarity: string }[] };
+    expect(m.pets[0].rarity).toBe('legendary');
   });
 });

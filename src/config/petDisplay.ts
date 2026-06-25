@@ -1,0 +1,64 @@
+// Shared pet display metadata — names, level labels, rarity styling, sprite/level helpers.
+// Consumed by PetRoom, Gacha, Collection (and the upcoming B-3 battle UI). Keep display
+// concerns here so a new species/rarity is a one-file change.
+import type { BattleStats, PetInstance, Rarity, Species } from '../data/types';
+import { stageForXp } from '../domain/xp';
+import { SPRITES } from './sprites';
+
+/** Friendly, A1-readable pet name per species. */
+export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
+
+/** Element glyph per species (UI flavor; species IS the element). */
+export const ELEMENT_EMOJI: Record<Species, string> = { leaf: '🍃', fire: '🔥', air: '💨', water: '💧' };
+
+/** Growth stage → the "level" number shown to the kid. */
+export const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
+
+/** Battle stat display order: [label, key]. */
+export const BATTLE_STAT_LABELS = [
+  ['HP', 'hp'],
+  ['ATK', 'atk'],
+  ['DEF', 'def'],
+  ['SPD', 'spd'],
+  ['LUK', 'luk'],
+] as const satisfies ReadonlyArray<readonly [string, keyof BattleStats]>;
+
+/** Rarity → pill background + text classes (badges). */
+export const RARITY_BADGE: Record<Rarity, string> = {
+  common: 'bg-slate-200 text-slate-700',
+  rare: 'bg-sky-200 text-sky-800',
+  epic: 'bg-violet-200 text-violet-800',
+  legendary: 'bg-amber-200 text-amber-800',
+};
+
+/** Rarity → ring color class (portrait rings). */
+export const RARITY_RING: Record<Rarity, string> = {
+  common: 'ring-slate-400',
+  rare: 'ring-sky-400',
+  epic: 'ring-violet-400',
+  legendary: 'ring-amber-400',
+};
+
+/** Rarity → hex (SVG fill/stroke, e.g. the stat radar). */
+export const RARITY_HEX: Record<Rarity, string> = {
+  common: '#64748b',
+  rare: '#0ea5e9',
+  epic: '#8b5cf6',
+  legendary: '#f59e0b',
+};
+
+/** A pet's current display level. */
+export function petLevel(pet: PetInstance): number {
+  return STAGE_LEVEL[stageForXp(pet.xp, pet.hatched)] || 1;
+}
+
+/** Display name: the custom name if set, otherwise the species name. */
+export function petDisplayName(pet: PetInstance): string {
+  return pet.name.trim() || PET_NAME[pet.species];
+}
+
+/** A pet's happy sprite at its current stage (eggs fall back to the baby sprite). */
+export function petStageSprite(pet: PetInstance): string {
+  const stage = stageForXp(pet.xp, pet.hatched);
+  return SPRITES[pet.species][stage === 'egg' ? 'baby' : stage].happy;
+}

@@ -7,19 +7,7 @@ import { PressButton } from './PressButton';
 import { DECOR_SPRITES } from '../config/decorSprites';
 import { health } from '../domain/pet';
 import { barColor } from '../domain/bars';
-import type { Species } from '../data/types';
-import { ELEMENTAL_EGGS } from '../config/sprites';
-
-/** Friendly, A1-readable pet name per species; level reads off the growth stage. */
-const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
-const STAGE_LEVEL: Record<string, number> = { egg: 0, baby: 1, young: 2, adult: 3 };
-const BATTLE_STAT_LABELS = [
-  ['HP', 'hp'],
-  ['ATK', 'atk'],
-  ['DEF', 'def'],
-  ['SPD', 'spd'],
-  ['LUK', 'luk'],
-] as const;
+import { STAGE_LEVEL, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 
 /** One stat = icon + slim track + value, sitting on the solid warm panel (always legible). */
 function StatChip({ icon, value, fill }: { icon: string; value: number; fill: string }) {
@@ -47,7 +35,6 @@ export function PetRoom() {
   const setScreen = useGameStore((s) => s.setScreen);
   const activeBackground = useGameStore((s) => s.activeBackground);
   const pets = useGameStore((s) => s.pets);
-  const switchPet = useGameStore((s) => s.switchPet);
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
 
@@ -101,7 +88,7 @@ export function PetRoom() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="rounded-full bg-amber-900/15 px-3 py-1 text-sm font-extrabold text-amber-950">
-              {PET_NAME[activePet.species]} · Lv {STAGE_LEVEL[stage] || 1}
+              {petDisplayName(activePet)} · Lv {STAGE_LEVEL[stage] || 1}
             </span>
             <span className="text-xs font-semibold text-amber-900/70 tabular-nums">XP {xp}</span>
           </div>
@@ -110,27 +97,17 @@ export function PetRoom() {
           </span>
         </div>
 
-        {/* ── collection: tap an egg to switch which pet you are raising ── */}
-        {pets.length > 1 && (
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-            {pets.map((p) => {
-              const isActive = p.id === activePet.id;
-            return (
-              <PressButton
-                key={p.id}
-                onClick={() => switchPet(p.id)}
-                aria-label={isActive ? `${PET_NAME[p.species]} (active)` : `Switch to ${PET_NAME[p.species]}`}
-                className={`flex shrink-0 flex-col items-center rounded-xl px-2 py-1 ${
-                  isActive ? 'bg-amber-900/25 ring-2 ring-amber-700' : 'bg-amber-900/10'
-                }`}
-              >
-                <img src={ELEMENTAL_EGGS[p.species]} alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
-                <span className="text-[10px] font-bold text-amber-950">{PET_NAME[p.species]}</span>
-              </PressButton>
-            );
-            })}
-          </div>
-        )}
+        {/* ── collection: open the full pet collection (detail + roster) to switch pets ── */}
+        <PressButton
+          onClick={() => setScreen('collection')}
+          aria-label="My pets"
+          className="mb-3 flex w-full items-center justify-between rounded-xl bg-amber-900/15 px-3 py-2"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold text-amber-950">
+            <span aria-hidden="true">🐾</span> My Pets ({pets.length})
+          </span>
+          <span aria-hidden="true" className="text-amber-900/60">▸</span>
+        </PressButton>
 
         <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
           {stats.map((s) => (
@@ -168,16 +145,23 @@ export function PetRoom() {
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
+          <PressButton
+            onClick={() => setScreen('gacha')}
+            aria-label="Eggs"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-violet-800 bg-violet-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+          >
+            Eggs 🥚
+          </PressButton>
           <PressButton
             onClick={() => setScreen('shop')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-6 py-3 text-lg font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
           >
             Shop 🛒
           </PressButton>
           <PressButton
             onClick={() => setScreen('pickDrill')}
-            className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-6 py-3 text-lg font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
+            className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2"
           >
             Play ▶
           </PressButton>

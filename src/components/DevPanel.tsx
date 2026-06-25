@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
-import { makePet, rollStats } from '../domain/pets';
+import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
 import type { BattleStats, PetStage, PetInstance } from '../data/types';
 
 const rng = () => Math.random();
@@ -44,7 +44,9 @@ function setStage(stage: Exclude<PetStage, 'egg'>) {
 function addPet() {
   useGameStore.setState((s) => {
     const id = crypto.randomUUID();
-    const pet = makePet({ id, species: pickSpecies(), stats: rollStats(rng), hatched: true });
+    const rarity = rollRarity(rng, GAME_CONFIG.gacha.rarities);
+    const stats = rollStatsForRarity(rarity, rng, GAME_CONFIG.gacha.rarities);
+    const pet = makePet({ id, species: pickSpecies(), stats, rarity, hatched: true });
     return { pets: [...s.pets, pet], activePetId: id };
   });
 }
