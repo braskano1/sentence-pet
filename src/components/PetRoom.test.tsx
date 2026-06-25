@@ -72,6 +72,16 @@ describe('PetRoom', () => {
     fireEvent.click(screen.getByRole('tab', { name: /power/i }));
     expect(screen.getByRole('tabpanel')).toBeTruthy();
   });
+
+  it('Power tab shows level/power/specialty rail', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('tab', { name: /power/i }));
+    expect(screen.getByText('Level')).toBeTruthy();
+    expect(screen.getByText(/Specialty/i)).toBeTruthy();
+    expect(screen.getByText(/\/ 50/)).toBeTruthy();
+  });
 });
 
 describe('PetRoom Eggs button', () => {
