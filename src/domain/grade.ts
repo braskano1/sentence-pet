@@ -29,7 +29,7 @@ export function gradePlacement(placed: (string | null)[], item: GradeItem): Grad
     const word = placed[i];
     if (word === answer[i]) continue;
     const trap = traps?.find((t) => t.slot === i && t.word === word);
-    if (trap && word !== null) {
+    if (trap) {
       flags.push(trap.tip);
     } else {
       wrong = true;

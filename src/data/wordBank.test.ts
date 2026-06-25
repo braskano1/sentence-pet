@@ -60,10 +60,11 @@ describe('WORD_BANK', () => {
     expect(trayWords(item)).toEqual(expected);
   });
 
-  it('no item has a trap word that duplicates one of its answer words', () => {
+  it('no item has a trap word that duplicates an answer word or a distractor', () => {
     for (const item of WORD_BANK) {
+      const otherTiles = [...item.answer, ...(item.distractors ?? [])];
       for (const t of item.traps ?? []) {
-        expect(item.answer).not.toContain(t.word);
+        expect(otherTiles).not.toContain(t.word);
       }
     }
   });

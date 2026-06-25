@@ -45,4 +45,22 @@ describe('resolveRound', () => {
     const action = resolveRound({ item: enforce, filled: ['he', 'eat'], index: 0, total: 5, mistakes: 0 });
     expect(action).toEqual({ type: 'retry' });
   });
+
+  it('correct last item WITH prior mistakes -> finish with fewer stars', () => {
+    const action = resolveRound({ item: pattern, filled: ['I', 'run'], index: 4, total: 5, mistakes: 2 });
+    expect(action.type).toBe('finish');
+    if (action.type === 'finish') {
+      expect(action.stars).toBeLessThan(3);
+    }
+  });
+
+  it('prior mistake plus a flag on the final item sum into the slip count', () => {
+    // 1 prior retry mistake + 1 flag slip = 2 slips -> 2 stars
+    const action = resolveRound({ item: flag, filled: ['he', 'eat'], index: 4, total: 5, mistakes: 1 });
+    expect(action.type).toBe('finish');
+    if (action.type === 'finish') {
+      expect(action.stars).toBe(2);
+      expect(action.flags).toEqual(['เขา → he eats 👍']);
+    }
+  });
 });
