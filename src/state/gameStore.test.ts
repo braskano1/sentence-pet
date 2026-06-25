@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
+import { levelForXp, totalXpForLevel } from '../domain/xp';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -362,6 +363,21 @@ describe('renamePet action', () => {
     expect(pets.find((p) => p.id === 'p2')!.name).toBe('Blaze');
     expect(pets[0].name).toBe(''); // active starter unchanged
     expect(useGameStore.getState().activePetId).toBe(STARTER_ID);
+  });
+});
+
+describe('applyXp / level-up', () => {
+  it('addXpForTest levels the pet and allocates one growth point per level', () => {
+    const { resetForTest, addXpForTest } = useGameStore.getState();
+    resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
+    const need = totalXpForLevel(3); // jump straight to level 3 -> +2 points
+    addXpForTest(need);
+    const p = useGameStore.getState().pets[0];
+    expect(levelForXp(p.xp)).toBe(3);
+    const totalGrowth = p.growth.hp + p.growth.atk + p.growth.def + p.growth.spd + p.growth.luk;
+    expect(totalGrowth).toBe(2);
+    expect(useGameStore.getState().lastLevelUp?.toLevel).toBe(3);
   });
 });
 

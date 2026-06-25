@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
-import type { DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
+import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
-import { stageForXp, xpPerCorrect } from '../domain/xp';
+import { levelForXp, stageForXp, xpPerCorrect } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
-import { makePet, rollStats, rarityForStats } from '../domain/pets';
+import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 
 export const STARTER_ID = 'starter-leaf';
@@ -49,6 +49,7 @@ interface GameState {
   lastPull: PetInstance | null;
   owned: string[];
   activeBackground: string | null;
+  lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
@@ -77,6 +78,22 @@ function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetIns
   return s.pets.map((p) => (p.id === s.activePetId ? fn(p) : p));
 }
 
+/** Apply an XP gain to one pet, allocating +1 growth per level crossed. */
+function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: PetInstance; levelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null } {
+  const before = levelForXp(pet.xp);
+  const xp = pet.xp + xpGain;
+  const after = levelForXp(xp);
+  if (after <= before) return { pet: { ...pet, xp }, levelUp: null };
+  const gained: (keyof BattleStats)[] = [];
+  let growth = pet.growth;
+  for (let l = before; l < after; l++) {
+    const next = allocateStatPoints(growth, 1, rng);
+    (Object.keys(next) as (keyof BattleStats)[]).forEach((k) => { if (next[k] !== growth[k]) gained.push(k); });
+    growth = next;
+  }
+  return { pet: { ...pet, xp, growth }, levelUp: { toLevel: after, gained } };
+}
+
 function freshPet(): PetInstance {
   return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
 }
@@ -98,6 +115,7 @@ function freshState() {
     lastPull: null as PetInstance | null,
     owned: [] as string[],
     activeBackground: null as string | null,
+    lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
   };
 }
 
@@ -118,22 +136,26 @@ export const useGameStore = create<GameState>()(
           const group = DRILL_FOOD[drill];
           const xpGain = correctCount * xpPerCorrect(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
+          let levelUp: GameState['lastLevelUp'] = null;
+          const pets = updateActive(s, (p) => {
+            const happiness =
+              decayHappiness(p.happiness) +
+              GAME_CONFIG.happiness.onClear +
+              (stars === 3 ? GAME_CONFIG.happiness.onThreeStars : 0);
+            const withXp = applyXp(p, xpGain, rng);
+            levelUp = withXp.levelUp;
+            return {
+              ...withXp.pet,
+              happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
+              bars: decayBars(p.bars),
+            };
+          });
           return {
-            pets: updateActive(s, (p) => {
-              const happiness =
-                decayHappiness(p.happiness) +
-                GAME_CONFIG.happiness.onClear +
-                (stars === 3 ? GAME_CONFIG.happiness.onThreeStars : 0);
-              return {
-                ...p,
-                xp: p.xp + xpGain,
-                happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
-                bars: decayBars(p.bars),
-              };
-            }),
+            pets,
             coins: s.coins + coinsGain,
             inventory: { ...s.inventory, [group]: s.inventory[group] + correctCount },
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
+            lastLevelUp: levelUp,
             screen: 'reward',
           };
         }),
@@ -188,7 +210,16 @@ export const useGameStore = create<GameState>()(
         return stageForXp(p.xp, p.hatched);
       },
 
-      addXpForTest: (xp) => set((s) => ({ pets: updateActive(s, (p) => ({ ...p, xp: p.xp + xp })) })),
+      addXpForTest: (xp) =>
+        set((s) => {
+          let levelUp: GameState['lastLevelUp'] = null;
+          const pets = updateActive(s, (p) => {
+            const r = applyXp(p, xp, rng);
+            levelUp = r.levelUp;
+            return r.pet;
+          });
+          return { pets, lastLevelUp: levelUp };
+        }),
       addCoinsForTest: (coins) => set((s) => ({ coins: s.coins + coins })),
       resetForTest: () => set(freshState()),
     }),
