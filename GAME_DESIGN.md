@@ -83,6 +83,9 @@ Separates "learn" from "care"; adds economy depth.
 - New pet unlocks (hatch/buy species)
 - (Cosmetics REMOVED — pets are real animals.)
 
+### Shop (treats shipped)
+- Shop screen reachable from PetRoom; sells 3 happiness-treat tiers (Snack 15→+15, Treat 30→+35, Feast 60→+80). Instant-apply, clamps happiness to 100. Coins now have a sink. Decor + pet-unlocks deferred (need art + a 2→3 persist bump for an owned-items set).
+
 ## 8. Architecture — Netlify + Firebase (serverless)
 SQLite + Express DROPPED (don't fit serverless / file persistence). Replaced by Firebase BaaS.
 
