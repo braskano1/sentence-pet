@@ -57,6 +57,17 @@ function freshBars(): NutritionBars {
   };
 }
 
+/** Migrate-only: tier a pre-v6 pet by the band floor its weakest stat reaches. */
+export function rarityForStats(stats: BattleStats, table: readonly RarityTier[]): Rarity {
+  const minStat = Math.min(stats.hp, stats.atk, stats.def, stats.spd, stats.luk);
+  // table is ordered weakest->strongest; pick the highest tier whose floor <= minStat.
+  let result: Rarity = table[0].rarity;
+  for (const t of table) {
+    if (minStat >= t.band[0]) result = t.rarity;
+  }
+  return result;
+}
+
 export function makePet(args: {
   id: string;
   species: Species;

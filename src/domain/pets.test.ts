@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rollStats, makePet, rollRarity, rollStatsForRarity } from './pets';
+import { rollStats, makePet, rollRarity, rollStatsForRarity, rarityForStats } from './pets';
 import { GAME_CONFIG } from '../config/gameConfig';
 import type { Rarity } from '../data/types';
 
@@ -83,5 +83,16 @@ describe('rollStatsForRarity', () => {
     const a = rollStatsForRarity('rare', seq([0.1, 0.2, 0.3, 0.4, 0.5]), RARITIES);
     const b = rollStatsForRarity('rare', seq([0.1, 0.2, 0.3, 0.4, 0.5]), RARITIES);
     expect(a).toEqual(b);
+  });
+});
+
+describe('rarityForStats (migrate heuristic: tier by minimum stat)', () => {
+  const mk = (n: number) => ({ hp: n, atk: n, def: n, spd: n, luk: n });
+  it('min < 55 -> common', () => expect(rarityForStats(mk(40), RARITIES)).toBe('common'));
+  it('min in [55,72) -> rare', () => expect(rarityForStats(mk(55), RARITIES)).toBe('rare'));
+  it('min in [72,85) -> epic', () => expect(rarityForStats(mk(72), RARITIES)).toBe('epic'));
+  it('min >= 85 -> legendary', () => expect(rarityForStats(mk(90), RARITIES)).toBe('legendary'));
+  it('uses the minimum stat, not the max', () => {
+    expect(rarityForStats({ hp: 90, atk: 90, def: 90, spd: 90, luk: 41 }, RARITIES)).toBe('common');
   });
 });
