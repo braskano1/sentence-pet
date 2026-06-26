@@ -5,7 +5,7 @@ import { EggHatch } from './components/EggHatch';
 import { PetRoom } from './components/PetRoom';
 import { DrillScreen } from './components/DrillScreen';
 import { RewardScreen } from './components/RewardScreen';
-import { DrillPicker } from './components/DrillPicker';
+import { JourneyMap } from './components/JourneyMap';
 import { Shop } from './components/Shop';
 import { Gacha } from './components/Gacha';
 import { Collection } from './components/Collection';
@@ -15,7 +15,7 @@ import type { DrillType } from './data/types';
 function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
-    case 'pickDrill': return { key: 'pickDrill', node: <DrillPicker /> };
+    case 'pickDrill': return { key: 'pickDrill', node: <JourneyMap /> };
     case 'drill': return { key: 'drill', node: <DrillScreen drill={drill} level={level} /> };
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'shop': return { key: 'shop', node: <Shop /> };
