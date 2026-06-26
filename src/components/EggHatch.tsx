@@ -23,6 +23,7 @@ import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
+import { SubmitBar } from './drill/SubmitBar';
 
 export function EggHatch() {
   const hatch = useGameStore((s) => s.hatch);
@@ -42,10 +43,6 @@ export function EggHatch() {
     if (next.placed === placed) return;
     setPlaced(next.placed);
     setUsed(next.used);
-    if (next.placed.every((p) => p !== null)) {
-      const correct = isPlacementCorrect(next.placed, item.answer);
-      play(correct ? 'correct' : 'wrong', () => (correct ? hatch() : reset()));
-    }
   }
 
   const sensors = useSensors(
@@ -58,6 +55,14 @@ export function EggHatch() {
     setPlaced(item.slots.map(() => null));
     setUsed(item.answer.map(() => false));
     setTiles(shuffle(item.answer));
+  }
+
+  const ready = placed.every((p) => p !== null);
+
+  function submit() {
+    if (locked || !ready) return;
+    const correct = isPlacementCorrect(placed, item.answer);
+    play(correct ? 'correct' : 'wrong', () => (correct ? hatch() : reset()));
   }
 
   function handleClear(i: number) {
@@ -92,10 +97,6 @@ export function EggHatch() {
     if (next.placed === placed) return;
     setPlaced(next.placed);
     setUsed(next.used);
-    if (next.placed.every((p) => p !== null)) {
-      const correct = isPlacementCorrect(next.placed, item.answer);
-      play(correct ? 'correct' : 'wrong', () => (correct ? hatch() : reset()));
-    }
   }
 
   return (
@@ -105,8 +106,8 @@ export function EggHatch() {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <div className="flex h-full flex-col bg-indigo-50 p-4">
-        <div className="flex flex-col items-center gap-3 pt-2">
+      <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
+        <div className="flex flex-col items-center gap-2 pt-3">
           <motion.img
             src={EGG_SPRITE}
             alt="egg"
@@ -115,9 +116,25 @@ export function EggHatch() {
             animate={{ y: [0, -6, 0], scale: [1, 1.03, 1] }}
             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
           />
-          <p className="text-slate-600">Build the sentence to hatch your pet!</p>
-          <p className="text-2xl text-slate-700">{item.thaiHint}</p>
+          <div className="rounded-2xl bg-white/90 px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm">
+            Build the sentence to hatch me! ✨
+          </div>
         </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-extrabold text-slate-800">{item.thaiHint}</span>
+            <button
+              type="button"
+              aria-label="Hear the meaning"
+              onClick={() => speak.speakThai(item.thaiHint)}
+              className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700"
+            >
+              🔊
+            </button>
+          </div>
+        </div>
+
         <div
           className={`relative flex flex-1 items-center justify-center rounded-xl ${
             feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
@@ -135,6 +152,9 @@ export function EggHatch() {
             </div>
           )}
         </div>
+
+        {ready && !locked && <SubmitBar onSubmit={submit} />}
+
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>

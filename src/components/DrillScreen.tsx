@@ -18,6 +18,7 @@ import { DrillHeader } from './drill/DrillHeader';
 import { DrillPet, type PetReaction } from './drill/DrillPet';
 import { WhyTip } from './drill/WhyTip';
 import { HintButton } from './drill/HintButton';
+import { SubmitBar } from './drill/SubmitBar';
 
 export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill: DrillType; level: number }) {
   const finishRound = useGameStore((s) => s.finishRound);
@@ -72,7 +73,6 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     setPlaced(next.placed);
     setUsed(next.used);
     setWhy(null);
-    if (next.placed.every((p) => p !== null)) evaluate(next.placed);
   }
 
   function onTapPlace(tileIndex: number) {
@@ -155,11 +155,13 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     commit(placeTile({ placed, used }, tiles, tileIndex, slot));
   }
 
+  const ready = placed.every((p) => p !== null);
+
   const stage = stageForXp(pet.xp, pet.hatched);
   const line = why
     ? 'Hmm, not quite!'
     : currentSlotIndex(placed) === -1
-      ? 'Tap a word to fix it!'
+      ? 'Looks done — check it! 👀'
       : `Which ${item.slots[currentSlotIndex(placed)]}? 👀`;
 
   return (
@@ -199,6 +201,8 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
             </div>
           )}
         </div>
+
+        {ready && !locked && <SubmitBar onSubmit={() => evaluate(placed)} />}
 
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />

@@ -10,6 +10,13 @@ vi.mock('./useRoundFeedback', () => ({
   useRoundFeedback: () => ({ feedback: null, locked: false, play: (_k: string, done: () => void) => done() }),
 }));
 
+const speech = vi.hoisted(() => ({
+  speakWord: vi.fn(),
+  speakThai: vi.fn(),
+  speakSentence: vi.fn(),
+}));
+vi.mock('../hooks/useSpeech', () => ({ useSpeech: () => speech }));
+
 import { DrillScreen } from './DrillScreen';
 import { useGameStore } from '../state/gameStore';
 import { SEED } from '../content/seed';
@@ -47,6 +54,7 @@ describe('DrillScreen', () => {
     fireEvent.click(screen.getByTestId('tile-She'));
     fireEvent.click(screen.getByTestId('tile-eats'));
     fireEvent.click(screen.getByTestId('tile-the cat'));
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
     expect(screen.getByTestId('slot-0')).toHaveTextContent('She');
     expect(screen.getByTestId('slot-2')).toHaveTextContent('the cat');
     expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eats');
@@ -90,5 +98,48 @@ describe('DrillScreen', () => {
         </DndContext>,
       ),
     ).not.toThrow();
+  });
+
+  it('shows no Submit button until every slot is filled', () => {
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-feeds'));
+    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
+  });
+
+  it('does not speak the sentence or grade until Submit is tapped', () => {
+    speech.speakSentence.mockClear();
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-feeds'));
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    expect(speech.speakSentence).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(speech.speakSentence).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the Submit button again when a filled slot is cleared', () => {
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-feeds'));
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('slot-0'));
+    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+  });
+
+  it('on Submit with a wrong answer, grades (clears wrong slot, shows why-tip) but does not speak the sentence', () => {
+    speech.speakSentence.mockClear();
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-eats'));
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(screen.getByTestId('why-tip')).toBeInTheDocument();
+    expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eats');
+    expect(speech.speakSentence).not.toHaveBeenCalled();
   });
 });
