@@ -60,4 +60,11 @@ describe('EvolutionScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
     expect(useGameStore.getState().soundEnabled).toBe(false);
   });
+
+  it('stops in-flight audio when the user mutes mid-sequence', () => {
+    useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, soundEnabled: true });
+    render(<EvolutionScreen />);
+    fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
+    expect(sound.stop).toHaveBeenCalled();
+  });
 });

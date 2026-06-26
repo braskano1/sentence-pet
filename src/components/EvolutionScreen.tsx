@@ -26,11 +26,15 @@ export function EvolutionScreen() {
   }, [change, setScreen]);
 
   const allow = soundAllowed(soundEnabled, reduced);
+  const cuedPhase = useRef<string | null>(null);
 
-  // Phase-aligned audio cues.
+  // Phase-aligned audio cues. Fire once per phase; stop in-flight audio if muted.
   useEffect(() => {
-    if (!change || !allow) return;
     const s = sound.current;
+    if (!change) return;
+    if (!allow) { s.stop(); cuedPhase.current = null; return; }
+    if (cuedPhase.current === phase) return;
+    cuedPhase.current = phase;
     if (phase === 'strobe') s.strobe();
     else if (phase === 'flash') s.flash();
     else if (phase === 'reveal') s.reveal();
