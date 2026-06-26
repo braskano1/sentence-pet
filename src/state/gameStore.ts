@@ -11,6 +11,7 @@ import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
+import { findLesson } from '../data/journey';
 
 export const STARTER_ID = 'starter-leaf';
 
@@ -50,6 +51,8 @@ interface GameState {
   owned: string[];
   activeBackground: string | null;
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
+  journey: { lessonStars: Record<string, number> };
+  currentLessonId: string | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
@@ -63,6 +66,7 @@ interface GameState {
   switchPet: (id: string) => void;
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
+  startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -117,6 +121,8 @@ function freshState() {
     owned: [] as string[],
     activeBackground: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
+    journey: { lessonStars: {} as Record<string, number> },
+    currentLessonId: null as string | null,
   };
 }
 
@@ -132,9 +138,25 @@ export const useGameStore = create<GameState>()(
 
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
+      startLesson: (lessonId) =>
+        set((s) => {
+          const found = findLesson(lessonId);
+          if (!found) return s; // unknown id — defensive no-op
+          return {
+            selectedDrill: found.lesson.drill,
+            selectedLevel: found.lesson.level,
+            currentLessonId: lessonId,
+            screen: 'drill' as Screen,
+          };
+        }),
+
       finishRound: ({ drill, level, stars, correctCount }) =>
         set((s) => {
           const group = DRILL_FOOD[drill];
+          const lessonId = s.currentLessonId;
+          const journey = lessonId
+            ? { lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, stars) } }
+            : s.journey;
           const xpGain = correctCount * xpPerCorrect(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           let levelUp: GameState['lastLevelUp'] = null;
@@ -157,6 +179,8 @@ export const useGameStore = create<GameState>()(
             inventory: { ...s.inventory, [group]: s.inventory[group] + correctCount },
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             lastLevelUp: levelUp,
+            journey,
+            currentLessonId: null,
             screen: 'reward',
           };
         }),
@@ -228,16 +252,18 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 8,
+      version: 9,
       partialize: (s) => {
-        const { lastLevelUp, ...rest } = s;
+        const { lastLevelUp, currentLessonId, ...rest } = s;
         void lastLevelUp; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp'>;
+        void currentLessonId; // transient — not persisted
+        return rest as Omit<GameState, 'lastLevelUp' | 'currentLessonId'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
       // v5->v6 backfills pet.rarity (derived from stats). v6->v7 backfills pet.name (default '').
       // v7->v8 backfills pet.growth (zeroed BattleStats for pets that predate the field).
+      // v8->v9 backfills journey { lessonStars: {} }.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -253,6 +279,7 @@ export const useGameStore = create<GameState>()(
               inventory?: Partial<Record<FoodGroup, number>>;
               owned?: string[];
               activeBackground?: string | null;
+              journey?: { lessonStars?: Record<string, number> };
             }
           | null;
         // Zustand treats a null migrate return as "reset to initial state".
@@ -265,6 +292,7 @@ export const useGameStore = create<GameState>()(
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
+          journey: st.journey ?? { lessonStars: {} },
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.

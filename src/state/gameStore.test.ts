@@ -3,6 +3,7 @@ import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel } from '../domain/xp';
+import { JOURNEY } from '../data/journey';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -457,5 +458,71 @@ describe('migrate -> v6 (rarity)', () => {
     };
     const m = getMigrate()(v6, 6) as { pets: { rarity: string }[] };
     expect(m.pets[0].rarity).toBe('legendary');
+  });
+});
+
+describe('startLesson + journey star recording', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('startLesson resolves a lesson to its drill/level and sets currentLessonId', () => {
+    useGameStore.getState().startLesson('u1-pattern');
+    const s = useGameStore.getState();
+    expect(s.selectedDrill).toBe('pattern');
+    expect(s.selectedLevel).toBe(1);
+    expect(s.currentLessonId).toBe('u1-pattern');
+    expect(s.screen).toBe('drill');
+  });
+
+  it('finishRound records best stars for the current lesson and clears it', () => {
+    useGameStore.getState().startLesson('u1-pattern');
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 2, correctCount: 5 });
+    expect(useGameStore.getState().journey.lessonStars['u1-pattern']).toBe(2);
+    expect(useGameStore.getState().currentLessonId).toBeNull();
+  });
+
+  it('replaying a lesson keeps the best stars (never lowers)', () => {
+    useGameStore.getState().startLesson('u1-pattern');
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
+    useGameStore.getState().startLesson('u1-pattern');
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 1, correctCount: 5 });
+    expect(useGameStore.getState().journey.lessonStars['u1-pattern']).toBe(3);
+  });
+
+  it('startLesson on an unknown id is a no-op (stays on current screen)', () => {
+    const before = useGameStore.getState().screen;
+    useGameStore.getState().startLesson('does-not-exist');
+    expect(useGameStore.getState().screen).toBe(before);
+    expect(useGameStore.getState().currentLessonId).toBeNull();
+  });
+});
+
+describe('persist v9 (journey)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('migrate backfills an empty journey on a v8 save', () => {
+    const v8 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    };
+    const out = getMigrate()(v8, 8) as { journey: { lessonStars: Record<string, number> } };
+    expect(out.journey).toEqual({ lessonStars: {} });
+  });
+
+  it('persisted slice excludes currentLessonId', () => {
+    const getPartialize = (useGameStore as unknown as {
+      persist: { getOptions: () => { partialize?: (s: unknown) => unknown } };
+    }).persist.getOptions().partialize;
+    const persisted = getPartialize!(useGameStore.getState()) as Record<string, unknown>;
+    expect('currentLessonId' in persisted).toBe(false);
+  });
+
+  it('JOURNEY is referenced so seed ids are stable', () => {
+    expect(JOURNEY[0].lessons[0].id).toBe('u1-pattern');
   });
 });
