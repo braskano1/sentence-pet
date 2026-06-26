@@ -18,7 +18,7 @@ export function soundAllowed(soundEnabled: boolean, reduced: boolean): boolean {
 const silent: EvolutionSound = { strobe() {}, flash() {}, reveal() {}, stop() {} };
 
 function audioContextCtor(): (new () => AudioContext) | null {
-  const w = window as unknown as { AudioContext?: new () => AudioContext; webkitAudioContext?: new () => AudioContext };
+  const w = globalThis as unknown as { AudioContext?: new () => AudioContext; webkitAudioContext?: new () => AudioContext };
   return w.AudioContext ?? w.webkitAudioContext ?? null;
 }
 
@@ -46,6 +46,7 @@ function createWebAudioSound(): EvolutionSound {
   }
   return {
     strobe() {
+      if (strobeTimer) { clearTimeout(strobeTimer); strobeTimer = null; }
       const c = ac();
       let pitch = 220, delay = 230;
       const start = Date.now();
@@ -79,6 +80,8 @@ function createWebAudioSound(): EvolutionSound {
     },
     stop() {
       if (strobeTimer) { clearTimeout(strobeTimer); strobeTimer = null; }
+      if (ctx && ctx.state !== 'closed') void ctx.close();
+      ctx = null;
     },
   };
 }
