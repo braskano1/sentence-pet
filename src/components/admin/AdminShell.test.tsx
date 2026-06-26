@@ -1,52 +1,41 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import type { AuthState } from '../../auth/AuthProvider';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const mockAuth = vi.fn<() => AuthState>();
-vi.mock('../../auth/useAuth', () => ({ useAuth: () => mockAuth() }));
-
-const writePing = vi.fn(async (_uid: string) => {});
-const readPing = vi.fn(async (_uid: string) => ({ at: 123 }));
-vi.mock('../../firebase/ping', () => ({
-  writePing: (uid: string) => writePing(uid),
-  readPing: (uid: string) => readPing(uid),
+vi.mock('../../auth/useAuth', () => ({
+  useAuth: () => ({ user: { email: 'a@b.c', uid: 'admin1' }, signOut: vi.fn() }),
+}));
+const saveContent = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../firebase/content', () => ({
+  saveContent: (b: unknown) => saveContent(b),
+  fetchContent: vi.fn(),
 }));
 
 import { AdminShell } from './AdminShell';
+import { useContentStore } from '../../content/store';
+import { SEED } from '../../content/seed';
 
-function adminState(): AuthState {
-  return {
-    user: { uid: 'u1', email: 'a@b.com' } as never,
-    isAdmin: true,
-    loading: false,
-    signIn: vi.fn(async () => {}),
-    signOut: vi.fn(async () => {}),
-  } as AuthState;
-}
+beforeEach(() => {
+  saveContent.mockClear();
+  useContentStore.setState({ bundle: SEED, status: 'fallback' });
+});
 
 describe('AdminShell', () => {
   it('shows the signed-in admin email', () => {
-    mockAuth.mockReturnValue(adminState());
     render(<AdminShell />);
-    expect(screen.getByText(/a@b\.com/)).toBeInTheDocument();
-    expect(screen.getByText(/admin/i)).toBeInTheDocument();
+    expect(screen.getByText(/a@b\.c/)).toBeInTheDocument();
   });
 
-  it('round-trips a ping on click', async () => {
-    mockAuth.mockReturnValue(adminState());
+  it('shows Pool and Journey tabs and switches to Journey', () => {
     render(<AdminShell />);
-    await userEvent.click(screen.getByRole('button', { name: /ping/i }));
-    expect(writePing).toHaveBeenCalledWith('u1');
-    expect(readPing).toHaveBeenCalledWith('u1');
-    expect(await screen.findByText(/ping ok/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^pool$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^journey$/i }));
+    // SEED's first lesson id is u1-pattern — it appears in the Journey tab
+    expect(screen.getAllByText(/u1-pattern/i).length).toBeGreaterThan(0);
   });
 
-  it('calls signOut', async () => {
-    const s = adminState();
-    mockAuth.mockReturnValue(s);
+  it('Save calls saveContent with the draft bundle when valid', async () => {
     render(<AdminShell />);
-    await userEvent.click(screen.getByRole('button', { name: /sign out/i }));
-    expect(s.signOut).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(saveContent).toHaveBeenCalled());
   });
 });
