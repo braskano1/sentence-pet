@@ -11,7 +11,7 @@ const h = vi.hoisted(() => {
     authObj,
     signInAnon: vi.fn().mockResolvedValue({}),
     linkEmailPassword: vi.fn().mockResolvedValue({}),
-    signIn: vi.fn(async () => { authObj.currentUser = { uid: 'acct1' }; }),
+    signIn: vi.fn(async () => { authObj.currentUser = { uid: 'acct1' }; return { user: { uid: 'acct1' } }; }),
     reconcileFromCloud: vi.fn().mockResolvedValue(true),
     startCloudSync: vi.fn(() => () => {}),
   };
@@ -57,6 +57,7 @@ describe('AuthProvider', () => {
     h.signInAnon.mockClear();
     h.signIn.mockClear();
     h.reconcileFromCloud.mockClear();
+    h.startCloudSync.mockClear();
     h.authObj.currentUser = null;
   });
 
@@ -112,5 +113,6 @@ describe('AuthProvider', () => {
     await waitFor(() =>
       expect(h.reconcileFromCloud).toHaveBeenCalledWith(expect.objectContaining({ uid: 'acct1' })),
     );
+    expect(h.reconcileFromCloud).toHaveBeenCalledTimes(1);
   });
 });

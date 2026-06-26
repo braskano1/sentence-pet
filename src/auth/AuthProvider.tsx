@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import {
-  auth, onAuthChange, signIn as fbSignIn, signInAnon, linkEmailPassword, signOutUser,
+  onAuthChange, signIn as fbSignIn, signInAnon, linkEmailPassword, signOutUser,
 } from '../firebase/auth';
 import { useGameStore, selectPersisted } from '../state/gameStore';
 import { startCloudSync } from '../sync/cloudSync';
@@ -20,6 +20,10 @@ export interface AuthState {
 
 export const AuthContext = createContext<AuthState | null>(null);
 
+// Guards against a duplicate anonymous sign-in when onAuthChange fires `null`
+// twice before the first signInAnon resolves (e.g. React StrictMode double-invoke).
+let anonBootstrapInFlight = false;
+
 export function AuthProvider({ children, player = false }: { children: ReactNode; player?: boolean }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -30,9 +34,13 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
     return onAuthChange(async (u) => {
       if (!u && player) {
         // Bootstrap a guest; onAuthChange will fire again with the anon user.
-        await signInAnon();
+        if (!anonBootstrapInFlight) {
+          anonBootstrapInFlight = true;
+          void signInAnon();
+        }
         return;
       }
+      anonBootstrapInFlight = false; // a user arrived — clear the in-flight guard
       setUser(u);
       if (u) {
         const token = await u.getIdTokenResult();
@@ -67,16 +75,13 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
     isAnonymous: user?.isAnonymous ?? false,
     loading,
     signIn: async (email, password) => {
-      await fbSignIn(email, password);
+      const cred = await fbSignIn(email, password);
       // Signing in on this device with an existing account: cloud always wins.
-      const signedInUid = auth.currentUser?.uid;
-      if (signedInUid) {
-        await reconcileFromCloud({
-          uid: signedInUid,
-          loadCloudSave,
-          applyState: (s) => useGameStore.setState(s),
-        });
-      }
+      await reconcileFromCloud({
+        uid: cred.user.uid,
+        loadCloudSave,
+        applyState: (s) => useGameStore.setState(s),
+      });
       // The sync effect (re)starts for the new uid and re-pushes the reconciled state.
     },
     linkEmail: async (email, password) => { await linkEmailPassword(email, password); },
