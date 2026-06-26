@@ -5,9 +5,9 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
 import { EGG_SPRITE, SPRITES } from '../config/sprites';
-import { fireConfetti } from '../effects/celebrate';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 import { MAX_PET_NAME } from '../domain/petName';
+import { EvolutionCinematic } from './EvolutionCinematic';
 
 export function Gacha() {
   const coins = useGameStore((s) => s.coins);
@@ -19,14 +19,26 @@ export function Gacha() {
   const price = GAME_CONFIG.gacha.eggPrice;
   const [revealed, setRevealed] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [hatching, setHatching] = useState(false);
 
   const onPull = () => {
     pullEgg();
     setRevealed(true);
-    fireConfetti();
+    setHatching(true);
   };
 
   const pulled = revealed ? lastPull : null;
+
+  if (hatching && lastPull) {
+    return (
+      <EvolutionCinematic
+        from="egg"
+        to="baby"
+        species={lastPull.species}
+        onDone={() => setHatching(false)}
+      />
+    );
+  }
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 bg-indigo-50 p-6">
