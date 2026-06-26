@@ -15,12 +15,13 @@ export function SignUpForm({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       await linkEmail(email, password);
-      onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create your account.");
+      return;
     } finally {
       setBusy(false);
     }
+    onDone();
   }
 
   return (

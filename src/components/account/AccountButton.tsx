@@ -4,8 +4,10 @@ import { SignUpForm } from './SignUpForm';
 
 /** Entry point for cloud save: guests sign up, signed-in students see their account. */
 export function AccountButton() {
-  const { isAnonymous, user, signOut } = useAuth();
+  const { isAnonymous, user, loading, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+
+  if (loading) return null;
 
   if (!isAnonymous && user) {
     return (
