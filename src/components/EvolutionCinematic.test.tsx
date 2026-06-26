@@ -9,6 +9,7 @@ vi.mock('../effects/evolutionSound', async (orig) => {
   return { ...actual, getEvolutionSound: () => sound };
 });
 
+import confetti from 'canvas-confetti';
 import { EvolutionCinematic } from './EvolutionCinematic';
 import { useGameStore } from '../state/gameStore';
 
@@ -55,5 +56,19 @@ describe('EvolutionCinematic', () => {
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
     expect(sound.stop).toHaveBeenCalled();
+  });
+
+  it('stops audio on unmount', () => {
+    const { unmount } = render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
+    sound.stop.mockClear();
+    unmount();
+    expect(sound.stop).toHaveBeenCalled();
+  });
+
+  it('fires confetti once on reveal', () => {
+    vi.mocked(confetti).mockClear();
+    render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
+    fireEvent.click(screen.getByTestId('evolution-stage')); // skip -> reveal
+    expect(confetti).toHaveBeenCalledTimes(1);
   });
 });
