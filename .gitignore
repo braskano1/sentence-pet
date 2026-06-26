@@ -32,6 +32,9 @@ test-output.txt
 *.sln
 *.sw?
 
+# Seed export
+dist-seed/
+
 # Firebase
 .env.local
 *.serviceAccount.json
