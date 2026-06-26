@@ -40,4 +40,20 @@ describe('EggHatch', () => {
     fireEvent.click(firstTile);
     expect(screen.getByTestId('slot-0')).toHaveTextContent(new RegExp(word, 'i'));
   });
+
+  it('shows no Submit button until all slots are filled, then reveals it', () => {
+    render(<EggHatch />);
+    expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+    const tileCount = screen.getAllByTestId(/^tile-/).length;
+    for (let i = 0; i < tileCount; i++) {
+      const tiles = screen.getAllByTestId(/^tile-/);
+      fireEvent.click(tiles[0]);
+    }
+    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
+  });
+
+  it('renders the Thai hint card with a play-audio button', () => {
+    render(<EggHatch />);
+    expect(screen.getByRole('button', { name: /hear the meaning/i })).toBeInTheDocument();
+  });
 });
