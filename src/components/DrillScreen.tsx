@@ -161,7 +161,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   const line = why
     ? 'Hmm, not quite!'
     : currentSlotIndex(placed) === -1
-      ? 'Tap a word to fix it!'
+      ? 'Looks done — check it! 👀'
       : `Which ${item.slots[currentSlotIndex(placed)]}? 👀`;
 
   return (

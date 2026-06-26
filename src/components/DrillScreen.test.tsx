@@ -130,4 +130,16 @@ describe('DrillScreen', () => {
     fireEvent.click(screen.getByTestId('slot-0'));
     expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
   });
+
+  it('on Submit with a wrong answer, grades (clears wrong slot, shows why-tip) but does not speak the sentence', () => {
+    speech.speakSentence.mockClear();
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-eats'));
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(screen.getByTestId('why-tip')).toBeInTheDocument();
+    expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eats');
+    expect(speech.speakSentence).not.toHaveBeenCalled();
+  });
 });
