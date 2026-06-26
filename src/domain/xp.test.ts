@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { xpPerCorrect, stageForXp, stageForLevel, STAGE_LEVEL, xpToNext, totalXpForLevel, levelForXp, xpProgress } from './xp';
+import { xpPerCorrect, stageForXp, stageForLevel, STAGE_LEVEL, xpToNext, totalXpForLevel, levelForXp, xpProgress, STAGE_ORDER, STAGE_NAME, stageUp } from './xp';
 
 describe('xpPerCorrect', () => {
   it('is 10 x level', () => {
@@ -41,6 +41,23 @@ describe('stage bands', () => {
     expect(stageForXp(999999, false)).toBe('egg');
     expect(stageForXp(0, true)).toBe('baby');
     expect(stageForXp(totalXpForLevel(16), true)).toBe('young');
+  });
+});
+
+describe('stage helpers', () => {
+  it('orders stages egg < baby < young < adult', () => {
+    expect(STAGE_ORDER).toEqual(['egg', 'baby', 'young', 'adult']);
+  });
+  it('stageUp is true only for forward transitions', () => {
+    expect(stageUp('egg', 'baby')).toBe(true);
+    expect(stageUp('baby', 'young')).toBe(true);
+    expect(stageUp('young', 'adult')).toBe(true);
+    expect(stageUp('baby', 'adult')).toBe(true);
+    expect(stageUp('baby', 'baby')).toBe(false);
+    expect(stageUp('young', 'baby')).toBe(false);
+  });
+  it('names every stage', () => {
+    expect(STAGE_NAME).toEqual({ egg: 'Egg', baby: 'Baby', young: 'Young', adult: 'Adult' });
   });
 });
 

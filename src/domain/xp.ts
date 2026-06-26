@@ -8,6 +8,17 @@ export function xpPerCorrect(level: number): number {
 /** First level of each non-egg stage. Add/retune a stage = one line here. */
 export const STAGE_LEVEL = { baby: 1, young: 16, adult: 36 } as const;
 
+export const STAGE_ORDER: PetStage[] = ['egg', 'baby', 'young', 'adult'];
+
+export const STAGE_NAME: Record<PetStage, string> = {
+  egg: 'Egg', baby: 'Baby', young: 'Young', adult: 'Adult',
+};
+
+/** True when `to` is a later stage than `from`. */
+export function stageUp(from: PetStage, to: PetStage): boolean {
+  return STAGE_ORDER.indexOf(to) > STAGE_ORDER.indexOf(from);
+}
+
 export function stageForLevel(level: number): Exclude<PetStage, 'egg'> {
   if (level >= STAGE_LEVEL.adult) return 'adult';
   if (level >= STAGE_LEVEL.young) return 'young';

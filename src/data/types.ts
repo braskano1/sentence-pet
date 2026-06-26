@@ -21,9 +21,12 @@ export interface DrillItem {
   strictness?: 'flag' | 'enforce'; // Grammar dial; undefined ⇒ exact match (Pattern/WC)
 }
 
-export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection';
+export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution';
 
 export type PetStage = 'egg' | 'baby' | 'young' | 'adult';
+
+/** A forward stage transition, for the evolution celebration. */
+export interface StageChange { from: PetStage; to: PetStage; }
 
 export interface NutritionBars {
   protein: number;  // Pattern drill
