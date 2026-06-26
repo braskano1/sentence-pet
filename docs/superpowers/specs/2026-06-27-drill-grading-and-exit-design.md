@@ -35,7 +35,7 @@ Two independent fixes to the Living Drill, bundled because they touch the same s
 | `src/domain/round.ts` | `RoundAction`: drop `flags` from the `finish` and `advance` variants. Remove the `grade.status === 'flagged' ? 1 : 0` slip addition (no more flagged-accept slips). Keep `firstTrapTip` — it still feeds the retry tip. |
 | `src/components/DrillScreen.tsx` | Delete the `'flag'` feedback branch (line ~110: `kind` is always `'correct'` on a pass). Delete the flags-based streak-reset / mistake-increment in the `advance` case (lines ~120–121) — a pass is always a clean advance now. Remove `'flag'` from the flash/✓ styling (lines ~188, ~197). |
 | `src/components/useRoundFeedback.ts` | Remove the `'flag'` feedback kind: drop it from the `Feedback` type, the `HOLD_MS` map, and the `play` signature. `'correct'` and `'wrong'` only. |
-| `src/content/seed.ts` | Remove `strictness` from every item. The `flag`-mode and `enforce`-mode versions of each grammar sentence become identical → **dedupe to a single item each**. |
+| `src/content/seed.ts` | Remove `strictness` from every item. Grammar L1 (`gr-l1-*`) and L2 (`gr-l2-*`) were the *same* 5 sentences differing only by strictness (the gentle→strict ramp). With strictness gone they would be identical, so **replace the 5 L2 grammar items (`gr-l2-*`) with new, harder 3-slot S+V+O agreement sentences** to keep a real difficulty ramp. L1 grammar (2-slot) is unchanged. Pool size stays 30. |
 | `src/content/validate.ts` | Keep the trap slot-range check unchanged. |
 
 ### Live content
@@ -44,7 +44,7 @@ Two independent fixes to the Living Drill, bundled because they touch the same s
 
 ### Tests to update to the new behavior
 
-`src/domain/grade.test.ts`, `src/domain/round.test.ts`, `src/components/DrillScreen.test.tsx`, `src/components/useRoundFeedback.test.ts`, `src/content/seed.test.ts`, and `src/content/validate.test.ts` / `src/content/model.test.ts` if they assert on `strictness`. New assertions: a trap near-miss grades `wrong`, routes to retry, and surfaces its tip; the deduped seed has no duplicate grammar items and no `strictness` field.
+`src/domain/grade.test.ts`, `src/domain/round.test.ts`, `src/components/DrillScreen.test.tsx`, `src/components/useRoundFeedback.test.ts`, `src/content/seed.test.ts`, and `src/content/validate.test.ts` / `src/content/model.test.ts` if they assert on `strictness`. New assertions: a trap near-miss grades `wrong`, routes to retry, and surfaces its tip; the seed has no `strictness` field; L2 grammar items are the new harder 3-slot sentences and differ from L1.
 
 ---
 
