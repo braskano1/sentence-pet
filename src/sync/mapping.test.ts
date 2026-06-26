@@ -17,7 +17,7 @@ const sample: PersistedState = {
   screen: 'petRoom', pets: [pet('a'), pet('b')], activePetId: 'a', coins: 7,
   inventory: { protein: 1, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 2, lastReward: null, lastPull: null,
-  owned: ['bg1'], activeBackground: 'bg1', journey: { lessonStars: { 'u1-pattern': 3 } },
+  owned: ['bg1'], activeBackground: 'bg1', journey: { lessonStars: { 'u1-pattern': 3 } }, soundEnabled: true,
 };
 
 describe('mapping', () => {

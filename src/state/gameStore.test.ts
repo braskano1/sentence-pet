@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
-import { levelForXp, totalXpForLevel } from '../domain/xp';
+import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
 import { SEED } from '../content/seed';
 
 function reset() {
@@ -31,11 +31,11 @@ describe('gameStore', () => {
     }
   });
 
-  it('hatch() marks the active pet hatched, keeps its species, and moves to petRoom', () => {
+  it('hatch() marks the active pet hatched, keeps its species, and moves to evolution', () => {
     useGameStore.getState().hatch();
     expect(active().hatched).toBe(true);
     expect(active().species).toBe('leaf'); // hatch no longer randomizes species
-    expect(useGameStore.getState().screen).toBe('petRoom');
+    expect(useGameStore.getState().screen).toBe('evolution');
   });
 
   it('startDrill selects the drill, sets the level, and opens the drill screen', () => {
@@ -524,5 +524,84 @@ describe('persist v9 (journey)', () => {
 
   it('SEED is referenced so seed ids are stable', () => {
     expect(SEED.units[0].lessons[0].id).toBe('u1-pattern');
+  });
+});
+
+describe('migrate -> v10 (soundEnabled)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('migrate backfills soundEnabled true on a v9 save that lacks the field', () => {
+    const v9 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      journey: { lessonStars: {} },
+    };
+    const out = getMigrate()(v9, 9) as { soundEnabled: boolean };
+    expect(out.soundEnabled).toBe(true);
+  });
+});
+
+describe('sound toggle', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  it('defaults soundEnabled to true and toggles it', () => {
+    expect(useGameStore.getState().soundEnabled).toBe(true);
+    useGameStore.getState().toggleSound();
+    expect(useGameStore.getState().soundEnabled).toBe(false);
+    useGameStore.getState().toggleSound();
+    expect(useGameStore.getState().soundEnabled).toBe(true);
+  });
+});
+
+describe('stage-change detection', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  function hatchStarter() {
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true, xp: 0 })) }));
+  }
+
+  it('sets lastStageChange when XP crosses into the young stage (L16)', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(16));
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
+  });
+
+  it('reports the spanned stages for a multi-stage jump', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(36));
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'adult' });
+  });
+
+  it('leaves lastStageChange null when the level gain stays in the same stage', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(5));
+    expect(useGameStore.getState().lastStageChange).toBeNull();
+  });
+
+  it('hatch() sets an egg→baby stage change and routes to the evolution screen', () => {
+    useGameStore.getState().hatch();
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'egg', to: 'baby' });
+    expect(useGameStore.getState().screen).toBe('evolution');
+  });
+
+  it('clearStageChange resets it to null', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().clearStageChange();
+    expect(useGameStore.getState().lastStageChange).toBeNull();
+  });
+
+  it('finishRound sets lastStageChange when the XP it grants crosses a stage', () => {
+    // Put a hatched baby pet just below L16, so one round's XP tips it into young.
+    const gain = xpPerCorrect(1); // finishRound below grants correctCount(1) * xpPerCorrect(level=1)
+    useGameStore.setState((s) => ({
+      pets: s.pets.map((p) => ({ ...p, hatched: true, xp: totalXpForLevel(16) - gain })),
+    }));
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
   });
 });

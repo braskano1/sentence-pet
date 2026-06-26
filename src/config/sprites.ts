@@ -63,6 +63,11 @@ export const SPRITES: Record<Species, Record<SpriteStage, Record<PetMood, string
   },
 };
 
+/** Single source of truth for resolving a pet's artwork. Egg is generic. */
+export function spriteSrc(species: Species, stage: PetStage, mood: PetMood): string {
+  return stage === 'egg' ? EGG_SPRITE : SPRITES[species][stage][mood];
+}
+
 /** Reserved for Phase B (species shop icons). Unused by Phase 0 components. */
 export const ELEMENTAL_EGGS: Record<Species, string> = {
   leaf: eggLeaf,

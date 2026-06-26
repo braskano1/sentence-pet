@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import type { PetStage, Species } from '../data/types';
-import { SPRITES, EGG_SPRITE } from '../config/sprites';
+import { spriteSrc } from '../config/sprites';
 import { moodFor } from '../domain/species';
 import { GAME_CONFIG } from '../config/gameConfig';
 
@@ -44,7 +44,7 @@ export function PetSprite({
 
   const mood = moodFor(happiness, GAME_CONFIG.happiness.max);
   const isEgg = stage === 'egg';
-  const src = isEgg ? EGG_SPRITE : SPRITES[species][stage][mood];
+  const src = spriteSrc(species, stage, mood);
   const alt = isEgg ? 'pet-egg' : `pet-${species}-${stage}-${mood}`;
 
   return (
