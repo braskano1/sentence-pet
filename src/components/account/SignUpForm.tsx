@@ -26,7 +26,7 @@ export function SignUpForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-2 p-3">
-      <p className="text-sm">Save your pets across devices.</p>
+      <p className="text-sm font-bold">New Game</p>
       <label className="flex flex-col text-sm">
         Email
         <input
@@ -44,8 +44,8 @@ export function SignUpForm({ onDone }: { onDone: () => void }) {
         />
       </label>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={busy} className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-50">
-        {busy ? 'Saving…' : 'Save my pets'}
+      <button type="submit" disabled={busy} className="rounded bg-emerald-500 px-3 py-1 font-bold text-emerald-950 disabled:opacity-50">
+        {busy ? 'Saving…' : 'Create & Play ▸'}
       </button>
     </form>
   );
