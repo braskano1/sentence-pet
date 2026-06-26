@@ -18,7 +18,7 @@ if (!isAdmin) {
 }
 
 const root = isAdmin
-  ? <Suspense fallback={null}><AdminApp /></Suspense>
+  ? <Suspense fallback={<p style={{ padding: 16 }}>Loading…</p>}><AdminApp /></Suspense>
   : <App />
 
 createRoot(document.getElementById('root')!).render(<StrictMode>{root}</StrictMode>)

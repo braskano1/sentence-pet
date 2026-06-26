@@ -8,6 +8,8 @@ describe('SEED content bundle', () => {
     expect(validateContent(SEED)).toEqual({ ok: true, errors: [] });
   });
 
+  // Snapshot tripwire: the bundled SEED only changes via a deliberate `npm run seed:export`
+  // commit (admin edits go to Firestore, not this file). Bump these if you regenerate SEED.
   it('has the expected migrated shape', () => {
     expect(SEED.units.length).toBe(2);
     expect(Object.keys(SEED.pool).length).toBe(30);
@@ -36,6 +38,7 @@ describe('SEED.pool content invariants', () => {
     for (const word of allWords) {
       // Each space-separated token must be: lowercase, OR === 'I', OR all-uppercase
       for (const token of word.split(' ')) {
+        if (!token) continue;
         const startsUpper = token[0] === token[0].toUpperCase() && token[0] !== token[0].toLowerCase();
         if (startsUpper) {
           expect(token === 'I' || token === token.toUpperCase()).toBe(true);
@@ -50,6 +53,7 @@ describe('SEED.pool content invariants', () => {
       expect(item.traps?.length).toBeGreaterThan(0);
       for (const trap of item.traps ?? []) {
         expect(item.answer).not.toContain(trap.word);
+        expect(item.distractors ?? []).not.toContain(trap.word);
       }
     }
   });

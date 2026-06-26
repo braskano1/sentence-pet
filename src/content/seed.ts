@@ -1,7 +1,9 @@
 import type { ContentBundle } from './model';
 
 /** The migrated static content (snapshot). Bundled fallback for first paint AND the
- *  seed-script source. Generated originally from the legacy data/ modules; now standalone. */
+ *  seed-script source. Generated from the legacy data/ modules; now standalone.
+ *  Do NOT hand-edit: change content via the admin UI (#admin), then regenerate with
+ *  `npm run seed:export`. */
 export const SEED: ContentBundle = {
   pool: {
     "l1-1": {
