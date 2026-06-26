@@ -24,7 +24,7 @@ export function MainMenu({ onSignedUp }: { onSignedUp: () => void }) {
   return (
     <MotionConfig reducedMotion="user">
       <AppShell>
-        <div className="relative flex min-h-[100dvh] flex-col">
+        <div className="relative flex min-h-[100dvh] flex-col overflow-hidden">
           <TitleScene active={view === 'title'} />
 
           {/* Full-surface tap target — only the live title accepts a tap-to-start */}
