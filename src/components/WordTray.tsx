@@ -12,6 +12,7 @@ function Tile({ word, index }: { word: string; index: number }) {
   return (
     <motion.button
       ref={setNodeRef}
+      data-testid={`tile-${word}`}
       {...listeners}
       {...attributes}
       initial={{ opacity: 0, scale: 0.6 }}

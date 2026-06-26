@@ -31,6 +31,7 @@ function Slot({
   return (
     <motion.button
       ref={setNodeRef}
+      data-testid={`slot-${index}`}
       onClick={() => !empty && onClear(index)}
       animate={{ scale: isOver && empty ? 1.06 : 1 }}
       transition={{ duration: 0.15 }}
