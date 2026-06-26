@@ -3,7 +3,7 @@ import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel } from '../domain/xp';
-import { JOURNEY } from '../data/journey';
+import { SEED } from '../content/seed';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -522,7 +522,7 @@ describe('persist v9 (journey)', () => {
     expect('currentLessonId' in persisted).toBe(false);
   });
 
-  it('JOURNEY is referenced so seed ids are stable', () => {
-    expect(JOURNEY[0].lessons[0].id).toBe('u1-pattern');
+  it('SEED is referenced so seed ids are stable', () => {
+    expect(SEED.units[0].lessons[0].id).toBe('u1-pattern');
   });
 });

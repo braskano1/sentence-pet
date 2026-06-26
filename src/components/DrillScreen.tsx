@@ -13,7 +13,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { trayWords } from '../data/wordBank';
+import { trayWords } from '../content/model';
 import type { DrillItem, DrillType } from '../data/types';
 import { shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';

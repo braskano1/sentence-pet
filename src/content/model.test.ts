@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ContentBundle } from './model';
-import { orderedUnits, findLesson, itemsForLesson, itemsForDrill, tutorialItem } from './model';
+import { orderedUnits, findLesson, itemsForLesson, itemsForDrill, tutorialItem, trayWords } from './model';
 import type { DrillItem } from '../data/types';
 
 const item = (id: string, drill: DrillItem['drill'], level: number): DrillItem => ({
@@ -53,5 +53,33 @@ describe('content/model accessors', () => {
   it('tutorialItem returns the first pattern level-1 item', () => {
     expect(tutorialItem(bundle)?.drill).toBe('pattern');
     expect(tutorialItem(bundle)?.level).toBe(1);
+  });
+});
+
+describe('trayWords', () => {
+  const answerOnly: DrillItem = {
+    id: 'x', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'],
+  };
+  const withDistractors: DrillItem = {
+    id: 'y', drill: 'wordChoice', level: 1, thaiHint: 'y', slots: ['Pronoun', 'Verb'],
+    answer: ['he', 'eats'], distractors: ['eat', 'eating'],
+  };
+  const withTraps: DrillItem = {
+    id: 'z', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'z',
+    slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'],
+    distractors: ['running'],
+    traps: [{ slot: 1, word: 'walk', tip: 'tip' }],
+  };
+
+  it('answer-only item returns just the answer', () => {
+    expect(trayWords(answerOnly)).toEqual(['I', 'run']);
+  });
+
+  it('item with distractors returns answer then distractors', () => {
+    expect(trayWords(withDistractors)).toEqual(['he', 'eats', 'eat', 'eating']);
+  });
+
+  it('item with traps returns answer then distractors then trap words', () => {
+    expect(trayWords(withTraps)).toEqual(['she', 'walks', 'running', 'walk']);
   });
 });

@@ -54,3 +54,12 @@ export function itemsForDrill(bundle: ContentBundle, drill: DrillType, level: nu
 export function tutorialItem(bundle: ContentBundle): DrillItem | undefined {
   return Object.values(bundle.pool).find((i) => i.drill === 'pattern' && i.level === 1);
 }
+
+/** Tiles for an item's tray: answer words, then distractors, then trap words. */
+export function trayWords(item: DrillItem): string[] {
+  return [
+    ...item.answer,
+    ...(item.distractors ?? []),
+    ...(item.traps ?? []).map((t) => t.word),
+  ];
+}
