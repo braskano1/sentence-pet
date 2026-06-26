@@ -15,6 +15,24 @@ describe('SEED content bundle', () => {
     expect(Object.keys(SEED.pool).length).toBe(30);
   });
 
+  it('no item carries a strictness field anymore', () => {
+    for (const item of Object.values(SEED.pool)) {
+      expect('strictness' in item).toBe(false);
+    }
+  });
+
+  it('L2 grammar sentences differ from L1 grammar sentences', () => {
+    const sentences = (level: number) =>
+      Object.values(SEED.pool)
+        .filter((i) => i.drill === 'grammar' && i.level === level)
+        .map((i) => i.answer.join(' '))
+        .sort();
+    const l1 = sentences(1);
+    const l2 = sentences(2);
+    expect(l2.length).toBe(5);
+    for (const s of l2) expect(l1).not.toContain(s);
+  });
+
   it('every lesson resolves to at least one pool item', () => {
     for (const u of SEED.units) for (const l of u.lessons) {
       expect(itemsForLesson(SEED, l).length).toBeGreaterThan(0);

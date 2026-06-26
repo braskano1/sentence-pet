@@ -6,7 +6,7 @@ export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 export interface GrammarTrap {
   slot: number;   // index into slots[]/answer[] this trap word belongs to
   word: string;   // the near-miss tile (must differ from every answer word)
-  tip: string;    // gentle Thai-scaffolded nudge shown on a flagged accept
+  tip: string;    // gentle Thai-scaffolded nudge shown on a near-miss retry
 }
 
 export interface DrillItem {
@@ -18,7 +18,6 @@ export interface DrillItem {
   answer: string[];     // correct words, in order (same length as slots)
   distractors?: string[]; // extra wrong tiles salted into the tray (Word-Choice)
   traps?: GrammarTrap[];  // near-miss tiles tied to tips (Grammar)
-  strictness?: 'flag' | 'enforce'; // Grammar dial; undefined ⇒ exact match (Pattern/WC)
 }
 
 export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution';
