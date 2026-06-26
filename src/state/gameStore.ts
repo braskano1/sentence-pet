@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
-import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen } from '../data/types';
+import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
-import { levelForXp, stageForXp, xpPerCorrect } from '../domain/xp';
+import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
 import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
@@ -52,6 +52,7 @@ interface GameState {
   owned: string[];
   activeBackground: string | null;
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
+  lastStageChange: StageChange | null;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
   // actions
@@ -67,6 +68,7 @@ interface GameState {
   switchPet: (id: string) => void;
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
+  clearStageChange: () => void;
   startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
@@ -113,11 +115,14 @@ function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetIns
 }
 
 /** Apply an XP gain to one pet, allocating +1 growth per level crossed. */
-function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: PetInstance; levelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null } {
+function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: PetInstance; levelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null; stageChange: StageChange | null } {
   const before = levelForXp(pet.xp);
+  const beforeStage = stageForXp(pet.xp, pet.hatched);
   const xp = pet.xp + xpGain;
   const after = levelForXp(xp);
-  if (after <= before) return { pet: { ...pet, xp }, levelUp: null };
+  const afterStage = stageForXp(xp, pet.hatched);
+  const stageChange = stageUp(beforeStage, afterStage) ? { from: beforeStage, to: afterStage } : null;
+  if (after <= before) return { pet: { ...pet, xp }, levelUp: null, stageChange };
   const gained: (keyof BattleStats)[] = [];
   let growth = pet.growth;
   for (let l = before; l < after; l++) {
@@ -125,7 +130,7 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
     (Object.keys(next) as (keyof BattleStats)[]).forEach((k) => { if (next[k] !== growth[k]) gained.push(k); });
     growth = next;
   }
-  return { pet: { ...pet, xp, growth }, levelUp: { toLevel: after, gained } };
+  return { pet: { ...pet, xp, growth }, levelUp: { toLevel: after, gained }, stageChange };
 }
 
 function freshPet(): PetInstance {
@@ -150,6 +155,7 @@ function freshState() {
     owned: [] as string[],
     activeBackground: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
+    lastStageChange: null as StageChange | null,
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
   };
@@ -163,7 +169,11 @@ export const useGameStore = create<GameState>()(
       setScreen: (screen) => set({ screen }),
 
       hatch: () =>
-        set((s) => ({ pets: updateActive(s, (p) => ({ ...p, hatched: true })), screen: 'petRoom' })),
+        set((s) => ({
+          pets: updateActive(s, (p) => ({ ...p, hatched: true })),
+          lastStageChange: { from: 'egg', to: 'baby' },
+          screen: 'evolution',
+        })),
 
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
@@ -185,6 +195,7 @@ export const useGameStore = create<GameState>()(
           const xpGain = correctCount * xpPerCorrect(level);
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           let levelUp: GameState['lastLevelUp'] = null;
+          let stageChange: StageChange | null = null;
           const pets = updateActive(s, (p) => {
             const happiness =
               decayHappiness(p.happiness) +
@@ -192,6 +203,7 @@ export const useGameStore = create<GameState>()(
               (stars === 3 ? GAME_CONFIG.happiness.onThreeStars : 0);
             const withXp = applyXp(p, xpGain, rng);
             levelUp = withXp.levelUp;
+            stageChange = withXp.stageChange;
             return {
               ...withXp.pet,
               happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
@@ -204,6 +216,7 @@ export const useGameStore = create<GameState>()(
             inventory: { ...s.inventory, [group]: s.inventory[group] + correctCount },
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             lastLevelUp: levelUp,
+            lastStageChange: stageChange,
             journey,
             currentLessonId: null,
             screen: 'reward',
@@ -247,6 +260,8 @@ export const useGameStore = create<GameState>()(
 
       clearLevelUp: () => set({ lastLevelUp: null }),
 
+      clearStageChange: () => set({ lastStageChange: null }),
+
       renamePet: (id, name) =>
         set((s) => {
           const clean = sanitizePetName(name);
@@ -265,12 +280,14 @@ export const useGameStore = create<GameState>()(
       addXpForTest: (xp) =>
         set((s) => {
           let levelUp: GameState['lastLevelUp'] = null;
+          let stageChange: StageChange | null = null;
           const pets = updateActive(s, (p) => {
             const r = applyXp(p, xp, rng);
             levelUp = r.levelUp;
+            stageChange = r.stageChange;
             return r.pet;
           });
-          return { pets, lastLevelUp: levelUp };
+          return { pets, lastLevelUp: levelUp, lastStageChange: stageChange };
         }),
       addCoinsForTest: (coins) => set((s) => ({ coins: s.coins + coins })),
       resetForTest: () => set(freshState()),
@@ -279,10 +296,11 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, currentLessonId, ...rest } = s;
+        const { lastLevelUp, lastStageChange, currentLessonId, ...rest } = s;
         void lastLevelUp; // transient — not persisted
+        void lastStageChange; // transient — not persisted
         void currentLessonId; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'currentLessonId'>;
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.

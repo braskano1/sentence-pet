@@ -31,11 +31,11 @@ describe('gameStore', () => {
     }
   });
 
-  it('hatch() marks the active pet hatched, keeps its species, and moves to petRoom', () => {
+  it('hatch() marks the active pet hatched, keeps its species, and moves to evolution', () => {
     useGameStore.getState().hatch();
     expect(active().hatched).toBe(true);
     expect(active().species).toBe('leaf'); // hatch no longer randomizes species
-    expect(useGameStore.getState().screen).toBe('petRoom');
+    expect(useGameStore.getState().screen).toBe('evolution');
   });
 
   it('startDrill selects the drill, sets the level, and opens the drill screen', () => {
@@ -524,5 +524,43 @@ describe('persist v9 (journey)', () => {
 
   it('SEED is referenced so seed ids are stable', () => {
     expect(SEED.units[0].lessons[0].id).toBe('u1-pattern');
+  });
+});
+
+describe('stage-change detection', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  function hatchStarter() {
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true, xp: 0 })) }));
+  }
+
+  it('sets lastStageChange when XP crosses into the young stage (L16)', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(16));
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
+  });
+
+  it('reports the spanned stages for a multi-stage jump', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(36));
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'adult' });
+  });
+
+  it('leaves lastStageChange null when the level gain stays in the same stage', () => {
+    hatchStarter();
+    useGameStore.getState().addXpForTest(totalXpForLevel(5));
+    expect(useGameStore.getState().lastStageChange).toBeNull();
+  });
+
+  it('hatch() sets an egg→baby stage change and routes to the evolution screen', () => {
+    useGameStore.getState().hatch();
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'egg', to: 'baby' });
+    expect(useGameStore.getState().screen).toBe('evolution');
+  });
+
+  it('clearStageChange resets it to null', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().clearStageChange();
+    expect(useGameStore.getState().lastStageChange).toBeNull();
   });
 });
