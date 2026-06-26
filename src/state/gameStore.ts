@@ -75,6 +75,34 @@ interface GameState {
   resetForTest: () => void;
 }
 
+/** Single source of truth for the persist schema version. */
+export const PERSIST_VERSION = 9;
+
+/** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
+export type PersistedState = Pick<
+  GameState,
+  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey'
+>;
+
+/** Project a full store snapshot down to the persisted payload. */
+export function selectPersisted(s: GameState): PersistedState {
+  return {
+    screen: s.screen,
+    pets: s.pets,
+    activePetId: s.activePetId,
+    coins: s.coins,
+    inventory: s.inventory,
+    selectedDrill: s.selectedDrill,
+    selectedLevel: s.selectedLevel,
+    lastReward: s.lastReward,
+    lastPull: s.lastPull,
+    owned: s.owned,
+    activeBackground: s.activeBackground,
+    journey: s.journey,
+  };
+}
+
 /** Active pet. Invariant: activePetId always resolves; fall back to pets[0] defensively. */
 export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string }): PetInstance =>
   s.pets.find((p) => p.id === s.activePetId) ?? s.pets[0];
@@ -249,7 +277,7 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'sentence-pet',
-      version: 9,
+      version: PERSIST_VERSION,
       partialize: (s) => {
         const { lastLevelUp, currentLessonId, ...rest } = s;
         void lastLevelUp; // transient — not persisted
