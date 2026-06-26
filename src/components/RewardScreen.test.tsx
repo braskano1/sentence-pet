@@ -39,6 +39,16 @@ describe('RewardScreen', () => {
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
 
+  it('routes to the evolution screen when a stage change is pending', async () => {
+    useGameStore.setState({
+      lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
+      lastStageChange: { from: 'baby', to: 'young' },
+    });
+    render(<RewardScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('evolution');
+  });
+
   it('shows level-up callout with toLevel and gained stat when lastLevelUp is set', () => {
     useGameStore.setState({
       lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
