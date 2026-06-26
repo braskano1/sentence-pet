@@ -2,21 +2,26 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { orderedUnits } from '../data/journey';
 import type { Unit, Lesson } from '../data/journey';
+import type { DrillType } from '../data/types';
 import { isUnitUnlocked, isLessonUnlocked, unitProgress, lessonCleared } from '../domain/journeyProgress';
 import type { LessonStars } from '../domain/journeyProgress';
 import { DRILL_FOOD, FOOD_META } from '../data/food';
 import { PressButton } from './PressButton';
 
-const DOT_COLOR: Record<string, string> = {
+const DOT_COLOR: Record<DrillType, string> = {
   pattern: 'bg-emerald-200 text-emerald-800',
   wordChoice: 'bg-blue-200 text-blue-800',
   grammar: 'bg-amber-200 text-amber-900',
   mixed: 'bg-pink-200 text-pink-800',
 };
 
-function lessonLabel(unit: Unit, lesson: Lesson, stars: LessonStars): string {
+function lessonLabel(unit: Unit, lesson: Lesson, stars: LessonStars, open: boolean): string {
   const what = lesson.isCheckpoint ? 'checkpoint' : `${lesson.drill} lesson`;
-  const status = lessonCleared(stars, lesson.id) ? `cleared, ${stars[lesson.id]} stars` : 'not started';
+  const status = lessonCleared(stars, lesson.id)
+    ? `cleared, ${stars[lesson.id]} stars`
+    : open
+      ? 'not started'
+      : 'locked';
   return `${unit.title}: ${what}, ${status}`;
 }
 
@@ -76,9 +81,9 @@ export function JourneyMap() {
                     <PressButton
                       key={lesson.id}
                       disabled={!open}
-                      aria-label={lessonLabel(unit, lesson, stars)}
+                      aria-label={lessonLabel(unit, lesson, stars, open)}
                       onClick={() => startLesson(lesson.id)}
-                      className={`flex h-12 w-12 items-center justify-center text-lg font-bold shadow ${base} ${tone} ${open ? '' : 'cursor-not-allowed'}`}
+                      className={`flex h-12 w-12 items-center justify-center text-lg font-bold shadow ${base} ${tone}`}
                     >
                       {dotContent(lesson, stars)}
                     </PressButton>

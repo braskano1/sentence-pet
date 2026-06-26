@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { JourneyMap } from './JourneyMap';
 import { useGameStore } from '../state/gameStore';
@@ -19,12 +19,12 @@ describe('JourneyMap', () => {
     expect(lockedNode).toBeDisabled();
   });
 
-  it('tapping an available node calls startLesson with the lesson id', () => {
-    const spy = vi.spyOn(useGameStore.getState(), 'startLesson');
+  it('tapping an available node starts that lesson', () => {
     render(<JourneyMap />);
     const node = screen.getByRole('button', { name: /Basics.*pattern.*not started/i });
     fireEvent.click(node);
-    expect(spy).toHaveBeenCalledWith('u1-pattern');
+    expect(useGameStore.getState().currentLessonId).toBe('u1-pattern');
+    expect(useGameStore.getState().screen).toBe('drill');
   });
 
   it('a checkpoint is locked until the unit lessons are cleared', () => {
