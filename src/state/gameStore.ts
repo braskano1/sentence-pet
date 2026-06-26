@@ -292,7 +292,7 @@ export const useGameStore = create<GameState>()(
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
-          journey: st.journey ?? { lessonStars: {} },
+          journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.
