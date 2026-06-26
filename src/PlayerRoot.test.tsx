@@ -38,6 +38,9 @@ describe('PlayerRoot routing', () => {
     authValue = { loading: false, isAnonymous: true };
     const { rerender } = render(<PlayerRoot />);
     fireEvent.click(screen.getByText('MENU'));     // onSignedUp → pendingIntro = true
+    // Mid-flip: pendingIntro is true but isAnonymous hasn't flipped yet — must NOT flash MainMenu.
+    expect(screen.queryByText('MENU')).toBeNull();
+    expect(screen.getByText('INTRO')).toBeInTheDocument();
     authValue = { loading: false, isAnonymous: false }; // auth flips after the link
     rerender(<PlayerRoot />);
     expect(screen.getByText('INTRO')).toBeInTheDocument();

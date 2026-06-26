@@ -17,7 +17,7 @@ export function PlayerRoot() {
       </AppShell>
     );
   }
-  if (isAnonymous) {
+  if (isAnonymous && !pendingIntro) {
     return <MainMenu onSignedUp={() => setPendingIntro(true)} />;
   }
   if (pendingIntro) {
