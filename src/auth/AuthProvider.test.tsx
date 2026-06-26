@@ -101,6 +101,25 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByTestId('anon')).toHaveTextContent('true'));
   });
 
+  it('clears isAnonymous after upgrading the anon account via linkEmail (New Game)', async () => {
+    function LinkProbe() {
+      const { isAnonymous, linkEmail } = useAuth();
+      return (
+        <>
+          <span data-testid="anon">{String(isAnonymous)}</span>
+          <button onClick={() => void linkEmail('k@s.th', 'pw123456')}>link</button>
+        </>
+      );
+    }
+    render(<AuthProvider player><LinkProbe /></AuthProvider>);
+    emit(fakeUser(false, true)); // anonymous guest
+    await waitFor(() => expect(screen.getByTestId('anon')).toHaveTextContent('true'));
+    fireEvent.click(screen.getByText('link'));
+    // linkWithCredential upgrades the same user in place and does NOT refire onAuthChange,
+    // so the provider must flip isAnonymous itself.
+    await waitFor(() => expect(screen.getByTestId('anon')).toHaveTextContent('false'));
+  });
+
   it('signing in reconciles from cloud for the signed-in uid (cloud wins)', async () => {
     function SignInProbe() {
       const { signIn } = useAuth();

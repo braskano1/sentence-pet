@@ -28,6 +28,12 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  // isAnonymous is explicit state, not derived from `user`. An anon->email link
+  // (linkWithCredential) upgrades the SAME User object in place without refiring
+  // onAuthChange, so deriving it off `user` would never re-render and the player
+  // would bounce back to the menu after sign-up. Set it on every auth change and
+  // flip it on a successful link.
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   // Track auth state; in player mode, auto-create an anonymous guest when signed out.
   useEffect(() => {
@@ -42,6 +48,7 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
       }
       anonBootstrapInFlight = false; // a user arrived — clear the in-flight guard
       setUser(u);
+      setIsAnonymous(u?.isAnonymous ?? false);
       if (u) {
         const token = await u.getIdTokenResult();
         setIsAdmin(token.claims.admin === true);
@@ -72,7 +79,7 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
   const value: AuthState = {
     user,
     isAdmin,
-    isAnonymous: user?.isAnonymous ?? false,
+    isAnonymous,
     loading,
     signIn: async (email, password) => {
       const cred = await fbSignIn(email, password);
@@ -84,7 +91,12 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
       });
       // The sync effect (re)starts for the new uid and re-pushes the reconciled state.
     },
-    linkEmail: async (email, password) => { await linkEmailPassword(email, password); },
+    linkEmail: async (email, password) => {
+      await linkEmailPassword(email, password);
+      // linkWithCredential mutates the current user in place (same uid, now non-anon)
+      // and does NOT refire onAuthChange, so flip the flag ourselves to leave the menu.
+      setIsAnonymous(false);
+    },
     signOut: async () => { await signOutUser(); },
   };
 
