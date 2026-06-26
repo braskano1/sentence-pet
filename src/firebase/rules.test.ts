@@ -88,6 +88,28 @@ run('firestore security rules', () => {
     await assertFails(getDoc(doc(other, 'users/u1/pets/p1')));
   });
 
+  it('owner can read+write own profile doc; others and unauth are denied', async () => {
+    const owner = env.authenticatedContext('u1', {}).firestore();
+    await assertSucceeds(setDoc(doc(owner, 'users/u1/meta/profile'), { coins: 5 }));
+    await assertSucceeds(getDoc(doc(owner, 'users/u1/meta/profile')));
+    const other = env.authenticatedContext('u2', {}).firestore();
+    await assertFails(setDoc(doc(other, 'users/u1/meta/profile'), { coins: 9 }));
+    await assertFails(getDoc(doc(other, 'users/u1/meta/profile')));
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'users/u1/meta/profile')));
+  });
+
+  it('owner can read+write own pet docs; others and unauth are denied', async () => {
+    const owner = env.authenticatedContext('u1', {}).firestore();
+    await assertSucceeds(setDoc(doc(owner, 'users/u1/pets/p1'), { id: 'p1' }));
+    await assertSucceeds(getDoc(doc(owner, 'users/u1/pets/p1')));
+    const other = env.authenticatedContext('u2', {}).firestore();
+    await assertFails(setDoc(doc(other, 'users/u1/pets/p1'), { id: 'x' }));
+    await assertFails(getDoc(doc(other, 'users/u1/pets/p1')));
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'users/u1/pets/p1')));
+  });
+
   it('default-denies an unmatched path', async () => {
     const fs = env.authenticatedContext('admin1', { admin: true }).firestore();
     await assertFails(getDoc(doc(fs, 'random/x')));
