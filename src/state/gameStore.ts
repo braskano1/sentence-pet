@@ -121,6 +121,7 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
   const xp = pet.xp + xpGain;
   const after = levelForXp(xp);
   const afterStage = stageForXp(xp, pet.hatched);
+  // Stages are level-threshold-defined, so a stage change always coincides with a level-up (see early return below keeps stageChange for that invariant's symmetry).
   const stageChange = stageUp(beforeStage, afterStage) ? { from: beforeStage, to: afterStage } : null;
   if (after <= before) return { pet: { ...pet, xp }, levelUp: null, stageChange };
   const gained: (keyof BattleStats)[] = [];

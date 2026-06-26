@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
-import { levelForXp, totalXpForLevel } from '../domain/xp';
+import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
 import { SEED } from '../content/seed';
 
 function reset() {
@@ -562,5 +562,15 @@ describe('stage-change detection', () => {
     useGameStore.getState().hatch();
     useGameStore.getState().clearStageChange();
     expect(useGameStore.getState().lastStageChange).toBeNull();
+  });
+
+  it('finishRound sets lastStageChange when the XP it grants crosses a stage', () => {
+    // Put a hatched baby pet just below L16, so one round's XP tips it into young.
+    const gain = xpPerCorrect(1); // finishRound below grants correctCount(1) * xpPerCorrect(level=1)
+    useGameStore.setState((s) => ({
+      pets: s.pets.map((p) => ({ ...p, hatched: true, xp: totalXpForLevel(16) - gain })),
+    }));
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
   });
 });
