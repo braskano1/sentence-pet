@@ -11,7 +11,6 @@ import { JourneyMap } from './components/JourneyMap';
 import { Shop } from './components/Shop';
 import { Gacha } from './components/Gacha';
 import { Collection } from './components/Collection';
-import { DevPanel } from './components/DevPanel';
 import { AccountButton } from './components/account/AccountButton';
 import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
@@ -72,7 +71,6 @@ export default function App() {
         <div className="px-3 pt-2"><AccountButton /></div>
         <CurrentScreen />
       </AppShell>
-      {import.meta.env.DEV && <DevPanel />}
     </MotionConfig>
   );
 }

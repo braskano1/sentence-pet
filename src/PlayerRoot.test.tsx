@@ -11,6 +11,7 @@ vi.mock('./components/menu/IntroVideo', () => ({
   IntroVideo: ({ onDone }: { onDone: () => void }) => <button onClick={onDone}>INTRO</button>,
 }));
 vi.mock('./App', () => ({ default: () => <div>GAME</div> }));
+vi.mock('./components/DevPanel', () => ({ DevPanel: () => <div>DEVPANEL</div> }));
 
 import { PlayerRoot } from './PlayerRoot';
 
@@ -26,6 +27,13 @@ describe('PlayerRoot routing', () => {
     authValue = { loading: false, isAnonymous: true };
     render(<PlayerRoot />);
     expect(screen.getByText('MENU')).toBeInTheDocument();
+  });
+
+  it('renders the DevPanel on the signed-out menu too (reachable before sign-in)', () => {
+    authValue = { loading: false, isAnonymous: true };
+    render(<PlayerRoot />);
+    expect(screen.getByText('MENU')).toBeInTheDocument();
+    expect(screen.getByText('DEVPANEL')).toBeInTheDocument();
   });
 
   it('signed-in shows the game', () => {
