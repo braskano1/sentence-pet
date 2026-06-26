@@ -11,6 +11,7 @@ import { Shop } from './components/Shop';
 import { Gacha } from './components/Gacha';
 import { Collection } from './components/Collection';
 import { DevPanel } from './components/DevPanel';
+import { AccountButton } from './components/account/AccountButton';
 import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
@@ -66,6 +67,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <AppShell>
+        <div className="px-3 pt-2"><AccountButton /></div>
         <CurrentScreen />
       </AppShell>
       {import.meta.env.DEV && <DevPanel />}
