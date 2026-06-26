@@ -55,6 +55,8 @@ describe('stage helpers', () => {
     expect(stageUp('baby', 'adult')).toBe(true);
     expect(stageUp('baby', 'baby')).toBe(false);
     expect(stageUp('young', 'baby')).toBe(false);
+    expect(stageUp('egg', 'egg')).toBe(false);
+    expect(stageUp('adult', 'adult')).toBe(false);
   });
   it('names every stage', () => {
     expect(STAGE_NAME).toEqual({ egg: 'Egg', baby: 'Baby', young: 'Young', adult: 'Adult' });
