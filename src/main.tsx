@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { useGameStore } from './state/gameStore'
 import { isAdminEntry } from './auth/adminEntry'
 import { hydrateContent } from './content/load'
+import { AuthProvider } from './auth/AuthProvider'
 
 const AdminApp = lazy(() => import('./admin-entry'))
 
@@ -19,6 +20,6 @@ if (!isAdmin) {
 
 const root = isAdmin
   ? <Suspense fallback={<p style={{ padding: 16 }}>Loading…</p>}><AdminApp /></Suspense>
-  : <App />
+  : <AuthProvider player><App /></AuthProvider>
 
 createRoot(document.getElementById('root')!).render(<StrictMode>{root}</StrictMode>)
