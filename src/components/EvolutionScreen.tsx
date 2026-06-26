@@ -71,7 +71,7 @@ export function EvolutionScreen() {
   return (
     <div
       className="relative flex h-full flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_38%,#1d2746_0%,#0a0f1f_70%)] p-6"
-      onClick={revealed ? undefined : skip}
+      onClick={revealed ? undefined : () => { skip(); sound.current.stop(); }}
     >
       <button
         type="button"

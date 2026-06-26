@@ -32,6 +32,7 @@ describe('EvolutionScreen', () => {
     useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, screen: 'evolution' });
     render(<EvolutionScreen />);
     fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
+    expect(sound.stop).toHaveBeenCalled();
     expect(screen.getByText(/Young/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(useGameStore.getState().lastStageChange).toBeNull();
