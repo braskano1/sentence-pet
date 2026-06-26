@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
-import { orderedUnits } from '../data/journey';
-import type { Unit, Lesson } from '../data/journey';
+import { orderedUnits } from '../content/model';
+import type { Unit, Lesson } from '../content/model';
+import { useContentStore } from '../content/store';
 import type { DrillType } from '../data/types';
 import { isUnitUnlocked, isLessonUnlocked, unitProgress, lessonCleared } from '../domain/journeyProgress';
 import type { LessonStars } from '../domain/journeyProgress';
@@ -35,7 +36,8 @@ export function JourneyMap() {
   const setScreen = useGameStore((s) => s.setScreen);
   const startLesson = useGameStore((s) => s.startLesson);
   const stars = useGameStore((s) => s.journey.lessonStars);
-  const units = orderedUnits();
+  const bundle = useContentStore((s) => s.bundle);
+  const units = orderedUnits(bundle);
 
   return (
     <div className="flex h-full flex-col bg-indigo-50 p-6">

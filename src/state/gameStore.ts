@@ -11,7 +11,8 @@ import type { TreatItem, DecorItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
-import { findLesson } from '../data/journey';
+import { findLesson } from '../content/model';
+import { useContentStore } from '../content/store';
 
 export const STARTER_ID = 'starter-leaf';
 
@@ -139,7 +140,8 @@ export const useGameStore = create<GameState>()(
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
       startLesson: (lessonId) => {
-        const found = findLesson(lessonId);
+        const bundle = useContentStore.getState().bundle;
+        const found = findLesson(bundle, lessonId);
         if (!found) return; // unknown id — defensive no-op
         get().startDrill(found.lesson.drill, found.lesson.level);
         set({ currentLessonId: lessonId });

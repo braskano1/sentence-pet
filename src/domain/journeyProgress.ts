@@ -1,4 +1,4 @@
-import type { Unit, Lesson } from '../data/journey';
+import type { Unit, Lesson } from '../content/model';
 
 export type LessonStars = Record<string, number>;
 

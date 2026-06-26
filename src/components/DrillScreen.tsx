@@ -1,5 +1,5 @@
 // src/components/DrillScreen.tsx
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   DndContext,
@@ -13,8 +13,8 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { itemsFor, trayWords } from '../data/wordBank';
-import type { DrillType } from '../data/types';
+import { trayWords } from '../data/wordBank';
+import type { DrillItem, DrillType } from '../data/types';
 import { shuffle } from '../domain/check';
 import { parseDndId, placeTile } from '../domain/placement';
 import { resolveRound, type RoundAction } from '../domain/round';
@@ -23,8 +23,7 @@ import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
 
-export function DrillScreen({ drill, level }: { drill: DrillType; level: number }) {
-  const items = useMemo(() => itemsFor(drill, level), [drill, level]);
+export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill: DrillType; level: number }) {
   const finishRound = useGameStore((s) => s.finishRound);
 
   const [index, setIndex] = useState(0);

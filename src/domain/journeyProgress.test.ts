@@ -1,21 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import type { Unit } from '../data/journey';
+import type { Unit } from '../content/model';
 import { lessonCleared, unitProgress, isLessonUnlocked, isUnitUnlocked } from './journeyProgress';
 
 const JOURNEY: Unit[] = [
   {
     id: 'a', title: 'A', emoji: '🐣', order: 1,
     lessons: [
-      { id: 'a1', drill: 'pattern', level: 1 },
-      { id: 'a2', drill: 'grammar', level: 1 },
-      { id: 'a-ck', drill: 'mixed', level: 1, isCheckpoint: true },
+      { id: 'a1', drill: 'pattern', level: 1, itemIds: [] },
+      { id: 'a2', drill: 'grammar', level: 1, itemIds: [] },
+      { id: 'a-ck', drill: 'mixed', level: 1, isCheckpoint: true, itemIds: [] },
     ],
   },
   {
     id: 'b', title: 'B', emoji: '🌱', order: 2,
     lessons: [
-      { id: 'b1', drill: 'pattern', level: 2 },
-      { id: 'b-ck', drill: 'mixed', level: 1, isCheckpoint: true },
+      { id: 'b1', drill: 'pattern', level: 2, itemIds: [] },
+      { id: 'b-ck', drill: 'mixed', level: 1, isCheckpoint: true, itemIds: [] },
     ],
   },
 ];
