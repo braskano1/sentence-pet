@@ -5,6 +5,13 @@ import { DndContext } from '@dnd-kit/core';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+const speech = vi.hoisted(() => ({
+  speakWord: vi.fn(),
+  speakThai: vi.fn(),
+  speakSentence: vi.fn(),
+}));
+vi.mock('../hooks/useSpeech', () => ({ useSpeech: () => speech }));
+
 import { EggHatch } from './EggHatch';
 import { useGameStore } from '../state/gameStore';
 
@@ -55,5 +62,23 @@ describe('EggHatch', () => {
   it('renders the Thai hint card with a play-audio button', () => {
     render(<EggHatch />);
     expect(screen.getByRole('button', { name: /hear the meaning/i })).toBeInTheDocument();
+  });
+
+  it('does not grade (no ✓/✗ feedback) when the last slot is filled before Submit', () => {
+    render(<EggHatch />);
+    const tileCount = screen.getAllByTestId(/^tile-/).length;
+    for (let i = 0; i < tileCount; i++) {
+      fireEvent.click(screen.getAllByTestId(/^tile-/)[0]);
+    }
+    // Submit is now showing, but grading has NOT run: no ✓/✗ feedback overlay yet.
+    expect(screen.queryByText('✓')).not.toBeInTheDocument();
+    expect(screen.queryByText('✗')).not.toBeInTheDocument();
+  });
+
+  it('plays the Thai hint when the 🔊 button is tapped', () => {
+    speech.speakThai.mockClear();
+    render(<EggHatch />);
+    fireEvent.click(screen.getByRole('button', { name: /hear the meaning/i }));
+    expect(speech.speakThai).toHaveBeenCalledTimes(1);
   });
 });
