@@ -14,6 +14,11 @@ The app stays on the **Spark (free) plan** — Auth + Firestore only, no Cloud F
 7. **Project settings → Service accounts → Generate new private key** → download the JSON. Keep it OUT of git (already gitignored).
 8. Update `.firebaserc` `default` to your real project id.
 
+### Slice 3 — student accounts
+
+- **Authentication → Sign-in method → enable Anonymous.** Players sign in anonymously on first load; signing up links the anonymous account to email/password (`linkWithCredential`), preserving progress.
+- The owner-only rule `users/{uid}/{document=**}` from slice 1 already authorizes the cloud-save docs (`users/{uid}/meta/profile`, `users/{uid}/pets/{petId}`) — no rules redeploy needed unless rules changed.
+
 ## Grant yourself admin
 ```bash
 # PowerShell
