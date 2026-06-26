@@ -38,4 +38,25 @@ describe('AdminShell', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(saveContent).toHaveBeenCalled());
   });
+
+  it('validation gate: Save is disabled and banner shows errors when draft is invalid', () => {
+    // Set an invalid bundle (no units → validation fails) BEFORE render so the
+    // draft seeded at mount is already invalid.
+    useContentStore.setState({ bundle: { pool: {}, units: [] }, status: 'fallback' });
+    render(<AdminShell />);
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    // The validation banner should list at least one error.
+    expect(screen.getByText(/journey has no units/i)).toBeInTheDocument();
+  });
+
+  it('saveContent rejection leaves live store unchanged and surfaces error text', async () => {
+    saveContent.mockRejectedValueOnce(new Error('boom'));
+    const bundleBefore = useContentStore.getState().bundle;
+    render(<AdminShell />);
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    // Wait for the async save to settle and error text to appear.
+    await screen.findByText(/save failed/i);
+    // The live store bundle must be the same reference — no partial update.
+    expect(useContentStore.getState().bundle).toBe(bundleBefore);
+  });
 });

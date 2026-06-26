@@ -15,11 +15,14 @@ import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
 
-function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number, items: DrillItem[]) {
+export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number, items: DrillItem[]) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
     case 'pickDrill': return { key: 'pickDrill', node: <JourneyMap /> };
-    case 'drill': return { key: 'drill', node: <DrillScreen items={items} drill={drill} level={level} /> };
+    case 'drill':
+      return items.length === 0
+        ? { key: 'pickDrill', node: <JourneyMap /> }
+        : { key: 'drill', node: <DrillScreen items={items} drill={drill} level={level} /> };
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'shop': return { key: 'shop', node: <Shop /> };
     case 'gacha': return { key: 'gacha', node: <Gacha /> };
