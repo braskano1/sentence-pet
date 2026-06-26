@@ -31,3 +31,12 @@ test-output.txt
 *.njsproj
 *.sln
 *.sw?
+
+# Firebase
+.env.local
+*.serviceAccount.json
+serviceAccountKey.json
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
