@@ -138,17 +138,12 @@ export const useGameStore = create<GameState>()(
 
       startDrill: (drill, level) => set({ selectedDrill: drill, selectedLevel: level, screen: 'drill' }),
 
-      startLesson: (lessonId) =>
-        set((s) => {
-          const found = findLesson(lessonId);
-          if (!found) return s; // unknown id — defensive no-op
-          return {
-            selectedDrill: found.lesson.drill,
-            selectedLevel: found.lesson.level,
-            currentLessonId: lessonId,
-            screen: 'drill' as Screen,
-          };
-        }),
+      startLesson: (lessonId) => {
+        const found = findLesson(lessonId);
+        if (!found) return; // unknown id — defensive no-op
+        get().startDrill(found.lesson.drill, found.lesson.level);
+        set({ currentLessonId: lessonId });
+      },
 
       finishRound: ({ drill, level, stars, correctCount }) =>
         set((s) => {
