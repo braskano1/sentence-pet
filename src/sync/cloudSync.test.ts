@@ -17,7 +17,7 @@ function state(coins: number, pets: PetInstance[]): PersistedState {
     screen: 'petRoom', pets, activePetId: pets[0].id, coins,
     inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
-    owned: [], activeBackground: null, journey: { lessonStars: {} },
+    owned: [], activeBackground: null, journey: { lessonStars: {} }, soundEnabled: true,
   };
 }
 

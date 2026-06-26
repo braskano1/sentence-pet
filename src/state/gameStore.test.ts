@@ -527,6 +527,17 @@ describe('persist v9 (journey)', () => {
   });
 });
 
+describe('sound toggle', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  it('defaults soundEnabled to true and toggles it', () => {
+    expect(useGameStore.getState().soundEnabled).toBe(true);
+    useGameStore.getState().toggleSound();
+    expect(useGameStore.getState().soundEnabled).toBe(false);
+    useGameStore.getState().toggleSound();
+    expect(useGameStore.getState().soundEnabled).toBe(true);
+  });
+});
+
 describe('stage-change detection', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 

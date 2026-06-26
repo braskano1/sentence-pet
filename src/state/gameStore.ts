@@ -53,6 +53,7 @@ interface GameState {
   activeBackground: string | null;
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
+  soundEnabled: boolean;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
   // actions
@@ -69,6 +70,7 @@ interface GameState {
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
+  toggleSound: () => void;
   startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
@@ -78,13 +80,13 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 9;
+export const PERSIST_VERSION = 10;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey' | 'soundEnabled'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -102,6 +104,7 @@ export function selectPersisted(s: GameState): PersistedState {
     owned: s.owned,
     activeBackground: s.activeBackground,
     journey: s.journey,
+    soundEnabled: s.soundEnabled,
   };
 }
 
@@ -157,6 +160,7 @@ function freshState() {
     activeBackground: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
+    soundEnabled: true,
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
   };
@@ -263,6 +267,8 @@ export const useGameStore = create<GameState>()(
 
       clearStageChange: () => set({ lastStageChange: null }),
 
+      toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
+
       renamePet: (id, name) =>
         set((s) => {
           const clean = sanitizePetName(name);
@@ -308,6 +314,7 @@ export const useGameStore = create<GameState>()(
       // v5->v6 backfills pet.rarity (derived from stats). v6->v7 backfills pet.name (default '').
       // v7->v8 backfills pet.growth (zeroed BattleStats for pets that predate the field).
       // v8->v9 backfills journey { lessonStars: {} }.
+      // v9->v10 backfills soundEnabled (default true).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -337,6 +344,7 @@ export const useGameStore = create<GameState>()(
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
+          soundEnabled: (st as { soundEnabled?: boolean }).soundEnabled ?? true,
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.

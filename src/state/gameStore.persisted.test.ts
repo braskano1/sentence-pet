@@ -9,6 +9,7 @@ describe('selectPersisted', () => {
       [
         'activeBackground', 'activePetId', 'coins', 'inventory', 'journey',
         'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
+        'soundEnabled',
       ].sort(),
     );
     expect(snap).not.toHaveProperty('lastLevelUp');
@@ -17,7 +18,11 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(9);
+    expect(PERSIST_VERSION).toBe(10);
+  });
+
+  it('includes soundEnabled, defaulting to true', () => {
+    expect(selectPersisted(useGameStore.getState())).toHaveProperty('soundEnabled', true);
   });
 
   it('covers exactly the persisted (non-transient, non-function) store fields — no drift vs partialize', () => {
