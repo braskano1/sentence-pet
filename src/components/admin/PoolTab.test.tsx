@@ -25,4 +25,20 @@ describe('PoolTab', () => {
     const next = onChange.mock.calls.at(-1)![0] as ContentBundle;
     expect(Object.keys(next.pool).length).toBe(2);
   });
+
+  it('new-item id does not collide when item-1 and item-3 exist (post-delete gap)', () => {
+    const onChange = vi.fn();
+    const gappedBundle: ContentBundle = {
+      pool: { 'item-1': item('item-1'), 'item-3': item('item-3') },
+      units: [],
+    };
+    render(<PoolTab bundle={gappedBundle} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /new item/i }));
+    expect(onChange).toHaveBeenCalled();
+    const next = onChange.mock.calls.at(-1)![0] as ContentBundle;
+    const keys = Object.keys(next.pool);
+    expect(keys.length).toBe(3);
+    // The new id must not be 'item-3' (which would overwrite the existing entry)
+    expect(next.pool['item-3'].id).toBe('item-3');
+  });
 });

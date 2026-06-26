@@ -17,7 +17,7 @@ export function ItemEditor({ item, onChange }: { item: DrillItem; onChange: (i: 
         </select>
       </label>
       <label>level <input type="number" className="w-16 border px-1" value={item.level}
-        onChange={(e) => set({ level: Number(e.target.value) })} /></label>
+        onChange={(e) => { const n = Number(e.target.value); set({ level: Number.isNaN(n) ? item.level : n }); }} /></label>
       <label>thaiHint <input className="border px-1" value={item.thaiHint}
         onChange={(e) => set({ thaiHint: e.target.value })} /></label>
       <label>slots (csv) <input className="border px-1" value={item.slots.join(',')}

@@ -7,8 +7,14 @@ export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange:
   const ids = Object.keys(bundle.pool);
   const [selected, setSelected] = useState<string | null>(ids[0] ?? null);
 
+  function freshId(): string {
+    let n = 1;
+    while (bundle.pool[`item-${n}`]) n++;
+    return `item-${n}`;
+  }
+
   function addItem() {
-    const id = `item-${ids.length + 1}`;
+    const id = freshId();
     const fresh: DrillItem = { id, drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun', 'Verb'], answer: ['', ''] };
     onChange({ ...bundle, pool: { ...bundle.pool, [id]: fresh } });
     setSelected(id);
