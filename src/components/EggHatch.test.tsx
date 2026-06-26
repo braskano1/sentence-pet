@@ -1,6 +1,6 @@
 // src/components/EggHatch.test.tsx
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DndContext } from '@dnd-kit/core';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
@@ -31,5 +31,13 @@ describe('EggHatch', () => {
         </DndContext>,
       ),
     ).not.toThrow();
+  });
+
+  it('lets you tap a tile into the current slot', () => {
+    render(<EggHatch />);
+    const firstTile = screen.getAllByTestId(/^tile-/)[0];
+    const word = firstTile.getAttribute('data-testid')!.replace('tile-', '');
+    fireEvent.click(firstTile);
+    expect(screen.getByTestId('slot-0')).toHaveTextContent(new RegExp(word, 'i'));
   });
 });
