@@ -42,3 +42,17 @@ export function gradePlacement(placed: (string | null)[], item: GradeItem): Grad
   }
   return { status: 'ideal', passes: true, flags: [] };
 }
+
+export type SlotResult = 'ok' | 'wrong';
+
+/** Per-slot correctness for partial retry. An accepted near-miss (trap, non-enforce) counts ok. */
+export function slotResults(placed: (string | null)[], item: GradeItem): SlotResult[] {
+  const { answer, traps, strictness } = item;
+  return answer.map((ans, i) => {
+    const word = placed[i];
+    if (word === ans) return 'ok';
+    const trap = traps?.find((t) => t.slot === i && t.word === word);
+    if (trap && strictness !== 'enforce') return 'ok';
+    return 'wrong';
+  });
+}
