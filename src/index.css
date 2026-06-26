@@ -51,3 +51,16 @@
     animation: bar-pulse 0.5s ease-out;
   }
 }
+
+/* --- Evolution sequence --- */
+.evo-silhouette {
+  filter: brightness(0) invert(1) drop-shadow(0 0 18px rgba(255, 255, 255, 0.9));
+}
+.evo-flash {
+  animation: evo-flash 0.65s ease-out;
+}
+@keyframes evo-flash {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}

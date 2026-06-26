@@ -14,6 +14,7 @@ export function RewardScreen() {
   const lastLevelUp = useGameStore((s) => s.lastLevelUp);
   const clearLevelUp = useGameStore((s) => s.clearLevelUp);
   const setScreen = useGameStore((s) => s.setScreen);
+  const lastStageChange = useGameStore((s) => s.lastStageChange);
 
   // Capture the level-up info on mount so the callout persists after clearLevelUp() nulls the store.
   const levelUpRef = useRef(lastLevelUp);
@@ -103,7 +104,7 @@ export function RewardScreen() {
         )}
       </motion.div>
       <PressButton
-        onClick={() => setScreen('petRoom')}
+        onClick={() => setScreen(lastStageChange ? 'evolution' : 'petRoom')}
         className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
       >
         Continue
