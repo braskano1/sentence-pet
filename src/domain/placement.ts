@@ -33,3 +33,18 @@ export function placeTile(
   used[tileIndex] = true;
   return { placed, used };
 }
+
+/** Index of the leftmost empty slot, or -1 when the sentence is full. */
+export function currentSlotIndex(placed: (string | null)[]): number {
+  return placed.findIndex((p) => p === null);
+}
+
+/**
+ * Tap-to-place: drop the tile at `tileIndex` into the current (leftmost empty) slot.
+ * No-op (same ref) when full or the tile is used — mirrors placeTile's contract.
+ */
+export function tapPlace(state: PlacementState, tiles: string[], tileIndex: number): PlacementState {
+  const slot = currentSlotIndex(state.placed);
+  if (slot === -1) return state;
+  return placeTile(state, tiles, tileIndex, slot);
+}

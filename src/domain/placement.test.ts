@@ -43,3 +43,33 @@ describe('placeTile', () => {
     expect(next.used).toEqual([false, true, false]);
   });
 });
+
+import { currentSlotIndex, tapPlace } from './placement';
+
+describe('currentSlotIndex', () => {
+  it('returns the leftmost empty slot', () => {
+    expect(currentSlotIndex([null, null])).toBe(0);
+    expect(currentSlotIndex(['She', null, null])).toBe(1);
+  });
+  it('returns -1 when full', () => {
+    expect(currentSlotIndex(['She', 'feeds'])).toBe(-1);
+  });
+});
+
+describe('tapPlace', () => {
+  const tiles = ['She', 'feeds', 'the cat'];
+  it('places a tile into the current (leftmost empty) slot', () => {
+    const state = { placed: ['She', null, null] as (string | null)[], used: [true, false, false] };
+    const next = tapPlace(state, tiles, 1);
+    expect(next.placed).toEqual(['She', 'feeds', null]);
+    expect(next.used).toEqual([true, true, false]);
+  });
+  it('is a no-op (same ref) when the sentence is full', () => {
+    const state = { placed: ['She', 'feeds', 'the cat'] as (string | null)[], used: [true, true, true] };
+    expect(tapPlace(state, tiles, 0)).toBe(state);
+  });
+  it('is a no-op when the tile is already used', () => {
+    const state = { placed: [null, null, null] as (string | null)[], used: [true, false, false] };
+    expect(tapPlace(state, tiles, 0)).toBe(state);
+  });
+});

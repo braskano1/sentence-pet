@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { gradePlacement } from './grade';
+import { gradePlacement, slotResults } from './grade';
 import type { DrillItem } from '../data/types';
 
 // minimal grammar item: 'he eats', with an agreement trap 'eat' on the verb slot
@@ -84,5 +84,25 @@ describe('gradePlacement', () => {
     });
     // distractor placed in the object slot -> wrong
     expect(gradePlacement(['I', 'eat', 'bread'], mixedItem).status).toBe('wrong');
+  });
+});
+
+describe('slotResults', () => {
+  const item = {
+    answer: ['She', 'feeds', 'the cat'],
+    traps: [{ slot: 1, word: 'feed', tip: 'feeds (he/she) takes -s' }],
+    strictness: undefined as 'flag' | 'enforce' | undefined,
+  };
+  it('marks exact matches ok and others wrong', () => {
+    expect(slotResults(['She', 'eats', 'the cat'], item)).toEqual(['ok', 'wrong', 'ok']);
+  });
+  it('treats an accepted near-miss trap (non-enforce) as ok', () => {
+    expect(slotResults(['She', 'feed', 'the cat'], item)).toEqual(['ok', 'ok', 'ok']);
+  });
+  it('treats a trap under enforce as wrong', () => {
+    expect(slotResults(['She', 'feed', 'the cat'], { ...item, strictness: 'enforce' })).toEqual(['ok', 'wrong', 'ok']);
+  });
+  it('marks an unfilled slot wrong', () => {
+    expect(slotResults(['She', null, 'the cat'], item)).toEqual(['ok', 'wrong', 'ok']);
   });
 });

@@ -26,4 +26,22 @@ describe('SentenceSlots', () => {
     await userEvent.click(screen.getByText('I'));
     expect(onClearSlot).toHaveBeenCalledWith(0);
   });
+
+  it('highlights the current (leftmost empty) slot', () => {
+    render(
+      <DndContext>
+        <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', null, null]} onClearSlot={() => {}} />
+      </DndContext>,
+    );
+    expect(screen.getByTestId('slot-1')).toHaveClass('border-emerald-500');
+  });
+
+  it('colors a filled slot by its part of speech', () => {
+    render(
+      <DndContext>
+        <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} />
+      </DndContext>,
+    );
+    expect(screen.getByTestId('slot-1')).toHaveClass('bg-emerald-100');
+  });
 });

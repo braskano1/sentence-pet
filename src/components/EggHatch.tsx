@@ -16,7 +16,8 @@ import {
 import { useContentStore } from '../content/store';
 import { tutorialItem } from '../content/model';
 import { isPlacementCorrect, shuffle } from '../domain/check';
-import { parseDndId, placeTile } from '../domain/placement';
+import { parseDndId, placeTile, tapPlace } from '../domain/placement';
+import { useSpeech } from '../hooks/useSpeech';
 import { EGG_SPRITE } from '../config/sprites';
 import { useGameStore } from '../state/gameStore';
 import { SentenceSlots } from './SentenceSlots';
@@ -32,6 +33,20 @@ export function EggHatch() {
   const [tiles, setTiles] = useState<string[]>(() => shuffle(item.answer));
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
+  const speak = useSpeech();
+
+  function onTapPlace(tileIndex: number) {
+    if (locked) return;
+    speak.speakWord(tiles[tileIndex]);
+    const next = tapPlace({ placed, used }, tiles, tileIndex);
+    if (next.placed === placed) return;
+    setPlaced(next.placed);
+    setUsed(next.used);
+    if (next.placed.every((p) => p !== null)) {
+      const correct = isPlacementCorrect(next.placed, item.answer);
+      play(correct ? 'correct' : 'wrong', () => (correct ? hatch() : reset()));
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -121,7 +136,7 @@ export function EggHatch() {
           )}
         </div>
         <div className="pb-2">
-          <WordTray tiles={tiles} used={used} />
+          <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>
       </div>
       <DragOverlay>

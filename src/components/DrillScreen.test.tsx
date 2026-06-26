@@ -1,14 +1,27 @@
 // src/components/DrillScreen.test.tsx
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { DndContext } from '@dnd-kit/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+// Make round feedback synchronous in tests: play immediately runs onDone.
+vi.mock('./useRoundFeedback', () => ({
+  useRoundFeedback: () => ({ feedback: null, locked: false, play: (_k: string, done: () => void) => done() }),
+}));
+
 import { DrillScreen } from './DrillScreen';
 import { useGameStore } from '../state/gameStore';
 import { SEED } from '../content/seed';
 import { itemsForDrill } from '../content/model';
+import type { DrillItem } from '../data/types';
+
+const ITEM: DrillItem = {
+  id: 'i1', drill: 'pattern' as const, level: 1, thaiHint: 'เธอให้อาหารแมว',
+  slots: ['Pronoun', 'Verb', 'Object'],
+  answer: ['She', 'feeds', 'the cat'],
+  distractors: ['eats'],
+};
 
 describe('DrillScreen', () => {
   beforeEach(() => {
@@ -16,10 +29,28 @@ describe('DrillScreen', () => {
   });
 
   it('renders the Thai hint and the POS slots for the first item', () => {
-    render(<DrillScreen items={itemsForDrill(SEED, 'pattern', 1)} drill="pattern" level={1} />);
-    expect(screen.getByText(/Sentence 1 of 5/)).toBeInTheDocument();
+    const items = itemsForDrill(SEED, 'pattern', 1);
+    render(<DrillScreen items={items} drill="pattern" level={1} />);
+    expect(screen.getByText(items[0].thaiHint)).toBeInTheDocument();
     expect(screen.getAllByText('Pronoun').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Verb').length).toBeGreaterThan(0);
+  });
+
+  it('tap-places a tile into the current slot', () => {
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    expect(screen.getByTestId('slot-0')).toHaveTextContent('She');
+  });
+
+  it('on a wrong answer, clears only the wrong slot and shows the why-tip', () => {
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    fireEvent.click(screen.getByTestId('tile-eats'));
+    fireEvent.click(screen.getByTestId('tile-the cat'));
+    expect(screen.getByTestId('slot-0')).toHaveTextContent('She');
+    expect(screen.getByTestId('slot-2')).toHaveTextContent('the cat');
+    expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eats');
+    expect(screen.getByTestId('why-tip')).toBeInTheDocument();
   });
 
   it('renders a draggable tile for each answer word', () => {

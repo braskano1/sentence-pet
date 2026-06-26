@@ -12,9 +12,28 @@ const flag: Pick<DrillItem, 'answer' | 'traps' | 'strictness'> = {
 const enforce = { ...flag, strictness: 'enforce' as const };
 
 describe('resolveRound', () => {
-  it('wrong placement -> retry', () => {
-    const action = resolveRound({ item: pattern, filled: ['run', 'I'], index: 0, total: 5, mistakes: 0 });
-    expect(action).toEqual({ type: 'retry' });
+  it('returns retry with the wrong slot indices and a trap tip when present', () => {
+    const item = {
+      answer: ['She', 'feeds', 'the cat'],
+      traps: [{ slot: 1, word: 'feed', tip: 'feeds (he/she) takes -s' }],
+      strictness: 'enforce' as const,
+    };
+    const action = resolveRound({ item, filled: ['She', 'feed', 'the cat'], index: 0, total: 5, mistakes: 0 });
+    expect(action.type).toBe('retry');
+    if (action.type === 'retry') {
+      expect(action.wrongSlots).toEqual([1]);
+      expect(action.tip).toBe('feeds (he/she) takes -s');
+    }
+  });
+
+  it('returns retry with tip null when no trap explains the slip', () => {
+    const item = { answer: ['She', 'feeds', 'the cat'], traps: [], strictness: undefined };
+    const action = resolveRound({ item, filled: ['She', 'eats', 'the cat'], index: 0, total: 5, mistakes: 0 });
+    expect(action.type).toBe('retry');
+    if (action.type === 'retry') {
+      expect(action.wrongSlots).toEqual([1]);
+      expect(action.tip).toBeNull();
+    }
   });
 
   it('correct but not last item -> advance, no flags', () => {
@@ -43,7 +62,7 @@ describe('resolveRound', () => {
 
   it('enforce mode near-miss -> retry (no pass, no food)', () => {
     const action = resolveRound({ item: enforce, filled: ['he', 'eat'], index: 0, total: 5, mistakes: 0 });
-    expect(action).toEqual({ type: 'retry' });
+    expect(action.type).toBe('retry');
   });
 
   it('correct last item WITH prior mistakes -> finish with fewer stars', () => {
