@@ -191,6 +191,14 @@ Each drill uses the 5 rungs as the sentence frame; only its own dial ramps L1→
 
 > **Level-select (shipped):** free-pick level chips on each drill card; available levels derived from authored content via `levelsFor(drill)` (never offers an empty level). Store gained transient `selectedLevel`; `startDrill(drill, level)` is 2-arg; `App` no longer hardcodes `level={1}`. No gated unlock yet (deferred — needs persisted per-drill progress + a persist version bump). Unlocks in-app playtesting of authored Pattern L2 & Grammar L2.
 
+> **Themed journey (shipped):** the free-pick drill grid is replaced by a
+> themed-unit journey (`src/data/journey.ts`): ordered Units → single-drill
+> Lesson nodes → a Mixed checkpoint gating the next unit. Unit-gated unlock,
+> per-lesson best-stars persisted (`journey.lessonStars`, persist v9), no lives,
+> pet 1–50 decoupled. `JourneyMap` (unit cards) replaced `DrillPicker`.
+> Checkpoint `isCheckpoint` is the seam for the B-3 boss battle; `JOURNEY` data
+> is the seam for the admin backend. Spec/plan dated 2026-06-26.
+
 ### Pass & stars
 - **Clear a level = 5/5 correct** (retry within the round until all 5 right).
 - **Stars measure hints + mistakes used:** 3⭐ = no hints + no wrong taps; fewer stars as hints/errors accrue. Replay for 3⭐ = mastery hook.
