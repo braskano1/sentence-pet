@@ -1,6 +1,9 @@
 import {
   getAuth,
   signInWithEmailAndPassword,
+  signInAnonymously,
+  linkWithCredential,
+  EmailAuthProvider,
   signOut,
   onAuthStateChanged,
   connectAuthEmulator,
@@ -16,6 +19,16 @@ if (import.meta.env.VITE_USE_EMULATOR === 'true') {
 
 export function signIn(email: string, password: string) {
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+export function signInAnon() {
+  return signInAnonymously(auth);
+}
+
+/** Upgrade the current (anonymous) user to an email/password account, preserving the uid. */
+export function linkEmailPassword(email: string, password: string) {
+  const cred = EmailAuthProvider.credential(email, password);
+  return linkWithCredential(auth.currentUser!, cred);
 }
 
 export function signOutUser() {
