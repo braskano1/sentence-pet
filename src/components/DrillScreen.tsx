@@ -1,39 +1,39 @@
-// src/components/DrillScreen.tsx
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
+  DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor,
+  closestCenter, useSensor, useSensors, type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import { trayWords } from '../content/model';
 import type { DrillItem, DrillType } from '../data/types';
 import { shuffle } from '../domain/check';
-import { parseDndId, placeTile } from '../domain/placement';
+import { parseDndId, placeTile, tapPlace, currentSlotIndex } from '../domain/placement';
 import { resolveRound, type RoundAction } from '../domain/round';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, selectActivePet } from '../state/gameStore';
+import { stageForXp } from '../domain/xp';
+import { useSpeech } from '../hooks/useSpeech';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
+import { DrillHeader } from './drill/DrillHeader';
+import { DrillPet, type PetReaction } from './drill/DrillPet';
+import { WhyTip } from './drill/WhyTip';
+import { HintButton } from './drill/HintButton';
 
 export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill: DrillType; level: number }) {
   const finishRound = useGameStore((s) => s.finishRound);
+  const pet = useGameStore(selectActivePet);
 
   const [index, setIndex] = useState(0);
   const [placed, setPlaced] = useState<(string | null)[]>(() => items[0].slots.map(() => null));
   const [tiles, setTiles] = useState<string[]>(() => shuffle(trayWords(items[0])));
   const [used, setUsed] = useState<boolean[]>(() => trayWords(items[0]).map(() => false));
   const [mistakes, setMistakes] = useState(0);
-  const [tip, setTip] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [why, setWhy] = useState<string | null>(null);
+  const [reaction, setReaction] = useState<PetReaction>('idle');
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
+  const speak = useSpeech();
 
   const item = items[index];
 
@@ -48,6 +48,8 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     setPlaced(items[i].slots.map(() => null));
     setTiles(shuffle(words));
     setUsed(words.map(() => false));
+    setWhy(null);
+    setReaction('idle');
   }
 
   function handleClear(slotIndex: number) {
@@ -65,6 +67,20 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     }
   }
 
+  function commit(next: { placed: (string | null)[]; used: boolean[] }) {
+    if (next.placed === placed) return;
+    setPlaced(next.placed);
+    setUsed(next.used);
+    setWhy(null);
+    if (next.placed.every((p) => p !== null)) evaluate(next.placed);
+  }
+
+  function onTapPlace(tileIndex: number) {
+    if (locked) return;
+    speak.speakWord(tiles[tileIndex]);
+    commit(tapPlace({ placed, used }, tiles, tileIndex));
+  }
+
   function onDragStart(e: DragStartEvent) {
     if (locked) return;
     const id = parseDndId(String(e.active.id));
@@ -78,102 +94,119 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     const from = parseDndId(String(e.active.id));
     const to = parseDndId(String(e.over.id));
     if (from?.kind !== 'tile' || to?.kind !== 'slot') return;
-    const next = placeTile({ placed, used }, tiles, from.index, to.index);
-    if (next.placed === placed) return; // no-op (slot filled / tile used)
-    setPlaced(next.placed);
-    setUsed(next.used);
-    if (next.placed.every((p) => p !== null)) evaluate(next.placed);
+    speak.speakWord(tiles[from.index]);
+    commit(placeTile({ placed, used }, tiles, from.index, to.index));
   }
 
   function evaluate(filled: (string | null)[]) {
-    const action = resolveRound({
-      item,
-      filled,
-      index,
-      total: items.length,
-      mistakes,
-    });
+    const action = resolveRound({ item, filled, index, total: items.length, mistakes });
     if (action.type === 'retry') {
-      setTip(null);
-      play('wrong', () => applyAction(action));
+      setReaction('wrong');
+      play('wrong', () => applyAction(action, filled));
       return;
     }
-    // action is advance|finish here, so action.flags is string[] (no narrowing tricks needed)
+    speak.speakSentence(item.answer.join(' '));
+    setReaction('correct');
     const kind = action.flags.length ? 'flag' : 'correct';
-    setTip(kind === 'flag' ? action.flags.join(' · ') : null);
-    play(kind, () => applyAction(action));
+    play(kind, () => applyAction(action, filled));
   }
 
-  function applyAction(action: RoundAction) {
+  function applyAction(action: RoundAction, filled: (string | null)[]) {
     switch (action.type) {
       case 'finish':
         finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
-        if (action.flags.length) setMistakes((m) => m + 1); // flag = one slip
-        setTip(null);
+        setStreak((s) => (action.flags.length ? 0 : s + 1));
+        if (action.flags.length) setMistakes((m) => m + 1);
         setIndex(action.nextIndex);
         loadItem(action.nextIndex);
         break;
-      case 'retry':
+      case 'retry': {
         setMistakes((m) => m + 1);
-        loadItem(index);
+        setStreak(0);
+        const np = [...filled];
+        const nu = [...used];
+        for (const si of action.wrongSlots) {
+          const w = filled[si];
+          np[si] = null;
+          const ui = tiles.findIndex((t, i) => nu[i] && t === w);
+          if (ui !== -1) nu[ui] = false;
+        }
+        setPlaced(np);
+        setUsed(nu);
+        setWhy(action.tip ?? `The ${item.slots[action.wrongSlots[0]]} isn't right yet.`);
         break;
+      }
     }
   }
 
+  function hint() {
+    if (locked) return;
+    const slot = currentSlotIndex(placed);
+    if (slot === -1) return;
+    const word = item.answer[slot];
+    const tileIndex = tiles.findIndex((t, i) => !used[i] && t === word);
+    if (tileIndex === -1) return;
+    setStreak(0);
+    setMistakes((m) => m + 1);
+    setWhy(null);
+    speak.speakWord(word);
+    commit(placeTile({ placed, used }, tiles, tileIndex, slot));
+  }
+
+  const stage = stageForXp(pet.xp, pet.hatched);
+  const line = why
+    ? 'Hmm, not quite!'
+    : currentSlotIndex(placed) === -1
+      ? 'Tap a word to fix it!'
+      : `Which ${item.slots[currentSlotIndex(placed)]}? 👀`;
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-    >
-      <div className="flex h-full flex-col bg-slate-100 p-4">
-        <div className="flex flex-col items-center gap-2 pt-2">
-          <p className="text-sm text-slate-500">Sentence {index + 1} of {items.length}</p>
-          <p className="text-2xl text-slate-700">{item.thaiHint}</p>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
+        <DrillHeader streak={streak} index={index} total={items.length} />
+
+        <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} />
+
+        <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-extrabold text-slate-800">{item.thaiHint}</span>
+            <button
+              type="button" aria-label="Hear the meaning"
+              onClick={() => speak.speakThai(item.thaiHint)}
+              className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700"
+            >🔊</button>
+            <HintButton onHint={hint} disabled={locked || currentSlotIndex(placed) === -1} />
+          </div>
         </div>
+
         <div
-          className={`relative flex flex-1 items-center justify-center rounded-xl ${
-            feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
+          className={`relative flex flex-1 flex-col items-center justify-center gap-3 rounded-xl ${
+            feedback === 'correct' || feedback === 'flag' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
           }`}
         >
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+          {why && <WhyTip text={why} />}
           {feedback && (
             <div
-              aria-hidden="true"
+              aria-hidden
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
-                feedback === 'correct'
-                  ? 'text-emerald-500'
-                  : feedback === 'flag'
-                    ? 'text-sky-500'
-                    : 'text-red-500'
+                feedback === 'wrong' ? 'text-rose-500' : feedback === 'flag' ? 'text-sky-500' : 'text-emerald-500'
               }`}
             >
               {feedback === 'wrong' ? '✗' : '✓'}
             </div>
           )}
-          {feedback === 'flag' && tip && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="pointer-events-none absolute bottom-2 rounded-xl bg-sky-100 px-4 py-2 text-center text-sm font-semibold text-sky-800 shadow"
-            >
-              {tip}
-            </motion.div>
-          )}
         </div>
+
         <div className="pb-2">
-          <WordTray tiles={tiles} used={used} />
+          <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>
       </div>
       <DragOverlay>
         {activeWord ? (
-          <div className="min-h-12 px-5 py-3 rounded-xl bg-indigo-600 text-white text-lg font-semibold shadow">
-            {activeWord}
-          </div>
+          <div className="min-h-12 rounded-xl bg-indigo-600 px-5 py-3 text-lg font-semibold text-white shadow">{activeWord}</div>
         ) : null}
       </DragOverlay>
     </DndContext>
