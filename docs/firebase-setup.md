@@ -42,3 +42,14 @@ npm run test:rules   # boots the Firestore emulator (JDK 21+), runs the rules su
 
 ## Reaching the admin tool
 Open the app at `<url>/#admin`. Non-admins and signed-out visitors are refused.
+
+## Seeding content (one-time / after content model changes)
+
+The player ships with a bundled content snapshot, but Firestore must be seeded so the
+admin tool and live fetch have data:
+
+1. `npm run seed:export`  — writes `dist-seed/content.json` from `src/content/seed.ts`.
+2. Set `GOOGLE_APPLICATION_CREDENTIALS` to your service-account key (see admin-claim setup).
+3. `npm run seed:push`    — writes `content/pool` + `content/journey` atomically.
+
+Re-runnable; overwrites both docs. After this, edit content live via the admin tool (`#admin`).

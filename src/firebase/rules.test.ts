@@ -57,6 +57,21 @@ run('firestore security rules', () => {
     await assertSucceeds(setDoc(doc(fs, 'content/x'), { a: 1 }));
   });
 
+  it('anyone can read content/pool and content/journey', async () => {
+    const anon = env.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(anon, 'content/pool')));
+    await assertSucceeds(getDoc(doc(anon, 'content/journey')));
+  });
+
+  it('only an admin can write content/pool and content/journey', async () => {
+    const user = env.authenticatedContext('user1', {}).firestore();
+    await assertFails(setDoc(doc(user, 'content/pool'), { items: {} }));
+    await assertFails(setDoc(doc(user, 'content/journey'), { units: [] }));
+    const admin = env.authenticatedContext('admin1', { admin: true }).firestore();
+    await assertSucceeds(setDoc(doc(admin, 'content/pool'), { items: {} }));
+    await assertSucceeds(setDoc(doc(admin, 'content/journey'), { units: [] }));
+  });
+
   it('reviewQueue is admin-only', async () => {
     const admin = env.authenticatedContext('admin1', { admin: true }).firestore();
     await assertSucceeds(setDoc(doc(admin, 'reviewQueue/item1'), { a: 1 }));
