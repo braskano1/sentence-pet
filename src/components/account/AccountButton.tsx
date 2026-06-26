@@ -1,34 +1,16 @@
-import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
-import { SignUpForm } from './SignUpForm';
 
-/** Entry point for cloud save: guests sign up, signed-in students see their account. */
+/** In-game signed-in control: shows the account email + Sign out. Hidden for guests (the menu owns sign-up). */
 export function AccountButton() {
   const { isAnonymous, user, loading, signOut } = useAuth();
-  const [open, setOpen] = useState(false);
-
-  if (loading) return null;
-
-  if (!isAnonymous && user) {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <span>{user.email}</span>
-        <button type="button" onClick={() => void signOut()} className="rounded border px-2 py-1">
-          Sign out
-        </button>
-      </div>
-    );
-  }
+  if (loading || isAnonymous || !user) return null;
 
   return (
-    <div className="text-sm">
-      {open ? (
-        <SignUpForm onDone={() => setOpen(false)} />
-      ) : (
-        <button type="button" onClick={() => setOpen(true)} className="rounded border px-2 py-1">
-          Save your pets across devices
-        </button>
-      )}
+    <div className="flex items-center gap-2 text-sm">
+      <span>{user.email}</span>
+      <button type="button" onClick={() => void signOut()} className="rounded border px-2 py-1">
+        Sign out
+      </button>
     </div>
   );
 }
