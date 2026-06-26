@@ -35,4 +35,20 @@ describe('useEvolutionSequence', () => {
     act(() => { result.current.skip(); });
     expect(result.current.phase).toBe('reveal');
   });
+
+  it('skip() during the strobe phase still jumps to reveal', () => {
+    const { result } = renderHook(() => useEvolutionSequence({ reduced: false }));
+    act(() => { vi.advanceTimersByTime(TIMINGS.announce + TIMINGS.silhouette + TIMINGS.strobeStart); });
+    expect(result.current.phase).toBe('strobe');
+    act(() => { result.current.skip(); });
+    expect(result.current.phase).toBe('reveal');
+  });
+
+  it('toggles swap during the strobe phase', () => {
+    const { result } = renderHook(() => useEvolutionSequence({ reduced: false }));
+    act(() => { vi.advanceTimersByTime(TIMINGS.announce + TIMINGS.silhouette); });
+    const before = result.current.swap;
+    act(() => { vi.advanceTimersByTime(TIMINGS.strobeStart); });
+    expect(result.current.swap).toBe(!before);
+  });
 });

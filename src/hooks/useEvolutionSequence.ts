@@ -36,6 +36,7 @@ export function useEvolutionSequence({ reduced }: { reduced: boolean }) {
   };
 
   useEffect(() => {
+    skipped.current = false;
     if (reduced) {
       at(TIMINGS.announce, toReveal);
       return clearTimers;
