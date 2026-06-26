@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useGameStore, selectActivePet } from './state/gameStore';
 import { AppShell } from './components/AppShell';
@@ -36,7 +37,10 @@ function CurrentScreen() {
   const bundle = useContentStore((s) => s.bundle);
   const currentLessonId = useGameStore((s) => s.currentLessonId);
   const lesson = currentLessonId ? findLesson(bundle, currentLessonId)?.lesson : undefined;
-  const items = lesson ? itemsForLesson(bundle, lesson) : itemsForDrill(bundle, drill, level);
+  const items = useMemo(
+    () => (lesson ? itemsForLesson(bundle, lesson) : itemsForDrill(bundle, drill, level)),
+    [bundle, lesson, drill, level],
+  );
   const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items);
 
   return (
