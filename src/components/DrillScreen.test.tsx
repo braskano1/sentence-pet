@@ -142,4 +142,16 @@ describe('DrillScreen', () => {
     expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eats');
     expect(speech.speakSentence).not.toHaveBeenCalled();
   });
+
+  it('rejects a grammar near-miss: clears the verb slot and shows the trap tip', () => {
+    // first grammar L1 item: answer ['he','eats'] + trap 'eat'
+    render(<DrillScreen items={itemsForDrill(SEED, 'grammar', 1)} drill="grammar" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-he'));
+    fireEvent.click(screen.getByTestId('tile-eat')); // the agreement trap
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    // near-miss is rejected -> the wrong verb slot is cleared (retry)
+    expect(screen.getByTestId('slot-1')).not.toHaveTextContent('eat');
+    // and the trap's teaching tip is shown
+    expect(screen.getByTestId('why-tip')).toHaveTextContent('เขา → he eats 👍');
+  });
 });

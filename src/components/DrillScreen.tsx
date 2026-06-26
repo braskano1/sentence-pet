@@ -107,8 +107,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     }
     speak.speakSentence(item.answer.join(' '));
     setReaction('correct');
-    const kind = action.flags.length ? 'flag' : 'correct';
-    play(kind, () => applyAction(action, filled));
+    play('correct', () => applyAction(action, filled));
   }
 
   function applyAction(action: RoundAction, filled: (string | null)[]) {
@@ -117,8 +116,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
         finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
-        setStreak((s) => (action.flags.length ? 0 : s + 1));
-        if (action.flags.length) setMistakes((m) => m + 1);
+        setStreak((s) => s + 1);
         setIndex(action.nextIndex);
         loadItem(action.nextIndex);
         break;
@@ -185,7 +183,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
 
         <div
           className={`relative flex flex-1 flex-col items-center justify-center gap-3 rounded-xl ${
-            feedback === 'correct' || feedback === 'flag' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
+            feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
           }`}
         >
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
@@ -194,7 +192,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
             <div
               aria-hidden
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
-                feedback === 'wrong' ? 'text-rose-500' : feedback === 'flag' ? 'text-sky-500' : 'text-emerald-500'
+                feedback === 'wrong' ? 'text-rose-500' : 'text-emerald-500'
               }`}
             >
               {feedback === 'wrong' ? '✗' : '✓'}
