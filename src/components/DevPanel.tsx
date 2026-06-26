@@ -10,6 +10,11 @@ import { pickSpecies } from '../domain/species';
 import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
 import { totalXpForLevel, STAGE_LEVEL } from '../domain/xp';
 import type { BattleStats, PetStage, PetInstance } from '../data/types';
+import { useAuth } from '../auth/useAuth';
+import { useContentStore } from '../content/store';
+import { orderedUnits } from '../content/model';
+import { devTestLoadout } from '../dev/testLoadout';
+import { viewAsTestAccount } from '../dev/testAccount';
 
 const rng = () => Math.random();
 const STAT_KEYS: (keyof BattleStats)[] = ['hp', 'atk', 'def', 'spd', 'luk'];
@@ -76,6 +81,17 @@ export function DevPanel() {
   const addCoins = useGameStore((s) => s.addCoinsForTest);
   const reset = useGameStore((s) => s.resetForTest);
   const hatch = useGameStore((s) => s.hatch);
+  const { signIn, signOut } = useAuth();
+  const bundle = useContentStore((s) => s.bundle);
+
+  // First few real (non-checkpoint) lesson ids, marked cleared in the loadout.
+  const clearedLessonIds = orderedUnits(bundle)
+    .flatMap((u) => u.lessons.filter((l) => !l.isCheckpoint).map((l) => l.id))
+    .slice(0, 3);
+
+  const applyLoadout = () => useGameStore.setState(devTestLoadout({ clearedLessonIds }));
+  const viewAsTest = () =>
+    void viewAsTestAccount({ signIn, seed: applyLoadout }).catch((e) => console.error('[dev] test account:', e));
 
   if (!open) {
     return (
@@ -137,10 +153,19 @@ export function DevPanel() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-1">
-        {!pet.hatched && <button type="button" className={btn} onClick={hatch}>hatch</button>}
-        <button type="button" className={`${btn} bg-red-800 hover:bg-red-700`} onClick={reset}>reset</button>
+      <div className="mb-1 text-fuchsia-300">VIEW AS</div>
+      <div className="mb-2 grid grid-cols-2 gap-1">
+        <button type="button" className={btn} onClick={reset}>👶 new player</button>
+        <button type="button" className={btn} onClick={() => void signOut().catch((e) => console.error('[dev] sign out:', e))}>🚪 sign out</button>
+        <button type="button" className={btn} onClick={applyLoadout}>🎒 loadout</button>
+        <button type="button" className={btn} onClick={viewAsTest}>🧪 test acct</button>
       </div>
+
+      {!pet.hatched && (
+        <div className="grid grid-cols-3 gap-1">
+          <button type="button" className={btn} onClick={hatch}>hatch</button>
+        </div>
+      )}
     </div>
   );
 }
