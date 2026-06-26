@@ -8,6 +8,12 @@ vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 describe('Gacha screen', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 
+  // After a pull, the hatch cinematic plays first; advance through it to the card.
+  function advanceCinematic() {
+    fireEvent.click(screen.getByTestId('evolution-stage'));            // skip -> reveal
+    fireEvent.click(screen.getByRole('button', { name: /continue/i })); // onDone -> name card
+  }
+
   it('shows the pull button disabled when too poor', () => {
     render(<Gacha />);
     expect(screen.getByRole('button', { name: /pull/i })).toBeDisabled();
@@ -24,6 +30,7 @@ describe('Gacha screen', () => {
     render(<Gacha />);
     fireEvent.click(screen.getByRole('button', { name: /pull/i }));
     expect(useGameStore.getState().pets).toHaveLength(2);
+    advanceCinematic();
     const rarity = useGameStore.getState().lastPull?.rarity ?? '';
     expect(screen.getByText(new RegExp(`^${rarity}$`, 'i'))).toBeTruthy();
   });
@@ -38,12 +45,23 @@ describe('Gacha screen', () => {
     useGameStore.getState().addCoinsForTest(100);
     render(<Gacha />);
     fireEvent.click(screen.getByRole('button', { name: /pull/i }));
+    advanceCinematic();
     const field = screen.getByRole('textbox', { name: /name your pet/i });
     fireEvent.change(field, { target: { value: 'Sparky' } });
     fireEvent.click(screen.getByRole('button', { name: /^name$/i }));
     const pulled = useGameStore.getState().lastPull!;
     expect(useGameStore.getState().pets.find((p) => p.id === pulled.id)!.name).toBe('Sparky');
-    // reveal headline reflects the new name (lastPull kept in sync)
     expect(screen.getByText('Sparky!')).toBeInTheDocument();
+  });
+
+  it('plays the hatch cinematic on pull, then shows the name card', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    render(<Gacha />);
+    fireEvent.click(screen.getByRole('button', { name: /pull/i }));
+    // cinematic overlay first — name card not shown yet
+    expect(screen.getByTestId('evolution-stage')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /name your pet/i })).toBeNull();
+    advanceCinematic();
+    expect(screen.getByRole('textbox', { name: /name your pet/i })).toBeInTheDocument();
   });
 });
