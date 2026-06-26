@@ -36,6 +36,16 @@ run('firestore security rules', () => {
     await assertFails(setDoc(doc(fs, 'ping/user1'), { at: 1 }));
   });
 
+  it('a non-admin cannot read ping', async () => {
+    const fs = env.authenticatedContext('user1', {}).firestore();
+    await assertFails(getDoc(doc(fs, 'ping/user1')));
+  });
+
+  it('an unauthenticated client cannot read ping', async () => {
+    const anon = env.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anon, 'ping/admin1')));
+  });
+
   it('anyone can read content but not write', async () => {
     const anon = env.unauthenticatedContext().firestore();
     await assertSucceeds(getDoc(doc(anon, 'content/x')));
@@ -45,6 +55,15 @@ run('firestore security rules', () => {
   it('an admin can write content', async () => {
     const fs = env.authenticatedContext('admin1', { admin: true }).firestore();
     await assertSucceeds(setDoc(doc(fs, 'content/x'), { a: 1 }));
+  });
+
+  it('reviewQueue is admin-only', async () => {
+    const admin = env.authenticatedContext('admin1', { admin: true }).firestore();
+    await assertSucceeds(setDoc(doc(admin, 'reviewQueue/item1'), { a: 1 }));
+    await assertSucceeds(getDoc(doc(admin, 'reviewQueue/item1')));
+    const user = env.authenticatedContext('user1', {}).firestore();
+    await assertFails(setDoc(doc(user, 'reviewQueue/item2'), { a: 1 }));
+    await assertFails(getDoc(doc(user, 'reviewQueue/item1')));
   });
 
   it('owner can write own user doc; others are denied', async () => {
