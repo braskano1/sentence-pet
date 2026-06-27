@@ -121,6 +121,8 @@ export function BattleScreen() {
   }
 
   function submit() {
+    // A charged attack is mid-resolution (dodge overlay up) — ignore drill submits until it clears.
+    if (useBattleStore.getState().battlePhase !== 'answering') return;
     const correct = isPlacementCorrect(placed, item.answer);
     if (correct) {
       onCorrect();
