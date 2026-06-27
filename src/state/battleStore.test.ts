@@ -136,4 +136,34 @@ describe('charge state machine', () => {
     expect(useBattleStore.getState().charge).toBe(0);
     expect(useBattleStore.getState().battlePhase).toBe('answering');
   });
+
+  it('resolveSwipe is a no-op outside the charged phase', () => {
+    useBattleStore.getState().begin(PET, BOSS);
+    useBattleStore.getState().resolveSwipe(true);
+    const s = useBattleStore.getState();
+    expect(s.battlePhase).toBe('answering');
+    expect(s.lastEvent).toBeNull();
+  });
+
+  it('onCorrect is a no-op while a charged attack is pending', () => {
+    useBattleStore.getState().begin(PET, BOSS);
+    useBattleStore.getState().tickCharge(8000); // → charged
+    const bossHpBefore = useBattleStore.getState().snapshot!.bossHp;
+    useBattleStore.getState().onCorrect();
+    const s = useBattleStore.getState();
+    expect(s.battlePhase).toBe('charged');                 // still pending
+    expect(s.snapshot!.bossHp).toBe(bossHpBefore);         // boss not damaged
+  });
+
+  it('onWrong is a no-op while a charged attack is pending', () => {
+    useBattleStore.getState().begin(PET, BOSS);
+    useBattleStore.getState().tickCharge(8000); // → charged
+    const petHpBefore = useBattleStore.getState().snapshot!.petHp;
+    const itemsBefore = useBattleStore.getState().itemsAnswered;
+    useBattleStore.getState().onWrong();
+    const s = useBattleStore.getState();
+    expect(s.battlePhase).toBe('charged');                 // still pending
+    expect(s.snapshot!.petHp).toBe(petHpBefore);           // pet not hit
+    expect(s.itemsAnswered).toBe(itemsBefore);             // not counted
+  });
 });
