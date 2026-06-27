@@ -66,6 +66,7 @@ interface GameState {
   audio: AudioSettings;
   l1Mode: L1Mode; // per-user TH/ENG language-helper toggle (Spec §4)
   journey: { lessonStars: Record<string, number> };
+  courseComplete: Record<string, boolean>; // per-player completed courses (v15); unlocks the next course
   currentLessonId: string | null;
   currentCourseId: string | null;
   // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
@@ -104,12 +105,12 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 14;
+export const PERSIST_VERSION = 15;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
-  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
+  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
   | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
 >;
 
@@ -120,6 +121,7 @@ export function selectPersisted(s: GameState): PersistedState {
     pets: s.pets,
     activePetId: s.activePetId,
     coins: s.coins,
+    courseComplete: s.courseComplete,
     inventory: s.inventory,
     selectedDrill: s.selectedDrill,
     selectedLevel: s.selectedLevel,
@@ -190,6 +192,7 @@ function freshState() {
     audio: defaultAudioSettings(),
     l1Mode: 'TH' as L1Mode,
     journey: { lessonStars: {} as Record<string, number> },
+    courseComplete: {} as Record<string, boolean>,
     currentLessonId: null as string | null,
     currentCourseId: null as string | null,
     currentBossLessonId: null as string | null,
@@ -448,6 +451,7 @@ export const useGameStore = create<GameState>()(
       // v12->v13 drops audio.allMuted (Master mute IS the global mute): a save with
       //   allMuted:true lands as master.muted:true; the allMuted field is removed.
       // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
+      // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -466,6 +470,7 @@ export const useGameStore = create<GameState>()(
               activeTrack?: string | null;
               journey?: { lessonStars?: Record<string, number> };
               l1Mode?: L1Mode;
+              courseComplete?: Record<string, boolean>;
             }
           | null;
         // Zustand treats a null migrate return as "reset to initial state".
@@ -483,6 +488,8 @@ export const useGameStore = create<GameState>()(
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
           // v13->v14: backfill the per-user TH/ENG language-helper toggle (default 'TH').
           l1Mode: (st as { l1Mode?: L1Mode }).l1Mode ?? 'TH',
+          // v14->v15: backfill per-player course-completion map (default {}).
+          courseComplete: (st as { courseComplete?: Record<string, boolean> }).courseComplete ?? {},
           audio: (() => {
             const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
             const a = saved ? { ...saved } : defaultAudioSettings();

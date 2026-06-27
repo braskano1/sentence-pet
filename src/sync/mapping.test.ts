@@ -16,6 +16,7 @@ function pet(id: string): PetInstance {
 
 const sample: PersistedState = {
   screen: 'petRoom', pets: [pet('a'), pet('b')], activePetId: 'a', coins: 7,
+  courseComplete: { 'course-1': true },
   inventory: { protein: 1, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 2, lastReward: null, lastPull: null,
   owned: ['bg1', 'music:lofi'], activeBackground: 'bg1', activeTrack: 'music:lofi',

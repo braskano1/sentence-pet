@@ -16,6 +16,7 @@ function pet(id: string): PetInstance {
 }
 const cloudState: PersistedState = {
   screen: 'petRoom', pets: [pet('cloud')], activePetId: 'cloud', coins: 42,
+  courseComplete: {},
   inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
   owned: [], activeBackground: null, activeTrack: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
