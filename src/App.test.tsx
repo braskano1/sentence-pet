@@ -22,7 +22,7 @@ vi.mock('./firebase/content', () => ({
 }));
 
 vi.mock('./auth/useAuth', () => ({
-  useAuth: () => ({ user: null, signOut: vi.fn() }),
+  useAuth: () => ({ user: null, isAnonymous: true, signOut: vi.fn(), linkEmail: vi.fn() }),
 }));
 
 import React from 'react';
@@ -126,5 +126,16 @@ describe('App — zone wiring pushes the current screen zone to the music engine
 
     expect(m.setZone).toHaveBeenCalled();
     expect(m.setZone.mock.calls.at(-1)?.[0]).toBe('overworld');
+  });
+
+  it('a global gear button opens the Settings dialog', async () => {
+    const userEvent = (await import('@testing-library/user-event')).default;
+    useGameStore.setState((s) => ({
+      pets: s.pets.map((p) => ({ ...p, hatched: true })),
+      screen: 'petRoom',
+    }));
+    const { getByLabelText, getByRole } = render(<App />);
+    await userEvent.click(getByLabelText('Settings'));
+    expect(getByRole('dialog')).toBeInTheDocument();
   });
 });
