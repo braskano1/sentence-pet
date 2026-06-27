@@ -8,6 +8,7 @@ import { useCountUp } from '../effects/useCountUp';
 import { FOOD_META } from '../data/food';
 import { BATTLE_STAT_LABELS } from '../config/petDisplay';
 import type { BattleStats } from '../data/types';
+import { useAudio } from '../hooks/useAudio';
 
 export function RewardScreen() {
   const reward = useGameStore((s) => s.lastReward);
@@ -15,6 +16,7 @@ export function RewardScreen() {
   const clearLevelUp = useGameStore((s) => s.clearLevelUp);
   const setScreen = useGameStore((s) => s.setScreen);
   const lastStageChange = useGameStore((s) => s.lastStageChange);
+  const { play } = useAudio();
 
   // Capture the level-up info on mount so the callout persists after clearLevelUp() nulls the store.
   const levelUpRef = useRef(lastLevelUp);
@@ -23,8 +25,8 @@ export function RewardScreen() {
   }
 
   useEffect(() => {
-    if (reward) fireConfetti();
-  }, [reward]);
+    if (reward) { fireConfetti(); play('coin'); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (lastLevelUp) {

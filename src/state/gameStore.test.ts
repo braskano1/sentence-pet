@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
@@ -527,13 +528,13 @@ describe('persist v9 (journey)', () => {
   });
 });
 
-describe('migrate -> v10 (soundEnabled)', () => {
+describe('migrate -> v11 (audio mixer)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {
       persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
     }).persist.getOptions().migrate;
 
-  it('migrate backfills soundEnabled true on a v9 save that lacks the field', () => {
+  it('migrate backfills default audio mixer on a v9 save that lacks soundEnabled', () => {
     const v9 = {
       pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
         bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
@@ -542,19 +543,68 @@ describe('migrate -> v10 (soundEnabled)', () => {
       activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
       journey: { lessonStars: {} },
     };
-    const out = getMigrate()(v9, 9) as { soundEnabled: boolean };
-    expect(out.soundEnabled).toBe(true);
+    const out = getMigrate()(v9, 9) as { audio: { allMuted: boolean; master: { level: number } } };
+    expect(out.audio.allMuted).toBe(false);
+    expect(out.audio.master.level).toBe(1);
+  });
+
+  it('migrate converts soundEnabled:false (v10) to allMuted:true', () => {
+    const v10 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      journey: { lessonStars: {} },
+      soundEnabled: false,
+    };
+    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
+    expect(out.audio.allMuted).toBe(true);
+    expect(out.soundEnabled).toBeUndefined();
+  });
+
+  it('migrate converts soundEnabled:true (v10) to allMuted:false', () => {
+    const v10 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      journey: { lessonStars: {} },
+      soundEnabled: true,
+    };
+    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
+    expect(out.audio.allMuted).toBe(false);
+    expect(out.soundEnabled).toBeUndefined();
   });
 });
 
-describe('sound toggle', () => {
-  beforeEach(() => useGameStore.getState().resetForTest());
-  it('defaults soundEnabled to true and toggles it', () => {
-    expect(useGameStore.getState().soundEnabled).toBe(true);
-    useGameStore.getState().toggleSound();
-    expect(useGameStore.getState().soundEnabled).toBe(false);
-    useGameStore.getState().toggleSound();
-    expect(useGameStore.getState().soundEnabled).toBe(true);
+describe('audio mixer actions', () => {
+  beforeEach(() => {
+    useGameStore.setState({ audio: defaultAudioSettings() });
+  });
+
+  it('setChannelLevel clamps into 0..1', () => {
+    useGameStore.getState().setChannelLevel('sfx', 1.5);
+    expect(useGameStore.getState().audio.sfx.level).toBe(1);
+    useGameStore.getState().setChannelLevel('music', -0.2);
+    expect(useGameStore.getState().audio.music.level).toBe(0);
+    useGameStore.getState().setChannelLevel('master', 0.3);
+    expect(useGameStore.getState().audio.master.level).toBeCloseTo(0.3);
+  });
+
+  it('toggleChannelMute flips a single channel', () => {
+    useGameStore.getState().toggleChannelMute('voice');
+    expect(useGameStore.getState().audio.voice.muted).toBe(true);
+    useGameStore.getState().toggleChannelMute('voice');
+    expect(useGameStore.getState().audio.voice.muted).toBe(false);
+  });
+
+  it('toggleMuteAll flips the global flag', () => {
+    useGameStore.getState().toggleMuteAll();
+    expect(useGameStore.getState().audio.allMuted).toBe(true);
+    useGameStore.getState().toggleMuteAll();
+    expect(useGameStore.getState().audio.allMuted).toBe(false);
   });
 });
 

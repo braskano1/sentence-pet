@@ -1,22 +1,39 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { useGameStore } from '../state/gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 
-const speak = vi.fn();
-vi.mock('../config/audio', () => ({
-  getSpeechProvider: () => ({ speak }),
-  noopSpeech: { speak: () => {} },
-}));
+const { speak } = vi.hoisted(() => ({ speak: vi.fn() }));
+vi.mock('../config/audio', () => ({ getSpeechProvider: () => ({ speak }) }));
 
 import { useSpeech } from './useSpeech';
 
-describe('useSpeech', () => {
-  it('routes words to en-US, the hint to th-TH, the sentence to en-US', () => {
+afterEach(() => speak.mockClear());
+
+describe('useSpeech voice gating', () => {
+  it('passes the effective voice volume', () => {
+    const a = defaultAudioSettings(); a.master.level = 0.5; a.voice.level = 0.8;
+    useGameStore.setState({ audio: a });
+    renderHook(() => useSpeech()).result.current.speakWord('cat');
+    expect(speak).toHaveBeenCalledWith('cat', 'en-US', 0.4);
+  });
+
+  it('does not speak when voice is muted', () => {
+    const a = defaultAudioSettings(); a.voice.muted = true;
+    useGameStore.setState({ audio: a });
+    renderHook(() => useSpeech()).result.current.speakThai('แมว');
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('routes each helper to the correct language', () => {
+    const a = defaultAudioSettings(); // full volume, unmuted
+    useGameStore.setState({ audio: a });
     const { result } = renderHook(() => useSpeech());
-    result.current.speakWord('feeds');
+    result.current.speakWord('cat');
     result.current.speakThai('แมว');
-    result.current.speakSentence('She feeds the cat');
-    expect(speak).toHaveBeenNthCalledWith(1, 'feeds', 'en-US');
-    expect(speak).toHaveBeenNthCalledWith(2, 'แมว', 'th-TH');
-    expect(speak).toHaveBeenNthCalledWith(3, 'She feeds the cat', 'en-US');
+    result.current.speakSentence('the cat sits');
+    expect(speak).toHaveBeenNthCalledWith(1, 'cat', 'en-US', 1);
+    expect(speak).toHaveBeenNthCalledWith(2, 'แมว', 'th-TH', 1);
+    expect(speak).toHaveBeenNthCalledWith(3, 'the cat sits', 'en-US', 1);
   });
 });

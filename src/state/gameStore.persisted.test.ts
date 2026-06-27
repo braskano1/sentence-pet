@@ -7,9 +7,8 @@ describe('selectPersisted', () => {
     const keys = Object.keys(snap).sort();
     expect(keys).toEqual(
       [
-        'activeBackground', 'activePetId', 'coins', 'inventory', 'journey',
+        'activeBackground', 'activePetId', 'audio', 'coins', 'inventory', 'journey',
         'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
-        'soundEnabled',
       ].sort(),
     );
     expect(snap).not.toHaveProperty('lastLevelUp');
@@ -18,11 +17,12 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(10);
+    expect(PERSIST_VERSION).toBe(11);
   });
 
-  it('includes soundEnabled, defaulting to true', () => {
-    expect(selectPersisted(useGameStore.getState())).toHaveProperty('soundEnabled', true);
+  it('includes audio, defaulting to a full unmuted mixer', () => {
+    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.level', 1);
+    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.allMuted', false);
   });
 
   it('covers exactly the persisted (non-transient, non-function) store fields — no drift vs partialize', () => {

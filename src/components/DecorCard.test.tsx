@@ -1,9 +1,12 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DecorCard } from './DecorCard';
 import { useGameStore } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
+
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
 
 const beach = GAME_CONFIG.shop.decor.find((d) => d.id === 'decor:beach')!;
 
@@ -39,5 +42,13 @@ describe('DecorCard', () => {
   it('owned + active shows Equipped (disabled)', () => {
     render(<DecorCard item={beach} coins={0} owned={true} active={true} index={0} />);
     expect(screen.getByRole('button', { name: /equipped beach/i })).toBeDisabled();
+  });
+
+  it('plays purchase SFX on a successful buy', async () => {
+    play.mockClear();
+    useGameStore.getState().addCoinsForTest(100);
+    render(<DecorCard item={beach} coins={100} owned={false} active={false} index={0} />);
+    await userEvent.click(screen.getByRole('button', { name: /buy beach/i }));
+    expect(play).toHaveBeenCalledWith('purchase');
   });
 });

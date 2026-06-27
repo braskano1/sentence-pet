@@ -1,4 +1,5 @@
 import { useState, useMemo, type KeyboardEvent } from 'react';
+import { SettingsSheet } from './SettingsSheet';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
@@ -11,6 +12,7 @@ import { xpProgress } from '../domain/xp';
 import { petDialogue } from '../domain/petDialogue';
 import { SpeechBubble } from './SpeechBubble';
 import type { PetInstance } from '../data/types';
+import { useAudio } from '../hooks/useAudio';
 
 const TABS = ['care', 'power'] as const;
 type Tab = (typeof TABS)[number];
@@ -27,6 +29,8 @@ export function PetRoom() {
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
   const [tab, setTab] = useState<Tab>('care');
+  const [showSettings, setShowSettings] = useState(false);
+  const { play } = useAudio();
 
   const coins = useCountUp(walletCoins);
 
@@ -92,7 +96,10 @@ export function PetRoom() {
           </span>
           <div className="flex flex-col items-end gap-1">
             <span className="rounded-full bg-amber-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-50 tabular-nums">🪙 {coins}</span>
-            <PressButton onClick={() => setScreen('collection')} aria-label="My pets" className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-extrabold text-amber-950 shadow">🐾 My Pets · {pets.length}</PressButton>
+            <div className="flex items-center gap-1">
+              <PressButton onClick={() => setScreen('collection')} aria-label="My pets" className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-extrabold text-amber-950 shadow">🐾 My Pets · {pets.length}</PressButton>
+              <PressButton onClick={() => setShowSettings(true)} aria-label="Sound settings" className="rounded-full bg-white/85 px-2 py-1 text-[13px] shadow">⚙️</PressButton>
+            </div>
           </div>
         </div>
 
@@ -157,7 +164,7 @@ export function PetRoom() {
                     <span className="text-xs font-extrabold tabular-nums text-amber-950">{activePet.bars[g]}</span>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-950/15"><div className={`h-full rounded-full ${FOOD_META[g].color}`} style={{ width: `${activePet.bars[g]}%` }} /></div>
                     <PressButton aria-label={`Feed ${FOOD_META[g].label}`} disabled={owned === 0}
-                      onClick={() => { feed(g); setFeedTrigger((n) => n + 1); }}
+                      onClick={() => { if (owned === 0) return; feed(g); play('feed'); setFeedTrigger((n) => n + 1); }}
                       className={`relative w-full rounded-lg py-1 text-xs font-extrabold text-white ${owned === 0 ? 'bg-amber-900/15 text-amber-900/40' : 'border-b-2 border-black/25 bg-green-600'}`}>
                       ＋<span className="absolute -right-1 -top-1 rounded-full bg-slate-900 px-1 text-[7px] text-white">{owned}</span>
                     </PressButton>
@@ -178,6 +185,7 @@ export function PetRoom() {
           <PressButton onClick={() => setScreen('pickDrill')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Play ▶</PressButton>
         </div>
       </div>
+      {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

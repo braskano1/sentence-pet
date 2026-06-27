@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
+
 import { RewardScreen } from './RewardScreen';
 import { useGameStore } from '../state/gameStore';
 
@@ -57,5 +60,13 @@ describe('RewardScreen', () => {
     render(<RewardScreen />);
     expect(screen.getByText(/Lv 3/)).toBeInTheDocument();
     expect(screen.getByText(/\+1 ATK/)).toBeInTheDocument();
+  });
+
+  it('plays coin SFX once on mount when a reward is present', () => {
+    play.mockClear();
+    useGameStore.setState({ lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' } });
+    render(<RewardScreen />);
+    expect(play).toHaveBeenCalledWith('coin');
+    expect(play).toHaveBeenCalledTimes(1);
   });
 });

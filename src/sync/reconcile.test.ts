@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { reconcileFromCloud } from './reconcile';
 import { toCloud } from './mapping';
 import type { PersistedState } from '../state/gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 import type { PetInstance } from '../data/types';
 
 function pet(id: string): PetInstance {
@@ -17,7 +18,7 @@ const cloudState: PersistedState = {
   screen: 'petRoom', pets: [pet('cloud')], activePetId: 'cloud', coins: 42,
   inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
-  owned: [], activeBackground: null, journey: { lessonStars: {} }, soundEnabled: true,
+  owned: [], activeBackground: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
 };
 
 describe('reconcileFromCloud', () => {

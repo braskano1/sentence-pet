@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
+
 import { PressButton } from './PressButton';
 
 describe('PressButton', () => {
@@ -24,5 +28,14 @@ describe('PressButton', () => {
     expect(btn).toBeDisabled();
     await userEvent.click(btn);
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('plays a tap SFX and still calls the provided onClick', async () => {
+    play.mockClear();
+    const onClick = vi.fn();
+    render(<PressButton onClick={onClick}>Go</PressButton>);
+    await userEvent.click(screen.getByRole('button', { name: 'Go' }));
+    expect(play).toHaveBeenCalledWith('tap');
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

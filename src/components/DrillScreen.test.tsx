@@ -17,6 +17,9 @@ const speech = vi.hoisted(() => ({
 }));
 vi.mock('../hooks/useSpeech', () => ({ useSpeech: () => speech }));
 
+const audio = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => audio }));
+
 import { DrillScreen } from './DrillScreen';
 import { useGameStore } from '../state/gameStore';
 import { SEED } from '../content/seed';
@@ -47,6 +50,13 @@ describe('DrillScreen', () => {
     render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
     fireEvent.click(screen.getByTestId('tile-She'));
     expect(screen.getByTestId('slot-0')).toHaveTextContent('She');
+  });
+
+  it('plays the drop SFX when a tile is tap-placed', () => {
+    audio.play.mockClear();
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByTestId('tile-She'));
+    expect(audio.play).toHaveBeenCalledWith('drop');
   });
 
   it('on a wrong answer, clears only the wrong slot and shows the why-tip', () => {

@@ -1,6 +1,6 @@
 // src/components/EggHatch.test.tsx
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DndContext } from '@dnd-kit/core';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
@@ -11,6 +11,9 @@ const speech = vi.hoisted(() => ({
   speakSentence: vi.fn(),
 }));
 vi.mock('../hooks/useSpeech', () => ({ useSpeech: () => speech }));
+
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
 
 import { EggHatch } from './EggHatch';
 import { useGameStore } from '../state/gameStore';
@@ -80,5 +83,22 @@ describe('EggHatch', () => {
     render(<EggHatch />);
     fireEvent.click(screen.getByRole('button', { name: /hear the meaning/i }));
     expect(speech.speakThai).toHaveBeenCalledTimes(1);
+  });
+
+  it('plays coo SFX on the interval while mounted', () => {
+    play.mockClear();
+    vi.useFakeTimers();
+    render(<EggHatch />);
+    act(() => { vi.advanceTimersByTime(7000); });
+    expect(play).toHaveBeenCalledWith('coo');
+    vi.useRealTimers();
+  });
+
+  it('plays drop SFX when a tile is tap-placed into a slot', () => {
+    play.mockClear();
+    render(<EggHatch />);
+    const firstTile = screen.getAllByTestId(/^tile-/)[0];
+    fireEvent.click(firstTile);
+    expect(play).toHaveBeenCalledWith('drop');
   });
 });

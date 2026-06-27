@@ -15,6 +15,12 @@ export function soundAllowed(soundEnabled: boolean, reduced: boolean): boolean {
   return soundEnabled && !reduced;
 }
 
+/** Module-level gain multiplier driven by the mixer (0 = muted, 1 = full). */
+let gainMul = 1;
+
+/** Set the gain multiplier for evolution audio (clamped to 0..1). */
+export function setEvolutionGain(g: number): void { gainMul = Math.max(0, Math.min(1, g)); }
+
 const silent: EvolutionSound = { strobe() {}, flash() {}, reveal() {}, stop() {} };
 
 function audioContextCtor(): (new () => AudioContext) | null {
@@ -39,7 +45,7 @@ function createWebAudioSound(): EvolutionSound {
     o.frequency.setValueAtTime(freq, t0);
     if (ramp) o.frequency.linearRampToValueAtTime(freq * 1.6, t0 + dur * 0.8);
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(peak * gainMul, t0 + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g).connect(c.destination);
     o.start(t0); o.stop(t0 + dur + 0.02);
@@ -69,7 +75,7 @@ function createWebAudioSound(): EvolutionSound {
       f.frequency.setValueAtTime(400, c.currentTime);
       f.frequency.linearRampToValueAtTime(6000, c.currentTime + 0.25);
       const g = c.createGain();
-      g.gain.setValueAtTime(0.22, c.currentTime);
+      g.gain.setValueAtTime(0.22 * gainMul, c.currentTime);
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
       n.connect(f).connect(g).connect(c.destination); n.start();
     },

@@ -1,5 +1,5 @@
 // src/components/EggHatch.tsx
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   DndContext,
@@ -24,6 +24,7 @@ import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
 import { SubmitBar } from './drill/SubmitBar';
+import { useAudio } from '../hooks/useAudio';
 
 export function EggHatch() {
   const hatch = useGameStore((s) => s.hatch);
@@ -35,6 +36,12 @@ export function EggHatch() {
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
   const speak = useSpeech();
+  const { play: playAudio } = useAudio();
+
+  useEffect(() => {
+    const id = setInterval(() => { playAudio('coo'); }, 7000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function onTapPlace(tileIndex: number) {
     if (locked) return;
@@ -43,6 +50,7 @@ export function EggHatch() {
     if (next.placed === placed) return;
     setPlaced(next.placed);
     setUsed(next.used);
+    playAudio('drop');
   }
 
   const sensors = useSensors(
@@ -97,6 +105,7 @@ export function EggHatch() {
     if (next.placed === placed) return;
     setPlaced(next.placed);
     setUsed(next.used);
+    playAudio('drop');
   }
 
   return (

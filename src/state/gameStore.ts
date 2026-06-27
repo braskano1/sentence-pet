@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { defaultAudioSettings, clampLevel, type AudioSettings, type ChannelName } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD } from '../data/food';
 import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
@@ -53,7 +54,7 @@ interface GameState {
   activeBackground: string | null;
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
-  soundEnabled: boolean;
+  audio: AudioSettings;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
   // actions
@@ -70,7 +71,9 @@ interface GameState {
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
-  toggleSound: () => void;
+  setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
+  toggleChannelMute: (ch: 'master' | ChannelName) => void;
+  toggleMuteAll: () => void;
   startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
@@ -80,13 +83,13 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 10;
+export const PERSIST_VERSION = 11;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey' | 'soundEnabled'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey' | 'audio'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -104,7 +107,7 @@ export function selectPersisted(s: GameState): PersistedState {
     owned: s.owned,
     activeBackground: s.activeBackground,
     journey: s.journey,
-    soundEnabled: s.soundEnabled,
+    audio: s.audio,
   };
 }
 
@@ -160,7 +163,7 @@ function freshState() {
     activeBackground: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
-    soundEnabled: true,
+    audio: defaultAudioSettings(),
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
   };
@@ -267,7 +270,13 @@ export const useGameStore = create<GameState>()(
 
       clearStageChange: () => set({ lastStageChange: null }),
 
-      toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
+      setChannelLevel: (ch, v) =>
+        set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], level: clampLevel(v) } } })),
+
+      toggleChannelMute: (ch) =>
+        set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], muted: !s.audio[ch].muted } } })),
+
+      toggleMuteAll: () => set((s) => ({ audio: { ...s.audio, allMuted: !s.audio.allMuted } })),
 
       renamePet: (id, name) =>
         set((s) => {
@@ -315,6 +324,7 @@ export const useGameStore = create<GameState>()(
       // v7->v8 backfills pet.growth (zeroed BattleStats for pets that predate the field).
       // v8->v9 backfills journey { lessonStars: {} }.
       // v9->v10 backfills soundEnabled (default true).
+      // v10->v11 replaces soundEnabled with the audio mixer slice.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -344,7 +354,15 @@ export const useGameStore = create<GameState>()(
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
-          soundEnabled: (st as { soundEnabled?: boolean }).soundEnabled ?? true,
+          audio:
+            (st as { audio?: AudioSettings }).audio ??
+            (() => {
+              // v10->v11: derive the mixer from the old boolean. soundEnabled:false -> mute all.
+              const a = defaultAudioSettings();
+              const legacy = (st as { soundEnabled?: boolean }).soundEnabled;
+              if (legacy === false) a.allMuted = true;
+              return a;
+            })(),
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.
@@ -397,6 +415,7 @@ export const useGameStore = create<GameState>()(
 
         // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).
         delete (base as { pet?: unknown }).pet;
+        delete (base as { soundEnabled?: unknown }).soundEnabled;
         return base as unknown as GameState;
       },
     },
