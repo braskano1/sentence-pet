@@ -1,4 +1,4 @@
-import type { DrillItem, DrillType, Species, PetStage } from '../data/types';
+import type { DrillItem, DrillType, Species, PetStage, ContentKind } from '../data/types';
 
 /** Per-checkpoint boss: a rival pet (reused sprite) parameterised by tier + element. */
 export interface CheckpointBoss {
@@ -12,7 +12,8 @@ export interface CheckpointBoss {
  *  isCheckpoint marks the unit's final node (the future B-3 boss seam). */
 export interface Lesson {
   id: string;
-  drill: DrillType;
+  kind?: ContentKind;         // which activity screen renders + which pool items are valid
+  drill: DrillType;           // dragdrop variant; only meaningful when kind === 'dragdrop' (validated in P2)
   level: number;
   itemIds: string[];
   isCheckpoint?: boolean;
@@ -26,6 +27,7 @@ export interface Unit {
   title: string;
   emoji: string;
   order: number;
+  l1Enabled?: boolean;        // set by the admin tool; consumed client-side to gate the TH/ENG (L1) toggle
   lessons: Lesson[];
 }
 

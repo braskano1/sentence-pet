@@ -2,6 +2,9 @@ export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
 
 export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 
+/** The five activity families a unit node can be. Boss is not a pool item. */
+export type ContentKind = 'flashcard' | 'matching' | 'dragdrop' | 'fillblank' | 'boss';
+
 /** A tempting grammar near-miss tile tied to a gentle tip (Grammar drill). */
 export interface GrammarTrap {
   slot: number;   // index into slots[]/answer[] this trap word belongs to
@@ -18,9 +21,10 @@ export interface DrillItem {
   answer: string[];     // correct words, in order (same length as slots)
   distractors?: string[]; // extra wrong tiles salted into the tray (Word-Choice)
   traps?: GrammarTrap[];  // near-miss tiles tied to tips (Grammar)
+  hidePos?: boolean;      // drag-drop difficulty: hide POS label/tint in slots (rendered in P2). Boss lessons use CheckpointBoss config, not pool items.
 }
 
-export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'bossPrep' | 'battle';
+export type Screen = 'egg' | 'petRoom' | 'pickCourse' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'bossPrep' | 'battle';
 
 export type PetStage = 'egg' | 'baby' | 'young' | 'adult';
 

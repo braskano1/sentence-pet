@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ContentBundle } from './model';
+import type { ContentBundle, Lesson, Unit } from './model';
 import { orderedUnits, findLesson, itemsForLesson, itemsForDrill, tutorialItem, trayWords } from './model';
 import type { DrillItem } from '../data/types';
 
@@ -81,5 +81,15 @@ describe('trayWords', () => {
 
   it('item with traps returns answer then distractors then trap words', () => {
     expect(trayWords(withTraps)).toEqual(['she', 'walks', 'running', 'walk']);
+  });
+});
+
+describe('kind-tagged model', () => {
+  // Structural smoke test — the types accept kind/l1Enabled; runtime logic lands in later tasks.
+  it('a Lesson carries a ContentKind and a Unit carries l1Enabled', () => {
+    const lesson: Lesson = { id: 'x', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: ['a'] };
+    const unit: Unit = { id: 'u', title: 'U', emoji: '🦊', order: 0, l1Enabled: false, lessons: [lesson] };
+    expect(lesson.kind).toBe('dragdrop');
+    expect(unit.l1Enabled).toBe(false);
   });
 });
