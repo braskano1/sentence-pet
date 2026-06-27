@@ -58,7 +58,10 @@ export function UnitSection({ units, unit, stars, currentId, folded, onToggle, o
           aria-hidden="true"
         />
         {unit.lessons.map((lesson, i) => (
-          <div key={lesson.id} className="relative z-10 my-3 flex justify-center">
+          <div
+            key={lesson.id}
+            className={`relative z-10 my-3 flex justify-center ${i === 0 && lesson.id === currentId ? 'mt-12' : ''}`}
+          >
             <TrailNode
               units={units}
               unit={unit}

@@ -64,7 +64,7 @@ export function TrailNode({ units, unit, lesson, stars, index, isCurrent, onStar
   return (
     <div className={`relative flex flex-col items-center ${serpentineOffset(index)}`}>
       {isCurrent && (
-        <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow">
+        <span className="absolute -top-7 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow">
           YOU ARE HERE
         </span>
       )}
