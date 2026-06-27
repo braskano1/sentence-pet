@@ -74,6 +74,31 @@ describe('gameStore', () => {
     expect(s.lastReward?.group).toBe('veggie');
   });
 
+  it('finishRound with kind:flashcard awards KIND_FOOD protein (overriding drill:mixed)', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'mixed', kind: 'flashcard', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.protein).toBe(5);
+    expect(s.inventory.treat).toBe(0); // would be treat if drill:mixed still drove food
+    expect(s.lastReward?.group).toBe('protein');
+  });
+
+  it('finishRound with kind:fillblank awards KIND_FOOD treat', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'mixed', kind: 'fillblank', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.treat).toBe(5);
+    expect(s.lastReward?.group).toBe('treat');
+  });
+
+  it('finishRound WITHOUT kind (dragdrop path) still uses DRILL_FOOD[pattern] = protein', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.protein).toBe(5);
+    expect(s.lastReward?.group).toBe('protein');
+  });
+
   it('feed(group) moves that food into the active pet bar and clears only that group', () => {
     useGameStore.getState().hatch();
     useGameStore.getState().finishRound({ drill: 'wordChoice', level: 1, stars: 3, correctCount: 5 });

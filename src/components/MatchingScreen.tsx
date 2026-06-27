@@ -57,6 +57,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
       if (index + 1 >= items.length) {
         finishRound({
           drill: 'mixed',
+          kind: 'matching',
           level: item.level,
           stars: computeStars({ hints: 0, mistakes }),
           correctCount: items.length,

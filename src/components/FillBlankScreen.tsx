@@ -33,6 +33,7 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
       if (index + 1 >= items.length) {
         finishRound({
           drill: 'mixed',
+          kind: 'fillblank',
           level: item.level,
           stars: computeStars({ hints: 0, mistakes: wrongCount }),
           correctCount: items.length,

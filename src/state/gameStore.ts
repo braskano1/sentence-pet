@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { defaultAudioSettings, clampLevel, type AudioSettings, type ChannelName } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
-import { DRILL_FOOD } from '../data/food';
-import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
+import { DRILL_FOOD, KIND_FOOD } from '../data/food';
+import type { BattleStats, ContentKind, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
 import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
@@ -36,6 +36,10 @@ interface RewardSummary {
 
 interface RoundResult {
   drill: DrillType;
+  /** Activity kind (flashcard/matching/fillblank/dragdrop). When present and not
+   * 'boss', it drives the awarded food group via KIND_FOOD; otherwise the
+   * per-variant DRILL_FOOD[drill] is used (dragdrop/DrillScreen pass no kind). */
+  kind?: ContentKind;
   level: number;
   stars: number;
   correctCount: number;
@@ -280,9 +284,9 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
-      finishRound: ({ drill, level, stars, correctCount }) =>
+      finishRound: ({ drill, kind, level, stars, correctCount }) =>
         set((s) => {
-          const group = DRILL_FOOD[drill];
+          const group = kind && kind !== 'boss' ? KIND_FOOD[kind] : DRILL_FOOD[drill];
           const lessonId = s.currentLessonId;
           // Resolve whether the finished lesson was a boss (checkpoint) BEFORE we
           // clear currentLessonId; if so, queue a win/lose stinger for RewardScreen.

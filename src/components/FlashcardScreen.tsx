@@ -26,7 +26,7 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
   function grade() {
     if (index + 1 >= items.length) {
       // Practice: completion-based — award full stars, no slip penalty (spec §7).
-      finishRound({ drill: 'mixed', level: item.level, stars: 3, correctCount: items.length });
+      finishRound({ drill: 'mixed', kind: 'flashcard', level: item.level, stars: 3, correctCount: items.length });
       return;
     }
     setIndex(index + 1);
