@@ -1,15 +1,21 @@
 import type { CheckpointBoss } from '../../content/model';
 import { bossSpriteSrc, bossElementEmoji } from '../../config/bossSprite';
 import { HpBar } from './HpBar';
+import { ChargeRing } from './ChargeRing';
+import { useBattleStore } from '../../state/battleStore';
 
 export function BossZone({ boss, hp, hpMax }: { boss: CheckpointBoss; hp: number; hpMax: number }) {
+  const charge = useBattleStore((s) => s.charge);
   return (
     <div className="relative rounded-b-3xl bg-gradient-to-b from-fuchsia-950 to-indigo-950 px-4 pb-3 pt-4">
       <div className="flex items-center justify-between text-xs text-fuchsia-100">
         <span className="rounded-md bg-emerald-600 px-2 py-0.5 font-bold">
           {bossElementEmoji(boss)} {boss.element}
         </span>
-        <span className="font-semibold">{boss.name}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{boss.name}</span>
+          <ChargeRing fraction={charge} />
+        </div>
       </div>
       <img
         src={bossSpriteSrc(boss)}

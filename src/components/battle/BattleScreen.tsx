@@ -16,6 +16,7 @@ import { BossZone } from './BossZone';
 import { HpBar } from './HpBar';
 import { DamageNumber } from './DamageNumber';
 import { BossIntro } from './BossIntro';
+import { DodgeSwipe } from './DodgeSwipe';
 import { petStageSprite, petDisplayName } from '../../config/petDisplay';
 
 export function BattleScreen() {
@@ -33,6 +34,8 @@ export function BattleScreen() {
   const onWrong = useBattleStore((s) => s.onWrong);
   const lastEvent = useBattleStore((s) => s.lastEvent);
   const begin = useBattleStore((s) => s.begin);
+  const battlePhase = useBattleStore((s) => s.battlePhase);
+  const resolveSwipe = useBattleStore((s) => s.resolveSwipe);
 
   const [intro, setIntro] = useState(true);
   const [index, setIndex] = useState(0);
@@ -58,6 +61,22 @@ export function BattleScreen() {
       useBattleStore.getState().reset();
     }
   }, [snapshot?.outcome, finishBoss]);
+
+  useEffect(() => {
+    if (intro || snapshot?.outcome) return;
+    let raf = 0;
+    let last = performance.now();
+    const loop = (t: number) => {
+      const dt = t - last;
+      last = t;
+      if (useBattleStore.getState().battlePhase === 'answering') {
+        useBattleStore.getState().tickCharge(dt);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [intro, snapshot?.outcome]);
 
   if (!snapshot || !boss || !pet || items.length === 0) return null;
   if (intro) return <BossIntro boss={boss} onDone={() => setIntro(false)} />;
@@ -213,6 +232,10 @@ export function BattleScreen() {
           </div>
         ) : null}
       </DragOverlay>
+
+      {battlePhase === 'charged' && (
+        <DodgeSwipe onResolve={(success) => resolveSwipe(success)} />
+      )}
     </DndContext>
   );
 }
