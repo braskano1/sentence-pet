@@ -11,7 +11,7 @@ describe('SEED content bundle', () => {
   // Snapshot tripwire: the bundled SEED only changes via a deliberate `npm run seed:export`
   // commit (admin edits go to Firestore, not this file). Bump these if you regenerate SEED.
   it('has the expected migrated shape', () => {
-    expect(SEED.units.length).toBe(2);
+    expect(SEED.units.length).toBe(3);
     expect(Object.keys(SEED.pool).length).toBe(30);
   });
 
