@@ -20,6 +20,13 @@ describe('kind-routed lesson rendering', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, flashItems, 'flashcard');
     expect(key).toBe('flashcard');
   });
+  it('renders the MatchingScreen for a matching lesson', () => {
+    const matchItems = [
+      { id: 'm', kind: 'matching' as const, level: 1, pairs: [{ left: 'cat', right: 'แมว' }, { left: 'dog', right: 'หมา' }] },
+    ];
+    const { key } = screenKeyAndNode('drill', true, 'pattern', 1, matchItems, 'matching');
+    expect(key).toBe('matching');
+  });
   it('routes a boss-kind lesson back to the map, not ComingSoon', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, items, 'boss');
     expect(key).toBe('pickDrill');
