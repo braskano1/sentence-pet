@@ -50,6 +50,16 @@ describe('JourneyMap', () => {
     expect(screen.getByRole('button', { name: /Basics: pattern lesson, cleared/i })).toBeInTheDocument();
   });
 
+  it('collapsing an expanded unit re-hides its nodes', () => {
+    useGameStore.setState({ journey: { lessonStars: u1AllCleared } });
+    render(<JourneyMap />);
+    fireEvent.click(screen.getByRole('button', { name: /expand Basics/i }));
+    expect(screen.getByRole('button', { name: /Basics: pattern lesson, cleared/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /collapse Basics/i }));
+    expect(screen.queryByRole('button', { name: /Basics: pattern lesson/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /expand Basics/i })).toBeInTheDocument();
+  });
+
   it('cleared nodes show their food emoji, not just a check', () => {
     useGameStore.setState({ journey: { lessonStars: { 'u1-pattern': 3 } } });
     render(<JourneyMap />);
