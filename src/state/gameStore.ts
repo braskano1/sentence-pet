@@ -16,6 +16,7 @@ import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
 import { findLesson } from '../content/model';
 import { useContentStore } from '../content/store';
+import type { L1Mode } from '../content/l1';
 import type { StingerKind } from '../effects/music';
 
 export const STARTER_ID = 'starter-leaf';
@@ -59,6 +60,7 @@ interface GameState {
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
   audio: AudioSettings;
+  l1Mode: L1Mode; // per-user TH/ENG language-helper toggle (Spec §4)
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
   currentCourseId: string | null;
@@ -84,6 +86,7 @@ interface GameState {
   clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
+  setL1Mode: (m: L1Mode) => void;
   startLesson: (lessonId: string) => void;
   selectCourse: (courseId: string) => void;
   currentBossLessonId: string | null;
@@ -97,13 +100,13 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 13;
+export const PERSIST_VERSION = 14;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -123,6 +126,7 @@ export function selectPersisted(s: GameState): PersistedState {
     activeTrack: s.activeTrack,
     journey: s.journey,
     audio: s.audio,
+    l1Mode: s.l1Mode,
   };
 }
 
@@ -180,6 +184,7 @@ function freshState() {
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
     audio: defaultAudioSettings(),
+    l1Mode: 'TH' as L1Mode,
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
     currentCourseId: null as string | null,
@@ -383,6 +388,8 @@ export const useGameStore = create<GameState>()(
       toggleChannelMute: (ch) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], muted: !s.audio[ch].muted } } })),
 
+      setL1Mode: (l1Mode) => set({ l1Mode }),
+
       renamePet: (id, name) =>
         set((s) => {
           const clean = sanitizePetName(name);
@@ -436,6 +443,7 @@ export const useGameStore = create<GameState>()(
       // v11->v12 backfills activeTrack (default null = free overworld loop).
       // v12->v13 drops audio.allMuted (Master mute IS the global mute): a save with
       //   allMuted:true lands as master.muted:true; the allMuted field is removed.
+      // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -453,6 +461,7 @@ export const useGameStore = create<GameState>()(
               activeBackground?: string | null;
               activeTrack?: string | null;
               journey?: { lessonStars?: Record<string, number> };
+              l1Mode?: L1Mode;
             }
           | null;
         // Zustand treats a null migrate return as "reset to initial state".
@@ -468,6 +477,8 @@ export const useGameStore = create<GameState>()(
           // v11->v12: backfill the equipped overworld track (null = free default loop).
           activeTrack: st.activeTrack ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
+          // v13->v14: backfill the per-user TH/ENG language-helper toggle (default 'TH').
+          l1Mode: (st as { l1Mode?: L1Mode }).l1Mode ?? 'TH',
           audio: (() => {
             const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
             const a = saved ? { ...saved } : defaultAudioSettings();

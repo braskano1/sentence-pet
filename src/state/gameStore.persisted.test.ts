@@ -9,7 +9,7 @@ describe('selectPersisted', () => {
     expect(keys).toEqual(
       [
         'activeBackground', 'activeTrack', 'activePetId', 'audio', 'coins', 'inventory', 'journey',
-        'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
+        'l1Mode', 'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
       ].sort(),
     );
     expect(snap).not.toHaveProperty('lastLevelUp');
@@ -20,7 +20,7 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(13);
+    expect(PERSIST_VERSION).toBe(14);
   });
 
   it('includes audio, defaulting to a 70% unmuted mixer', () => {

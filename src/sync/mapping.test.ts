@@ -20,6 +20,7 @@ const sample: PersistedState = {
   selectedDrill: 'pattern', selectedLevel: 2, lastReward: null, lastPull: null,
   owned: ['bg1', 'music:lofi'], activeBackground: 'bg1', activeTrack: 'music:lofi',
   journey: { lessonStars: { 'u1-pattern': 3 } }, audio: defaultAudioSettings(),
+  l1Mode: 'TH',
 };
 
 describe('mapping', () => {
