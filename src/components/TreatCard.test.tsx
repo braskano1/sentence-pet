@@ -8,6 +8,9 @@ import { GAME_CONFIG } from '../config/gameConfig';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
+
 const snack = GAME_CONFIG.shop.treats[0]; // price 15, +15
 
 beforeEach(() => {
@@ -42,5 +45,20 @@ describe('TreatCard', () => {
     const btn = screen.getByRole('button', { name: /snack/i });
     expect(btn).toBeDisabled();
     expect(screen.getByText('Already happy!')).toBeInTheDocument();
+  });
+
+  it('plays purchase SFX on a successful buy', async () => {
+    play.mockClear();
+    useGameStore.getState().addCoinsForTest(100);
+    render(<TreatCard item={snack} coins={100} full={false} index={0} />);
+    await userEvent.click(screen.getByRole('button', { name: /snack/i }));
+    expect(play).toHaveBeenCalledWith('purchase');
+  });
+
+  it('does NOT play purchase SFX when the player cannot afford', async () => {
+    play.mockClear();
+    render(<TreatCard item={snack} coins={0} full={false} index={0} />);
+    await userEvent.click(screen.getByRole('button', { name: /snack/i }));
+    expect(play).not.toHaveBeenCalledWith('purchase');
   });
 });

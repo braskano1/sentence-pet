@@ -5,6 +5,9 @@ import { useGameStore } from '../state/gameStore';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
+
 describe('Gacha screen', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -63,5 +66,13 @@ describe('Gacha screen', () => {
     expect(screen.queryByRole('textbox', { name: /name your pet/i })).toBeNull();
     advanceCinematic();
     expect(screen.getByRole('textbox', { name: /name your pet/i })).toBeInTheDocument();
+  });
+
+  it('plays pull SFX when the Pull button is clicked', () => {
+    play.mockClear();
+    useGameStore.getState().addCoinsForTest(100);
+    render(<Gacha />);
+    fireEvent.click(screen.getByRole('button', { name: /pull/i }));
+    expect(play).toHaveBeenCalledWith('pull');
   });
 });

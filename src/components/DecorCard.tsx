@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import type { DecorItem } from '../domain/shop';
+import { useAudio } from '../hooks/useAudio';
 
 interface DecorCardProps {
   item: DecorItem;
@@ -15,6 +16,7 @@ export function DecorCard({ item, coins, owned, active, index }: DecorCardProps)
   const buyDecor = useGameStore((s) => s.buyDecor);
   const equipBackground = useGameStore((s) => s.equipBackground);
   const afford = coins >= item.price;
+  const { play } = useAudio();
 
   // label drives the visible text AND the accessible name (button text + aria-label)
   const label = active ? 'Equipped' : owned ? 'Equip' : 'Buy';
@@ -22,8 +24,8 @@ export function DecorCard({ item, coins, owned, active, index }: DecorCardProps)
 
   function handleClick() {
     if (active) return;
-    if (owned) equipBackground(item.id);
-    else if (afford) buyDecor(item);
+    if (owned) equipBackground(item.id); // equip: no SFX (free action)
+    else if (afford) { buyDecor(item); play('purchase'); }
   }
 
   const buttonStyle = active

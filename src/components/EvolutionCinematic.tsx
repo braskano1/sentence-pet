@@ -5,7 +5,8 @@ import { spriteSrc } from '../config/sprites';
 import { STAGE_NAME } from '../domain/xp';
 import type { PetStage, Species } from '../data/types';
 import { useEvolutionSequence } from '../hooks/useEvolutionSequence';
-import { getEvolutionSound, soundAllowed } from '../effects/evolutionSound';
+import { getEvolutionSound, setEvolutionGain } from '../effects/evolutionSound';
+import { effectiveGain } from '../audio/mixer';
 import { fireConfetti, buzz } from '../effects/celebrate';
 import { PressButton } from './PressButton';
 
@@ -15,18 +16,20 @@ import { PressButton } from './PressButton';
 export function EvolutionCinematic({
   from, to, species, onDone,
 }: { from: PetStage; to: PetStage; species: Species; onDone: () => void }) {
-  const soundEnabled = useGameStore((s) => s.soundEnabled);
-  const toggleSound = useGameStore((s) => s.toggleSound);
+  const audio = useGameStore((s) => s.audio);
+  const toggleMuteAll = useGameStore((s) => s.toggleMuteAll);
   const reduced = !!useReducedMotion();
   const { phase, swap, skip } = useEvolutionSequence({ reduced });
   const sound = useRef(getEvolutionSound());
   const celebrated = useRef(false);
 
-  const allow = soundAllowed(soundEnabled, reduced);
+  const sfxGain = effectiveGain('sfx', audio);
+  const allow = sfxGain > 0 && !reduced;
   const cuedPhase = useRef<string | null>(null);
 
   // Phase-aligned audio cues. Fire once per phase; stop in-flight audio if muted.
   useEffect(() => {
+    setEvolutionGain(sfxGain);
     const s = sound.current;
     if (!allow) { s.stop(); cuedPhase.current = null; return; }
     if (cuedPhase.current === phase) return;
@@ -34,7 +37,7 @@ export function EvolutionCinematic({
     if (phase === 'strobe') s.strobe();
     else if (phase === 'flash') s.flash();
     else if (phase === 'reveal') s.reveal();
-  }, [phase, allow]);
+  }, [phase, allow, sfxGain]);
 
   // Confetti + haptic once on reveal.
   useEffect(() => {
@@ -65,11 +68,11 @@ export function EvolutionCinematic({
     >
       <button
         type="button"
-        aria-label={soundEnabled ? 'Mute sound' : 'Unmute sound'}
-        onClick={(e) => { e.stopPropagation(); toggleSound(); }}
+        aria-label={audio.allMuted ? 'Unmute sound' : 'Mute sound'}
+        onClick={(e) => { e.stopPropagation(); toggleMuteAll(); }}
         className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl text-white"
       >
-        {soundEnabled ? '🔊' : '🔇'}
+        {audio.allMuted ? '🔇' : '🔊'}
       </button>
 
       {phase === 'announce' && (

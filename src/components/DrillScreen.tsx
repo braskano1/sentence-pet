@@ -14,6 +14,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
+import { useAudio } from '../hooks/useAudio';
 import { DrillHeader } from './drill/DrillHeader';
 import { DrillPet, type PetReaction } from './drill/DrillPet';
 import { WhyTip } from './drill/WhyTip';
@@ -34,6 +35,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   const [reaction, setReaction] = useState<PetReaction>('idle');
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const { feedback, play, locked } = useRoundFeedback();
+  const { play: playAudio } = useAudio(); // `play` is taken by useRoundFeedback
   const speak = useSpeech();
 
   const item = items[index];
@@ -73,6 +75,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     setPlaced(next.placed);
     setUsed(next.used);
     setWhy(null);
+    playAudio('drop');
   }
 
   function onTapPlace(tileIndex: number) {
