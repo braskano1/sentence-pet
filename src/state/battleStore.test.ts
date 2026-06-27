@@ -4,6 +4,7 @@ import { makePet } from '../domain/pets';
 import type { PetInstance } from '../data/types';
 import type { CheckpointBoss } from '../content/model';
 import { BOSS_TIERS } from '../domain/bossTiers';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 const boss: CheckpointBoss = {
   tierId: 'tier-1', element: 'fire', name: 'Ember Rival',
@@ -165,5 +166,61 @@ describe('charge state machine', () => {
     expect(s.battlePhase).toBe('charged');                 // still pending
     expect(s.snapshot!.petHp).toBe(petHpBefore);           // pet not hit
     expect(s.itemsAnswered).toBe(itemsBefore);             // not counted
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P3 multi-phase ramp tests
+// ---------------------------------------------------------------------------
+
+describe('multi-phase ramp', () => {
+  beforeEach(() => useBattleStore.getState().reset());
+
+  // tier-3 has phases: 2 (threshold at 50%). Fire boss so water PET has advantage.
+  const PHASE_BOSS: CheckpointBoss = {
+    tierId: 'tier-3', element: 'fire', name: 'Phase Rival',
+    rivalSprite: { species: 'fire', stage: 'young' },
+  };
+
+  it('begins at phase 0 with the tier phase count', () => {
+    useBattleStore.getState().begin(PET, PHASE_BOSS);
+    const s = useBattleStore.getState();
+    expect(s.phaseIndex).toBe(0);
+    expect(s.bossPhases).toBe(2);
+  });
+
+  it('crossing 50% boss HP increments phaseIndex', () => {
+    const bigPet: PetInstance = { ...PET, stats: { ...PET.stats, atk: 100 } };
+    useBattleStore.getState().begin(bigPet, PHASE_BOSS, () => 0.99);
+    const max = useBattleStore.getState().snapshot!.bossHpMax;
+    let guard = 0;
+    while (useBattleStore.getState().snapshot!.bossHp / max > 0.5 && guard++ < 100) {
+      useBattleStore.getState().onCorrect();
+      // re-arm to answering if a phase cross paused things (spell added in a later task)
+      if (useBattleStore.getState().battlePhase !== 'answering') {
+        useBattleStore.setState({ battlePhase: 'answering' });
+      }
+    }
+    expect(useBattleStore.getState().phaseIndex).toBe(1);
+  });
+
+  it('ramped chargeMs makes the ring fill faster after a phase cross', () => {
+    useBattleStore.getState().begin(PET, PHASE_BOSS, () => 0.99);
+    useBattleStore.setState({ phaseIndex: 1 }); // force phase 1
+    const ramped = GAME_CONFIG.battle.timer.chargeMs * GAME_CONFIG.battle.phaseRamp.chargeMult;
+    useBattleStore.getState().tickCharge(ramped);
+    expect(useBattleStore.getState().battlePhase).toBe('charged');
+  });
+
+  it('a kill-hit on a single-phase boss resolves win with no phase bump', () => {
+    const onePunch: PetInstance = { ...PET, stats: { ...PET.stats, atk: 100 } };
+    useBattleStore.getState().begin(onePunch, { ...PHASE_BOSS, tierId: 'tier-1' }, () => 0.99);
+    let guard = 0;
+    while (useBattleStore.getState().snapshot!.outcome == null && guard++ < 100) {
+      useBattleStore.getState().onCorrect();
+    }
+    const s = useBattleStore.getState();
+    expect(s.snapshot!.outcome).toBe('win');
+    expect(s.phaseIndex).toBe(0);
   });
 });
