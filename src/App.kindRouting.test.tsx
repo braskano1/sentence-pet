@@ -27,6 +27,13 @@ describe('kind-routed lesson rendering', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, matchItems, 'matching');
     expect(key).toBe('matching');
   });
+  it('renders the FillBlankScreen for a fillblank lesson', () => {
+    const blankItems = [
+      { id: 'fb', kind: 'fillblank' as const, level: 1, template: 'I ___ rice.', answer: 'eat' },
+    ];
+    const { key } = screenKeyAndNode('drill', true, 'pattern', 1, blankItems, 'fillblank');
+    expect(key).toBe('fillblank');
+  });
   it('routes a boss-kind lesson back to the map, not ComingSoon', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, items, 'boss');
     expect(key).toBe('pickDrill');

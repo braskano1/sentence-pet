@@ -18,13 +18,14 @@ import { BattleScreen } from './components/battle/BattleScreen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { useUiStore } from './state/uiStore';
 import type { ContentItem, DrillType, ContentKind } from './data/types';
-import { isDragDrop, isFlashcard, isMatching } from './data/types';
+import { isDragDrop, isFlashcard, isMatching, isFillBlank } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
 import { CourseSelect } from './components/CourseSelect';
 import { ComingSoon } from './components/ComingSoon';
 import { FlashcardScreen } from './components/FlashcardScreen';
 import { MatchingScreen } from './components/MatchingScreen';
+import { FillBlankScreen } from './components/FillBlankScreen';
 
 export function screenKeyAndNode(
   screen: string,
@@ -47,6 +48,7 @@ export function screenKeyAndNode(
       if (kind === 'dragdrop') return { key: 'drill', node: <DrillScreen items={items.filter(isDragDrop)} drill={drill} level={level} /> };
       if (kind === 'flashcard') return { key: 'flashcard', node: <FlashcardScreen items={items.filter(isFlashcard)} unit={unit} /> };
       if (kind === 'matching') return { key: 'matching', node: <MatchingScreen items={items.filter(isMatching)} unit={unit} /> };
+      if (kind === 'fillblank') return { key: 'fillblank', node: <FillBlankScreen items={items.filter(isFillBlank)} unit={unit} /> };
       return { key: 'comingSoon', node: <ComingSoon kind={kind} /> };
     }
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
@@ -85,6 +87,7 @@ export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
     case 'comingSoon':
     case 'flashcard':
     case 'matching':
+    case 'fillblank':
     case 'pickDrill':
     case 'petRoom':
     case 'shop':
