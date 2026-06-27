@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   ELEMENT_BEATS, elementMultiplier, maxHpFromStat, mitigatedBase,
   critChance, computeHit, dodgeChance, rollDodge, firstStrike,
+  chargeFraction, lurchedFraction, swipeDodges,
 } from './battle';
 
 describe('elements', () => {
@@ -64,5 +65,24 @@ describe('crit & dodge & first strike', () => {
     expect(firstStrike(60, 50)).toBe(true);
     expect(firstStrike(50, 60)).toBe(false);
     expect(firstStrike(50, 50)).toBe(false);
+  });
+});
+
+describe('P2 charge timer', () => {
+  it('chargeFraction is elapsed/chargeMs clamped to [0,1]', () => {
+    expect(chargeFraction(0, 8000)).toBe(0);
+    expect(chargeFraction(4000, 8000)).toBe(0.5);
+    expect(chargeFraction(8000, 8000)).toBe(1);
+    expect(chargeFraction(12000, 8000)).toBe(1);   // clamps over
+    expect(chargeFraction(-100, 8000)).toBe(0);     // clamps under
+  });
+  it('lurchedFraction adds the lurch, capped at 1', () => {
+    expect(lurchedFraction(0.5, 0.3)).toBeCloseTo(0.8);
+    expect(lurchedFraction(0.9, 0.3)).toBe(1);
+  });
+  it('swipeDodges when the swipe lands inside the window', () => {
+    expect(swipeDodges(800, 1200)).toBe(true);   // in time
+    expect(swipeDodges(1200, 1200)).toBe(true);  // boundary inclusive
+    expect(swipeDodges(1400, 1200)).toBe(false); // too slow
   });
 });
