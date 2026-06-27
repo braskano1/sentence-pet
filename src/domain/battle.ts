@@ -1,5 +1,5 @@
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { Species } from '../data/types';
+import type { Species, DrillItem } from '../data/types';
 
 const B = GAME_CONFIG.battle;
 
@@ -75,4 +75,22 @@ export function chargeFraction(elapsedMs: number, chargeMs: number): number {
 /** A wrong answer pushes the ring forward; never past full. */
 export function lurchedFraction(frac: number, lurch: number): number {
   return Math.min(1, frac + lurch);
+}
+
+export interface SpellChallenge {
+  words: string[];     // the boss's wrong sentence, as tappable word chips
+  wrongIndex: number;  // the index the kid must tap to break the spell
+  tip: string;         // gentle Thai-scaffolded nudge
+}
+
+/** Build a spot-the-error challenge: take a trap-bearing item, substitute the
+ *  trap word at its slot into the answer, and mark that slot as the wrong word.
+ *  Pure + deterministic (rng injected). Returns null if the item has no traps. */
+export function buildSpellChallenge(item: DrillItem, rng: () => number): SpellChallenge | null {
+  const traps = item.traps ?? [];
+  if (traps.length === 0) return null;
+  const trap = traps[Math.floor(rng() * traps.length) % traps.length];
+  const words = item.answer.slice();
+  words[trap.slot] = trap.word;
+  return { words, wrongIndex: trap.slot, tip: trap.tip };
 }
