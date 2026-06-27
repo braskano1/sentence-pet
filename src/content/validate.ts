@@ -31,6 +31,10 @@ function validateItem(itemId: string, item: ContentItem, push: (m: string) => vo
       if (item.answer.trim() === '') push(`item ${itemId} fillblank answer is empty`);
       break;
     }
+    default: {
+      const _exhaustive: never = item;
+      void _exhaustive;
+    }
   }
 }
 
