@@ -5,6 +5,7 @@ import {
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import { useGameStore } from '../state/gameStore';
+import { computeStars } from '../domain/scoring';
 import { showL1 } from '../content/l1';
 import { L1Toggle } from './L1Toggle';
 import type { MatchingItem, MatchingPair } from '../data/types';
@@ -57,7 +58,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
         finishRound({
           drill: 'mixed',
           level: item.level,
-          stars: mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1,
+          stars: computeStars({ hints: 0, mistakes }),
           correctCount: items.length,
         });
       } else {

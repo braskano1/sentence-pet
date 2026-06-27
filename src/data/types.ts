@@ -33,7 +33,12 @@ export interface FlashcardItem extends BaseContentItem {
   // speaking?: SpeakingCheck;  // RESERVED — pronunciation check, built later
 }
 
-/** A single match row. left = prompt (L2), right = answer slot. */
+/**
+ * A single match row. left = prompt (L2), right = answer slot.
+ * NOTE: `right` values must be unique within a MatchingItem — they double as
+ * droppable ids / display keys. Duplicate rights grade correctly but render and
+ * attribute (filledBy) ambiguously.
+ */
 export interface MatchingPair {
   left: string;
   right: string;
