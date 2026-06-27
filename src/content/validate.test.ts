@@ -155,4 +155,46 @@ describe('validateCourse', () => {
     expect(res.ok).toBe(false);
     expect(res.errors.join()).toMatch(/pins unknown item/);
   });
+
+  // Task 8: Non-breaking structural validation for gates/final
+  it('still accepts a course with no final boss (P3a does not enforce presence)', () => {
+    expect(validateCourse(base).ok).toBe(true);
+  });
+  it('rejects a gated boss with no afterUnitId', () => {
+    const bad: Course = {
+      ...base,
+      gates: [{ id: 'g', title: 'G', scope: 'gated', reviewsUnitIds: ['u'], boss: sampleBoss }],
+    };
+    const res = validateCourse(bad);
+    expect(res.ok).toBe(false);
+    expect(res.errors.join()).toMatch(/afterUnitId/);
+  });
+  it('rejects a gated boss whose afterUnitId is unknown', () => {
+    const bad: Course = {
+      ...base,
+      gates: [{ id: 'g', title: 'G', scope: 'gated', afterUnitId: 'nope', reviewsUnitIds: ['u'], boss: sampleBoss }],
+    };
+    expect(validateCourse(bad).errors.join()).toMatch(/afterUnitId/);
+  });
+  it('rejects a gated/final boss with empty reviewsUnitIds', () => {
+    const bad: Course = {
+      ...base,
+      gates: [{ id: 'g', title: 'G', scope: 'gated', afterUnitId: 'u', reviewsUnitIds: [], boss: sampleBoss }],
+    };
+    expect(validateCourse(bad).errors.join()).toMatch(/reviews no units/);
+  });
+  it('rejects a reviewCount below 1', () => {
+    const bad: Course = {
+      ...base,
+      gates: [{ id: 'g', title: 'G', scope: 'gated', afterUnitId: 'u', reviewsUnitIds: ['u'], reviewCount: 0, boss: sampleBoss }],
+    };
+    expect(validateCourse(bad).errors.join()).toMatch(/reviewCount/);
+  });
+  it('rejects a final boss missing onClear=completeCourse', () => {
+    const bad: Course = {
+      ...base,
+      finalBoss: { id: 'fb', title: 'F', scope: 'final', reviewsUnitIds: ['u'], boss: sampleBoss },
+    };
+    expect(validateCourse(bad).errors.join()).toMatch(/onClear/);
+  });
 });

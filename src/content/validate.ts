@@ -84,13 +84,29 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
   validateBundleShape({ pool: course.pool, units: course.units }, push);
 
   const unitIds = new Set(course.units.map((u) => u.id));
-  const reviewBosses = [...course.gates, ...(course.finalBoss ? [course.finalBoss] : [])];
-  for (const b of reviewBosses) {
+  const reviewBosses = [
+    ...course.gates.map((b) => ({ b, isFinal: false })),
+    ...(course.finalBoss ? [{ b: course.finalBoss, isFinal: true }] : []),
+  ];
+  for (const { b, isFinal } of reviewBosses) {
+    // Existing reference checks.
     for (const uid of b.reviewsUnitIds ?? []) {
       if (!unitIds.has(uid)) push(`boss ${b.id} reviews unknown unit ${uid}`);
     }
     for (const pid of b.pinnedItemIds ?? []) {
       if (!course.pool[pid]) push(`boss ${b.id} pins unknown item ${pid}`);
+    }
+    // Review bosses must actually review something.
+    if (!b.reviewsUnitIds || b.reviewsUnitIds.length === 0) push(`boss ${b.id} reviews no units`);
+    if (b.reviewCount !== undefined && b.reviewCount < 1) push(`boss ${b.id} reviewCount must be >= 1`);
+    // Scope-specific structure.
+    if (isFinal) {
+      if (b.scope !== 'final') push(`final boss ${b.id} must have scope 'final'`);
+      if (b.onClear !== 'completeCourse') push(`final boss ${b.id} must set onClear 'completeCourse'`);
+    } else {
+      if (b.scope !== 'gated') push(`gate ${b.id} must have scope 'gated'`);
+      if (!b.afterUnitId) push(`gate ${b.id} missing afterUnitId`);
+      else if (!unitIds.has(b.afterUnitId)) push(`gate ${b.id} afterUnitId ${b.afterUnitId} is unknown`);
     }
   }
 
