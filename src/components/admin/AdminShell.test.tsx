@@ -13,10 +13,11 @@ vi.mock('../../firebase/content', () => ({
 import { AdminShell } from './AdminShell';
 import { useContentStore } from '../../content/store';
 import { SEED } from '../../content/seed';
+import { bundleToDefaultCourse } from '../../content/migrate';
 
 beforeEach(() => {
   saveContent.mockClear();
-  useContentStore.setState({ bundle: SEED, status: 'fallback' });
+  useContentStore.setState({ course: bundleToDefaultCourse(SEED), activeCourseId: 'default', bundle: SEED, status: 'fallback' });
 });
 
 describe('AdminShell', () => {

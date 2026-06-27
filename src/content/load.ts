@@ -1,30 +1,18 @@
-import type { ContentBundle } from './model';
-import { validateContent } from './validate';
-import { fetchContent } from '../firebase/content';
+import type { CourseIndexEntry } from './course';
+import { validateContent, validateCourse } from './validate';
+import { fetchContent, fetchCourse, fetchCoursesIndex } from '../firebase/content';
 import { useContentStore } from './store';
+import * as cache from './cache';
 
-export const CACHE_KEY = 'sentence-pet-content';
-
-/** Last-good bundle from localStorage, or null if absent/corrupt/invalid. */
-export function cachedBundle(): ContentBundle | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ContentBundle;
-    return validateContent(parsed).ok ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Persist a known-good bundle as the last-good cache. */
-export function writeCache(bundle: ContentBundle): void {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(bundle));
-  } catch {
-    // quota / disabled storage — non-fatal
-  }
-}
+// Re-export cache primitives so existing importers (e.g. load.test.ts) still resolve.
+export {
+  CACHE_KEY,
+  cachedBundle,
+  writeCache,
+  COURSE_CACHE_PREFIX,
+  cachedCourse,
+  writeCourseCache,
+} from './cache';
 
 /** Fetch live content; swap + cache only if valid. Errors/invalid → keep current bundle. */
 export async function hydrateContent(): Promise<void> {
@@ -32,9 +20,25 @@ export async function hydrateContent(): Promise<void> {
     const live = await fetchContent();
     if (validateContent(live).ok) {
       useContentStore.getState().setBundle(live, 'live');
-      writeCache(live);
+      cache.writeCache(live);
     }
   } catch {
     // offline / permission — keep fallback, never blank the game
   }
+}
+
+/** Fetch one live course; swap + cache only if valid. Errors → keep current. */
+export async function hydrateCourse(id: string): Promise<void> {
+  try {
+    const live = await fetchCourse(id);
+    if (live && validateCourse(live).ok) {
+      useContentStore.getState().setCourse(live, 'live');
+      cache.writeCourseCache(live);
+    }
+  } catch { /* offline / permission / not found — keep current fallback */ }
+}
+
+/** Fetch the course index for the select screen; [] on error. */
+export async function loadCoursesIndex(): Promise<CourseIndexEntry[]> {
+  try { return await fetchCoursesIndex(); } catch { return []; }
 }
