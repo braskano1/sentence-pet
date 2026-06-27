@@ -107,11 +107,11 @@ function CurrentScreen() {
   );
 }
 
-export default function App() {
+export default function App({ onReplayIntro }: { onReplayIntro?: () => void } = {}) {
   return (
     <MotionConfig reducedMotion="user">
       <AppShell>
-        <div className="px-3 pt-2"><AccountButton /></div>
+        <div className="px-3 pt-2"><AccountButton onReplayIntro={onReplayIntro} /></div>
         <CurrentScreen />
       </AppShell>
     </MotionConfig>

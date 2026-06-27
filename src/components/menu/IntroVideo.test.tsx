@@ -30,21 +30,59 @@ vi.mock('framer-motion', async () => {
 const { setZone } = vi.hoisted(() => ({ setZone: vi.fn() }));
 vi.mock('../../hooks/useAudio', () => ({ useAudio: () => ({ setZone }) }));
 
+// Mutable intro config so we can exercise both the placeholder branch (no asset)
+// and the real-video branch. Named imports are live bindings, so the getters are
+// re-read on each render — flip `cfg.src` before rendering to switch branches.
+const cfg = vi.hoisted(() => ({ src: '', webm: '', poster: '' }));
+vi.mock('../../config/intro', () => ({
+  get INTRO_VIDEO_SRC() { return cfg.src; },
+  get INTRO_VIDEO_WEBM() { return cfg.webm; },
+  get INTRO_VIDEO_POSTER() { return cfg.poster; },
+}));
+
 import { IntroVideo } from './IntroVideo';
 
 describe('IntroVideo', () => {
   it('stops music on mount (setZone(null)) so it does not clash with the video', () => {
+    cfg.src = '';
     setZone.mockClear();
     render(<IntroVideo onDone={() => {}} />);
     expect(setZone).toHaveBeenCalledWith(null);
   });
 
   it('renders the placeholder while there is no real asset', () => {
+    cfg.src = '';
     render(<IntroVideo onDone={() => {}} />);
     expect(screen.getByTestId('intro-placeholder')).toBeInTheDocument();
   });
 
+  it('renders the <video> (not the placeholder) once an asset is set', () => {
+    cfg.src = '/intro.mp4';
+    cfg.webm = '/intro.webm';
+    cfg.poster = '/intro-poster.jpg';
+    render(<IntroVideo onDone={() => {}} />);
+    expect(screen.getByTestId('intro-video')).toBeInTheDocument();
+    expect(screen.queryByTestId('intro-placeholder')).toBeNull();
+  });
+
+  it('onEnded fires onDone (clip finished)', () => {
+    cfg.src = '/intro.mp4';
+    const onDone = vi.fn();
+    render(<IntroVideo onDone={onDone} />);
+    fireEvent.ended(screen.getByTestId('intro-video'));
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it('onError fires onDone so a failed load cannot trap the player on a black screen', () => {
+    cfg.src = '/intro.mp4';
+    const onDone = vi.fn();
+    render(<IntroVideo onDone={onDone} />);
+    fireEvent.error(screen.getByTestId('intro-video'));
+    expect(onDone).toHaveBeenCalled();
+  });
+
   it('Skip calls onDone', () => {
+    cfg.src = '';
     const onDone = vi.fn();
     render(<IntroVideo onDone={onDone} />);
     fireEvent.click(screen.getByRole('button', { name: /skip/i }));

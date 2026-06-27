@@ -18,7 +18,7 @@ const SPRING = { type: 'spring' as const, stiffness: 380, damping: 34 };
  * (sign in); the auth forms swap inside that same sheet. The scene never
  * unmounts, so the title art stays behind every step.
  */
-export function MainMenu({ onSignedUp }: { onSignedUp: () => void }) {
+export function MainMenu({ onSignedUp, onReplayIntro }: { onSignedUp: () => void; onReplayIntro?: () => void }) {
   const [view, setView] = useState<View>('title');
   const isForm = view === 'signup' || view === 'signin';
 
@@ -109,6 +109,15 @@ export function MainMenu({ onSignedUp }: { onSignedUp: () => void }) {
                             Continue
                           </motion.button>
                         </div>
+                        {onReplayIntro && (
+                          <button
+                            type="button"
+                            onClick={onReplayIntro}
+                            className="mx-auto mt-5 block rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            ▸ Watch intro
+                          </button>
+                        )}
                       </motion.div>
                     )}
 

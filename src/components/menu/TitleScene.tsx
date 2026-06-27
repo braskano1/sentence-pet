@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { TitleLogo } from './TitleLogo';
 
 /**
  * Hero title art — the "twilight hatch world".
@@ -63,37 +64,29 @@ export function TitleScene({ active = true }: { active?: boolean }) {
         ))}
       </div>
 
-      {/* Hero + wordmark */}
+      {/* Hero logo */}
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-        {/* Wordmark */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        >
-          <h1 className="text-balance text-5xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
-            Sentence<span className="text-amber-300"> Pet</span>
-          </h1>
-          <p className="mt-3 text-sm font-medium tracking-wide text-teal-50/80">
-            Build a sentence. Hatch a pet.
-          </p>
-        </motion.div>
-
-        {/* Hero egg with a breathing glow */}
-        <div className="relative mt-10 flex items-center justify-center">
+        <div className="relative flex flex-col items-center">
+          {/* breathing glow behind the logo */}
           <motion.div
             aria-hidden
-            className="absolute h-40 w-40 rounded-full bg-amber-200/40 blur-2xl"
-            animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.8, 0.5] }}
+            className="absolute h-56 w-56 rounded-full bg-amber-200/35 blur-3xl"
+            animate={{ scale: [1, 1.12, 1], opacity: [0.45, 0.75, 0.45] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
           />
-          <motion.div
-            className="relative text-[7rem] leading-none drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
-            animate={{ y: [0, -12, 0], rotate: [-2, 2, -2] }}
-            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+          <div className="relative">
+            <TitleLogo />
+          </div>
+          <motion.p
+            className="mt-4 text-sm font-medium leading-relaxed tracking-wide text-teal-50/80"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
           >
-            🐣
-          </motion.div>
+            Build a sentence. Hatch a pet.
+            <br />
+            Battle your friends.
+          </motion.p>
         </div>
       </div>
 
