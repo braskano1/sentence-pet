@@ -22,6 +22,8 @@ What P3a delivered (the boss-tier runtime is fully playable):
 
 How to run: `npm run dev` → guest → PetRoom → Play ▶ → Beginner course → clear units. The ⚔️ Midway Review gate appears after Next Steps and locks Challenge; the 👑 Grand Finale appears last and completes the course (persists across reload). `npm test` (803), `npm run build`.
 
+> **QA caveat (live vs fallback):** the P3a example bosses live only on `SEED_COURSE` (the offline/un-migrated fallback). `hydrateCourse('default')` will REPLACE it with the live Firestore default course, which has gates `[]` and no finalBoss (from `bundleToDefaultCourse`) — so an **online** install shows NO bosses until P3b regenerates the seed and persists gates/finalBoss to Firestore. When smoke-testing P3a bosses, run offline / against a fresh install, or this reads as "bosses missing" when it is the intended fallback semantics.
+
 ## P3b SCOPE (write a fresh plan via writing-plans)
 
 ### 1. Admin boss-config forms
