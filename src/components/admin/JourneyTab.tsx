@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import type { ContentBundle, Lesson, Unit } from '../../content/model';
+import type { ContentItem, ContentKind } from '../../data/types';
 import { isDragDrop } from '../../data/types';
+
+/** Pool item ids whose kind matches a node's kind — the items admins may assign to it. */
+export function eligibleItemIds(pool: Record<string, ContentItem>, kind: ContentKind): string[] {
+  return Object.values(pool).filter((i) => i.kind === kind).map((i) => i.id);
+}
 
 export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChange: (b: ContentBundle) => void }) {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(
     bundle.units[0]?.lessons[0]?.id ?? null,
   );
-  const poolIds = Object.keys(bundle.pool);
 
   function setUnits(units: Unit[]) { onChange({ ...bundle, units }); }
 
@@ -55,6 +60,12 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
         {selected && (
           <div className="flex flex-col gap-2">
             <p className="font-semibold">Lesson: {selected.l.id}</p>
+            <label>kind
+              <select className="border px-1" value={selected.l.kind ?? 'dragdrop'}
+                onChange={(e) => patchLesson(selected.u.id, selected.l.id, { kind: e.target.value as ContentKind })}>
+                {['flashcard', 'matching', 'dragdrop', 'fillblank'].map((k) => <option key={k}>{k}</option>)}
+              </select>
+            </label>
             <label>drill
               <select className="border px-1" value={selected.l.drill}
                 onChange={(e) => patchLesson(selected.u.id, selected.l.id, { drill: e.target.value as Lesson['drill'] })}>
@@ -68,9 +79,11 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
               }} /></label>
             <label><input type="checkbox" checked={!!selected.l.isCheckpoint}
               onChange={(e) => patchLesson(selected.u.id, selected.l.id, { isCheckpoint: e.target.checked })} /> checkpoint</label>
+            <label><input type="checkbox" checked={!!selected.u.l1Enabled}
+              onChange={(e) => patchUnit(selected.u.id, { l1Enabled: e.target.checked })} /> L1 enabled (TH/ENG toggle)</label>
             <p className="mt-2 font-semibold">Items in lesson</p>
             <div className="flex flex-col">
-              {poolIds.map((id) => (
+              {eligibleItemIds(bundle.pool, selected.l.kind ?? 'dragdrop').map((id) => (
                 <label key={id}>
                   <input type="checkbox" aria-label={`item ${id}`} checked={selected.l.itemIds.includes(id)}
                     onChange={() => toggleItem(selected.u.id, selected.l, id)} /> {id} <span className="text-xs text-slate-400">({(() => { const it = bundle.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{bundle.pool[id].level})</span>
