@@ -30,6 +30,11 @@ describe('Shop', () => {
     expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
   });
 
+  it('uses the pan camera, not a scrollbar', () => {
+    const { container } = render(<Shop />);
+    expect(container.querySelector('.overflow-y-auto')).toBeNull();
+  });
+
   it('Back returns to petRoom', async () => {
     render(<Shop />);
     await userEvent.click(screen.getByRole('button', { name: /back/i }));
