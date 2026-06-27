@@ -46,3 +46,14 @@ describe('shop.decor catalog', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+describe('battle.timer (P2)', () => {
+  it('defines a positive charge duration and swipe window', () => {
+    expect(GAME_CONFIG.battle.timer.chargeMs).toBeGreaterThan(0);
+    expect(GAME_CONFIG.battle.timer.swipeWindowMs).toBeGreaterThan(0);
+  });
+  it('wrongLurchFrac is a fraction in (0, 1)', () => {
+    expect(GAME_CONFIG.battle.timer.wrongLurchFrac).toBeGreaterThan(0);
+    expect(GAME_CONFIG.battle.timer.wrongLurchFrac).toBeLessThan(1);
+  });
+});

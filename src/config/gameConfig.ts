@@ -67,5 +67,10 @@ export const GAME_CONFIG = {
       firstClearXp: 80,     // bonus XP applied to the fighting pet on first clear
       replayCoins: 8,       // small coin trickle on a repeat clear
     },
+    timer: {            // P2 timer-paced tempo
+      chargeMs: 8000,        // boss charge ring fills over this many ms per item
+      swipeWindowMs: 1200,   // active swipe-to-dodge window on a charged attack
+      wrongLurchFrac: 0.3,   // a wrong answer pushes the ring forward by this fraction
+    },
   },
 } as const;
