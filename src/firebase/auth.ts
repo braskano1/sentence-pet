@@ -14,7 +14,8 @@ import { firebaseApp } from './app';
 export const auth = getAuth(firebaseApp);
 
 if (import.meta.env.VITE_USE_EMULATOR === 'true') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  const host = import.meta.env.VITE_EMULATOR_HOST ?? '127.0.0.1';
+  connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
 }
 
 export function signIn(email: string, password: string) {
