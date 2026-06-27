@@ -277,7 +277,7 @@ describe('setTrack (per-zone url override + live swap)', () => {
   });
 });
 
-describe('previewTrack / stopPreview (one-shot audition, independent of the loop)', () => {
+describe('previewTrack / stopPreview (one-shot audition; pauses + resumes the loop)', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
@@ -303,14 +303,40 @@ describe('previewTrack / stopPreview (one-shot audition, independent of the loop
     expect(el.playCalls).toBe(1);
   });
 
-  it('does NOT stop or duck the zone loop', () => {
+  it('pauses the zone loop while previewing and resumes it on stop', () => {
     const { m, created } = setup();
     m.setZone('overworld', 1);
     vi.advanceTimersByTime(500);
     const loopEl = created[0];
+    const playsBefore = loopEl.playCalls;
     m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
-    expect(loopEl.pauseCalls).toBe(0);
-    expect(loopEl.volume).toBeCloseTo(1, 2); // loop volume untouched
+    expect(loopEl.pauseCalls).toBeGreaterThan(0); // loop paused for the audition
+    m.stopPreview();
+    expect(loopEl.playCalls).toBe(playsBefore + 1); // loop resumed
+  });
+
+  it('resumes the zone loop when the preview ends on its own', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    const loopEl = created[0];
+    const playsBefore = loopEl.playCalls;
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+    const previewEl = created[1];
+    previewEl.fireEnded();
+    expect(loopEl.playCalls).toBe(playsBefore + 1);
+  });
+
+  it('pauses the loop only once across back-to-back previews', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    const loopEl = created[0];
+    m.previewTrack('/audio/tracks/lofi.mp3', 0.5);
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5); // swap preview, loop stays paused
+    expect(loopEl.pauseCalls).toBe(1);
+    m.stopPreview();
+    expect(loopEl.pauseCalls).toBe(1); // still just the one pause
   });
 
   it('replaces an in-flight preview (tears down the previous element)', () => {

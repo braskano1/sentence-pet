@@ -29,9 +29,9 @@ export interface Music {
    */
   setTrack(zone: Zone, url: string): void;
   /**
-   * Play a one-shot, non-looping audition element at `gain`, independent of the
-   * zone loop and stinger (does not stop/duck them). Replaces any in-flight
-   * preview. `gain <= 0` or empty url → no-op.
+   * Play a one-shot, non-looping audition element at `gain`. Pauses the zone
+   * loop so the preview is heard cleanly, then resumes it on end/stop. Replaces
+   * any in-flight preview. `gain <= 0` or empty url → no-op.
    */
   previewTrack(url: string, gain: number): void;
   /** Pause/teardown the preview element. No-op if nothing is previewing. */
@@ -88,6 +88,8 @@ export function __createMusicWithFactory(
   let fadeTimer: ReturnType<typeof setInterval> | null = null;
   let stinger: HTMLAudioElement | null = null;
   let preview: HTMLAudioElement | null = null;
+  // True while a preview has paused the zone loop, so we know to resume it.
+  let loopPausedForPreview = false;
   // Per-instance url overrides (equipped/buyable tracks). Resolution everywhere is
   // `override[zone] ?? TRACKS[zone]`.
   const override: Partial<Record<Zone, string>> = {};
@@ -119,6 +121,20 @@ export function __createMusicWithFactory(
     } catch {
       /* swallow — never let media failure throw */
     }
+  }
+
+  /** Pause the current zone loop while a preview plays; halts any in-flight fade. */
+  function pauseLoopForPreview(): void {
+    if (!current || loopPausedForPreview) return;
+    clearFade();
+    teardown(current.el);
+    loopPausedForPreview = true;
+  }
+
+  /** Resume the zone loop after a preview ends or is stopped. */
+  function resumeLoopAfterPreview(): void {
+    if (current && loopPausedForPreview) start(current.el);
+    loopPausedForPreview = false;
   }
 
   /** Stepped volume ramp (HTMLAudioElement has no AudioParam). Replaces any in-flight fade. */
@@ -153,6 +169,7 @@ export function __createMusicWithFactory(
           teardown(current.el);
           current = null;
         }
+        loopPausedForPreview = false; // no loop to resume
         return;
       }
       // Null-track zone (e.g. multiplayer placeholder): no track to switch to,
@@ -169,6 +186,7 @@ export function __createMusicWithFactory(
       start(el);
       const outgoing = current ? current.el : null;
       current = { zone, el, url };
+      loopPausedForPreview = false; // new loop plays normally; old paused ref is gone
       crossfade(el, target, outgoing);
     },
 
@@ -207,6 +225,16 @@ export function __createMusicWithFactory(
       // Same resolved url already playing → no-op (don't restart the loop).
       if (current.url === url) return;
       const target = current.el.volume; // keep playing at the current gain
+      // Equipped mid-preview: the loop is paused. Swap the track silently; it
+      // starts on resume (no audible crossfade under the preview).
+      if (loopPausedForPreview) {
+        teardown(current.el);
+        const el = makeAudio(url);
+        el.loop = true;
+        el.volume = target;
+        current = { zone, el, url };
+        return;
+      }
       const el = makeAudio(url);
       el.loop = true;
       el.volume = 0;
@@ -223,6 +251,8 @@ export function __createMusicWithFactory(
         preview = null;
       }
       if (!url || gain <= 0) return;
+      // Pause the petroom loop so the audition is heard cleanly; resume on end/stop.
+      pauseLoopForPreview();
       const el = makeAudio(url);
       el.loop = false;
       el.volume = clampLevel(gain);
@@ -230,6 +260,7 @@ export function __createMusicWithFactory(
         el.removeEventListener('ended', onEnded);
         teardown(el);
         if (preview === el) preview = null;
+        resumeLoopAfterPreview();
       };
       el.addEventListener('ended', onEnded);
       preview = el;
@@ -241,6 +272,7 @@ export function __createMusicWithFactory(
         teardown(preview);
         preview = null;
       }
+      resumeLoopAfterPreview();
     },
 
     stop() {
@@ -257,6 +289,7 @@ export function __createMusicWithFactory(
         teardown(preview);
         preview = null;
       }
+      loopPausedForPreview = false;
     },
   };
 }
