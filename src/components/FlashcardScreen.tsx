@@ -6,7 +6,7 @@ import { L1Toggle } from './L1Toggle';
 import type { FlashcardItem } from '../data/types';
 
 /**
- * Flashcard practice (Spec §5/§7). Flip front→back, optional 🔊 audio, self-grade
+ * Flashcard practice (Spec §5/§7). Flip front→back, 🔊 speaks the front via TTS, self-grade
  * Again/Got-it. BOTH buttons advance; practice is completion-based — full stars,
  * no slip penalty. L1 helper line + toggle are gated by unit.l1Enabled.
  */
@@ -48,16 +48,14 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
       >
         {flipped ? item.back : item.front}
       </button>
-      {item.audio && (
-        <button
-          type="button"
-          aria-label="Hear the word"
-          onClick={() => speak.speakWord(item.front)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700"
-        >
-          🔊
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label="Hear the word"
+        onClick={() => speak.speakWord(item.front)}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-700"
+      >
+        🔊
+      </button>
       {th && <p className="text-lg font-bold text-slate-600">{th}</p>}
       <div className="mt-auto flex w-full max-w-sm gap-3">
         <button type="button" onClick={grade} className="flex-1 rounded-2xl bg-slate-200 py-3 font-black">

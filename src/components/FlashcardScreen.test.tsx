@@ -22,4 +22,17 @@ describe('FlashcardScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /got it/i }));
     expect(screen.getByText('dog')).toBeInTheDocument();
   });
+
+  it('finishes the round on Got it for the last card', () => {
+    // After resetForTest the store is on the egg screen with no reward.
+    expect(useGameStore.getState().screen).toBe('egg');
+    expect(useGameStore.getState().lastReward).toBeNull();
+
+    render(<FlashcardScreen items={[items[0]]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /got it/i }));
+
+    // finishRound flips the store to the reward screen and records a reward.
+    expect(useGameStore.getState().screen).toBe('reward');
+    expect(useGameStore.getState().lastReward).not.toBeNull();
+  });
 });

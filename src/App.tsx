@@ -102,8 +102,10 @@ function CurrentScreen() {
   const currentLessonId = useGameStore((s) => s.currentLessonId);
   const found = currentLessonId ? findLesson(bundle, currentLessonId) : undefined;
   const lesson = found?.lesson;
-  // The active unit gates the L1 (TH/ENG) helper; free-practice has no unit, so {}.
-  const unit = useMemo(() => ({ l1Enabled: found?.unit.l1Enabled }), [found]);
+  // The active unit gates the L1 (TH/ENG) helper; free-practice has no lesson/unit
+  // → l1Enabled undefined → L1 helper stays off. Dep on the primitive so the object
+  // reference passed to the screen stays stable across renders.
+  const unit = useMemo(() => ({ l1Enabled: found?.unit.l1Enabled }), [found?.unit.l1Enabled]);
   const items = useMemo(
     () => (lesson ? itemsForLesson(bundle, lesson) : itemsForDrill(bundle, drill, level)),
     [bundle, lesson, drill, level],
