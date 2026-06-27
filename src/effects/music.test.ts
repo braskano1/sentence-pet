@@ -6,6 +6,7 @@ import {
   __createMusicWithFactory,
   type Music,
   type Zone,
+  type StingerKind,
 } from './music';
 
 afterEach(() => setMusicProvider(null));
@@ -34,6 +35,9 @@ describe('music provider seam', () => {
       setZone: vi.fn(),
       setGain: vi.fn(),
       playStinger: vi.fn(),
+      setTrack: vi.fn(),
+      previewTrack: vi.fn(),
+      stopPreview: vi.fn(),
       stop: vi.fn(),
     };
     setMusicProvider(() => spy);
@@ -43,15 +47,24 @@ describe('music provider seam', () => {
     m.setZone('overworld', 1);
     m.setGain(0.5);
     m.playStinger('win', 1);
+    m.setTrack('overworld', '/audio/tracks/lofi.mp3');
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+    m.stopPreview();
     m.stop();
     expect(spy.setZone).toHaveBeenCalledWith('overworld', 1);
     expect(spy.setGain).toHaveBeenCalledWith(0.5);
     expect(spy.playStinger).toHaveBeenCalledWith('win', 1);
+    expect(spy.setTrack).toHaveBeenCalledWith('overworld', '/audio/tracks/lofi.mp3');
+    expect(spy.previewTrack).toHaveBeenCalledWith('/audio/tracks/jazz.mp3', 0.5);
+    expect(spy.stopPreview).toHaveBeenCalled();
     expect(spy.stop).toHaveBeenCalled();
   });
 
   it('setMusicProvider(null) resets to the real factory', () => {
-    const spy: Music = { setZone: vi.fn(), setGain: vi.fn(), playStinger: vi.fn(), stop: vi.fn() };
+    const spy: Music = {
+      setZone: vi.fn(), setGain: vi.fn(), playStinger: vi.fn(),
+      setTrack: vi.fn(), previewTrack: vi.fn(), stopPreview: vi.fn(), stop: vi.fn(),
+    };
     setMusicProvider(() => spy);
     expect(getMusic()).toBe(spy);
     setMusicProvider(null);
@@ -84,7 +97,15 @@ describe('real factory in jsdom (no throw across a representative sequence)', ()
   it('a null-track zone (multiplayer) does not throw', () => {
     const m = createHtmlAudioMusic();
     expect(() => m.setZone('multiplayer', 1)).not.toThrow();
-    expect(() => m.setZone('title', 1)).not.toThrow();
+  });
+
+  it('drives setZone(title, ...) and playStinger(cleared, ...) without throwing', () => {
+    const m = createHtmlAudioMusic();
+    expect(() => {
+      m.setZone('title', 1); // title now has a real track
+      m.playStinger('cleared', 1);
+      m.stop();
+    }).not.toThrow();
   });
 });
 
@@ -193,6 +214,183 @@ describe('zone state machine (via injected fake elements)', () => {
   });
 });
 
+describe('setTrack (per-zone url override + live swap)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  function setup() {
+    const created: ReturnType<typeof fakeAudio>[] = [];
+    const make = (url: string) => {
+      const el = fakeAudio(url);
+      created.push(el);
+      return el as unknown as HTMLAudioElement;
+    };
+    const m = __createMusicWithFactory(make);
+    return { m, created };
+  }
+
+  it('records an override for a non-current zone without building an element', () => {
+    const { m, created } = setup();
+    m.setTrack('overworld', '/audio/tracks/lofi.mp3'); // overworld not current yet
+    expect(created).toHaveLength(0);
+    // next setZone(overworld) uses the override url
+    m.setZone('overworld', 1);
+    expect(created).toHaveLength(1);
+    expect(created[0].src).toContain('lofi');
+  });
+
+  it('live-crossfades when the zone is current and the resolved url differs', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1); // plays default overworld
+    vi.advanceTimersByTime(500);
+    const oldEl = created[0];
+    expect(oldEl.src).toContain('overworld');
+
+    m.setTrack('overworld', '/audio/tracks/jazz.mp3'); // live swap
+    expect(created).toHaveLength(2);
+    const newEl = created[1];
+    expect(newEl.src).toContain('jazz');
+    expect(newEl.playCalls).toBe(1);
+    vi.advanceTimersByTime(500);
+    expect(oldEl.pauseCalls).toBeGreaterThan(0); // old loop torn down
+    expect(newEl.volume).toBeCloseTo(1, 2);      // new ramps to the current gain
+  });
+
+  it('is a no-op when the resolved url is unchanged (does not restart the loop)', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    expect(created).toHaveLength(1);
+    // setting the SAME url as the playing default → no restart
+    m.setTrack('overworld', '/audio/overworld.mp3');
+    expect(created).toHaveLength(1);
+    expect(created[0].pauseCalls).toBe(0);
+  });
+
+  it('overriding a non-current zone does not disturb the current loop', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    m.setTrack('drill', '/audio/tracks/arcade.mp3'); // drill not current
+    expect(created).toHaveLength(1);
+    expect(created[0].pauseCalls).toBe(0);
+  });
+});
+
+describe('previewTrack / stopPreview (one-shot audition; pauses + resumes the loop)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  function setup() {
+    const created: ReturnType<typeof fakeAudio>[] = [];
+    const make = (url: string) => {
+      const el = fakeAudio(url);
+      created.push(el);
+      return el as unknown as HTMLAudioElement;
+    };
+    const m = __createMusicWithFactory(make);
+    return { m, created };
+  }
+
+  it('plays a non-looping preview element at the given gain', () => {
+    const { m, created } = setup();
+    m.previewTrack('/audio/tracks/lofi.mp3', 0.7);
+    expect(created).toHaveLength(1);
+    const el = created[0];
+    expect(el.src).toContain('lofi');
+    expect(el.loop).toBe(false);
+    expect(el.volume).toBeCloseTo(0.7, 5);
+    expect(el.playCalls).toBe(1);
+  });
+
+  it('pauses the zone loop while previewing and resumes it on stop', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    const loopEl = created[0];
+    const playsBefore = loopEl.playCalls;
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+    expect(loopEl.pauseCalls).toBeGreaterThan(0); // loop paused for the audition
+    m.stopPreview();
+    expect(loopEl.playCalls).toBe(playsBefore + 1); // loop resumed
+  });
+
+  it('resumes the zone loop when the preview ends on its own', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    const loopEl = created[0];
+    const playsBefore = loopEl.playCalls;
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+    const previewEl = created[1];
+    previewEl.fireEnded();
+    expect(loopEl.playCalls).toBe(playsBefore + 1);
+  });
+
+  it('pauses the loop only once across back-to-back previews', () => {
+    const { m, created } = setup();
+    m.setZone('overworld', 1);
+    vi.advanceTimersByTime(500);
+    const loopEl = created[0];
+    m.previewTrack('/audio/tracks/lofi.mp3', 0.5);
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5); // swap preview, loop stays paused
+    expect(loopEl.pauseCalls).toBe(1);
+    m.stopPreview();
+    expect(loopEl.pauseCalls).toBe(1); // still just the one pause
+  });
+
+  it('replaces an in-flight preview (tears down the previous element)', () => {
+    const { m, created } = setup();
+    m.previewTrack('/audio/tracks/lofi.mp3', 0.5);
+    const first = created[0];
+    m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+    expect(first.pauseCalls).toBeGreaterThan(0);
+    expect(created).toHaveLength(2);
+    expect(created[1].src).toContain('jazz');
+  });
+
+  it('gain<=0 or empty url is a no-op (no element built)', () => {
+    const { m, created } = setup();
+    m.previewTrack('/audio/tracks/lofi.mp3', 0);
+    m.previewTrack('', 0.5);
+    expect(created).toHaveLength(0);
+  });
+
+  it('stopPreview pauses/tears down the preview element', () => {
+    const { m, created } = setup();
+    m.previewTrack('/audio/tracks/lofi.mp3', 0.5);
+    m.stopPreview();
+    expect(created[0].pauseCalls).toBeGreaterThan(0);
+  });
+
+  it('stopPreview is a no-op when nothing is previewing', () => {
+    const { m } = setup();
+    expect(() => m.stopPreview()).not.toThrow();
+  });
+});
+
+describe('silent music (no-op surface)', () => {
+  it('setTrack/previewTrack/stopPreview never throw when media is unavailable', () => {
+    // Force the silent path by hiding Audio/HTMLAudioElement.
+    const w = globalThis as unknown as { Audio?: unknown; HTMLAudioElement?: unknown };
+    const origAudio = w.Audio;
+    const origEl = w.HTMLAudioElement;
+    w.Audio = undefined;
+    w.HTMLAudioElement = undefined;
+    try {
+      const m = createHtmlAudioMusic();
+      expect(() => {
+        m.setTrack('overworld', '/audio/tracks/lofi.mp3');
+        m.previewTrack('/audio/tracks/jazz.mp3', 0.5);
+        m.stopPreview();
+      }).not.toThrow();
+    } finally {
+      w.Audio = origAudio;
+      w.HTMLAudioElement = origEl;
+    }
+  });
+});
+
 describe('playStinger', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
@@ -248,5 +446,13 @@ describe('Zone type surface', () => {
   it('covers all zones', () => {
     const zones: Zone[] = ['title', 'overworld', 'drill', 'boss', 'multiplayer'];
     expect(zones.length).toBe(5);
+  });
+});
+
+describe('StingerKind surface', () => {
+  it("includes 'cleared' alongside win/lose", () => {
+    const kinds: StingerKind[] = ['win', 'lose', 'cleared'];
+    expect(kinds).toContain('cleared');
+    expect(kinds.length).toBe(3);
   });
 });

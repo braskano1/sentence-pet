@@ -41,16 +41,25 @@ export function DecorCard({ item, coins, owned, active, index }: DecorCardProps)
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
-      className="flex flex-col gap-2 rounded-xl bg-white/70 p-2 shadow"
+      className={`flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ${
+        active ? 'ring-emerald-300' : 'ring-amber-100'
+      }`}
     >
-      <img
-        src={item.sprite}
-        alt={`${item.name} room`}
-        className="h-24 w-full rounded-lg object-cover"
-      />
+      <div className="relative">
+        <img
+          src={item.sprite}
+          alt={`${item.name} room`}
+          className="h-24 w-full rounded-xl object-cover"
+        />
+        {active && (
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+            ACTIVE
+          </span>
+        )}
+      </div>
       <div className="flex items-center justify-between px-1">
-        <span className="font-semibold text-slate-700">{item.name}</span>
-        {!owned && <span className="text-sm text-slate-500">🪙 {item.price}</span>}
+        <span className="truncate font-bold text-slate-700">{item.name}</span>
+        {!owned && <span className="shrink-0 text-sm text-slate-500">🪙 {item.price}</span>}
       </div>
       <PressButton
         onClick={handleClick}

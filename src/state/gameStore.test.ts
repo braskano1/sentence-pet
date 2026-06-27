@@ -187,6 +187,48 @@ describe('decor ownership', () => {
   });
 });
 
+describe('music ownership', () => {
+  const lofi = GAME_CONFIG.shop.music.find((t) => t.id === 'music:lofi')!;
+
+  it('starts with null activeTrack (free default)', () => {
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().activeTrack).toBeNull();
+  });
+
+  it('buyMusic with enough coins spends wallet coins and records ownership', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['music:lofi']);
+  });
+
+  it('buyMusic without enough coins is a no-op', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(10);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(10);
+    expect(useGameStore.getState().owned).toEqual([]);
+  });
+
+  it('buyMusic twice does not double-charge or duplicate', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().buyMusic(lofi);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['music:lofi']);
+  });
+
+  it('equipTrack sets and clears the active track', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().equipTrack('music:lofi');
+    expect(useGameStore.getState().activeTrack).toBe('music:lofi');
+    useGameStore.getState().equipTrack(null);
+    expect(useGameStore.getState().activeTrack).toBeNull();
+  });
+});
+
 describe('pullEgg action', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -497,6 +539,51 @@ describe('startLesson + journey star recording', () => {
   });
 });
 
+describe('boss (checkpoint) stinger queueing', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('finishRound after a checkpoint lesson with stars>=1 queues a win stinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 1, correctCount: 3 });
+    expect(useGameStore.getState().pendingStinger).toBe('win');
+  });
+
+  it('finishRound after a checkpoint lesson with 0 stars queues a lose stinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 0, correctCount: 0 });
+    expect(useGameStore.getState().pendingStinger).toBe('lose');
+  });
+
+  it("finishRound after a non-checkpoint lesson queues the 'cleared' stinger", () => {
+    useGameStore.getState().startLesson('u1-pattern');
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 0, correctCount: 0 });
+    expect(useGameStore.getState().pendingStinger).toBe('cleared');
+  });
+
+  it('finishRound with no active lesson leaves pendingStinger null', () => {
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('clearPendingStinger resets it to null', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 3, correctCount: 5 });
+    expect(useGameStore.getState().pendingStinger).toBe('win');
+    useGameStore.getState().clearPendingStinger();
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('persisted slice excludes pendingStinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 3, correctCount: 5 });
+    const getPartialize = (useGameStore as unknown as {
+      persist: { getOptions: () => { partialize?: (s: unknown) => unknown } };
+    }).persist.getOptions().partialize;
+    const persisted = getPartialize!(useGameStore.getState()) as Record<string, unknown>;
+    expect('pendingStinger' in persisted).toBe(false);
+  });
+});
+
 describe('persist v9 (journey)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {
@@ -543,12 +630,12 @@ describe('migrate -> v11 (audio mixer)', () => {
       activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
       journey: { lessonStars: {} },
     };
-    const out = getMigrate()(v9, 9) as { audio: { allMuted: boolean; master: { level: number } } };
-    expect(out.audio.allMuted).toBe(false);
-    expect(out.audio.master.level).toBe(1);
+    const out = getMigrate()(v9, 9) as { audio: { master: { muted: boolean; level: number } } };
+    expect(out.audio.master.muted).toBe(false);
+    expect(out.audio.master.level).toBe(0.7);
   });
 
-  it('migrate converts soundEnabled:false (v10) to allMuted:true', () => {
+  it('migrate converts soundEnabled:false (v10) to master.muted:true', () => {
     const v10 = {
       pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
         bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
@@ -558,12 +645,12 @@ describe('migrate -> v11 (audio mixer)', () => {
       journey: { lessonStars: {} },
       soundEnabled: false,
     };
-    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
-    expect(out.audio.allMuted).toBe(true);
+    const out = getMigrate()(v10, 10) as { audio: { master: { muted: boolean } }; soundEnabled?: boolean };
+    expect(out.audio.master.muted).toBe(true);
     expect(out.soundEnabled).toBeUndefined();
   });
 
-  it('migrate converts soundEnabled:true (v10) to allMuted:false', () => {
+  it('migrate converts soundEnabled:true (v10) to master.muted:false', () => {
     const v10 = {
       pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
         bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
@@ -573,9 +660,96 @@ describe('migrate -> v11 (audio mixer)', () => {
       journey: { lessonStars: {} },
       soundEnabled: true,
     };
-    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
-    expect(out.audio.allMuted).toBe(false);
+    const out = getMigrate()(v10, 10) as { audio: { master: { muted: boolean } }; soundEnabled?: boolean };
+    expect(out.audio.master.muted).toBe(false);
     expect(out.soundEnabled).toBeUndefined();
+  });
+});
+
+describe('migrate -> v13 (drop allMuted, fold into master.muted)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  const v12Save = (audio: Record<string, unknown>) => ({
+    pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+      bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+      stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+    activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    journey: { lessonStars: {} }, audio,
+  });
+
+  it('a v12 save with allMuted:true folds into master.muted and drops the field', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: full(), sfx: full(), music: full(), voice: full(), allMuted: true }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(true);
+    expect('allMuted' in out.audio).toBe(false);
+  });
+
+  it('a v12 save with allMuted:false leaves master.muted untouched and drops the field', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: full(), sfx: full(), music: full(), voice: full(), allMuted: false }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(false);
+    expect('allMuted' in out.audio).toBe(false);
+  });
+
+  it('preserves an already-set master.muted (allMuted:false does not clear it)', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: { level: 1, muted: true }, sfx: full(), music: full(), voice: full(), allMuted: false }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(true);
+    expect('allMuted' in out.audio).toBe(false);
+  });
+});
+
+describe('migrate -> v12 (activeTrack)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills activeTrack: null on a v11 save that lacks it, keeping other fields', () => {
+    const v11 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 42, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: ['decor:beach'], activeBackground: 'decor:beach',
+      journey: { lessonStars: { u1: 2 } }, audio: defaultAudioSettings(),
+    };
+    const out = getMigrate()(v11, 11) as {
+      activeTrack: string | null; coins: number; owned: string[]; activeBackground: string | null;
+    };
+    expect(out.activeTrack).toBeNull();
+    // other fields survive untouched
+    expect(out.coins).toBe(42);
+    expect(out.owned).toEqual(['decor:beach']);
+    expect(out.activeBackground).toBe('decor:beach');
+  });
+
+  it('preserves an already-set activeTrack', () => {
+    const v12 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: ['music:lofi'], activeTrack: 'music:lofi',
+      journey: { lessonStars: {} }, audio: defaultAudioSettings(),
+    };
+    const out = getMigrate()(v12, 12) as { activeTrack: string | null };
+    expect(out.activeTrack).toBe('music:lofi');
   });
 });
 
@@ -598,13 +772,6 @@ describe('audio mixer actions', () => {
     expect(useGameStore.getState().audio.voice.muted).toBe(true);
     useGameStore.getState().toggleChannelMute('voice');
     expect(useGameStore.getState().audio.voice.muted).toBe(false);
-  });
-
-  it('toggleMuteAll flips the global flag', () => {
-    useGameStore.getState().toggleMuteAll();
-    expect(useGameStore.getState().audio.allMuted).toBe(true);
-    useGameStore.getState().toggleMuteAll();
-    expect(useGameStore.getState().audio.allMuted).toBe(false);
   });
 });
 

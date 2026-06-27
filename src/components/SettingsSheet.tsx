@@ -9,12 +9,11 @@ const CHANNELS: { key: 'master' | ChannelName; label: string }[] = [
   { key: 'voice', label: 'Voice' },
 ];
 
-/** Bottom-sheet audio mixer: mute-all + per-channel slider & mute. */
+/** Bottom-sheet audio mixer: per-channel slider & mute. Master mute is the global mute. */
 export function SettingsSheet({ onClose }: { onClose: () => void }) {
   const audio = useGameStore((s) => s.audio);
   const setChannelLevel = useGameStore((s) => s.setChannelLevel);
   const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
-  const toggleMuteAll = useGameStore((s) => s.toggleMuteAll);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
@@ -27,20 +26,17 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">Sound</h2>
-          <PressButton
-            onClick={toggleMuteAll}
-            className={`rounded-lg px-3 py-1 text-sm font-semibold ${audio.allMuted ? 'bg-red-500 text-white' : 'bg-slate-200'}`}
-          >
-            {audio.allMuted ? 'Muted — Unmute all' : 'Mute all'}
-          </PressButton>
         </div>
 
         <ul className="space-y-4">
           {CHANNELS.map(({ key, label }) => {
             const ch = audio[key];
             const id = `vol-${key}`;
+            // A channel greys when its own mute is on, or — for non-master channels —
+            // when Master (the global mute) is muted.
+            const disabled = ch.muted || (key !== 'master' && audio.master.muted);
             return (
-              <li key={key} className="flex items-center gap-3">
+              <li key={key} className={`flex items-center gap-3 ${disabled ? 'opacity-40' : ''}`}>
                 <button
                   type="button"
                   aria-label={`${label} ${ch.muted ? 'unmute' : 'mute'}`}
@@ -59,9 +55,9 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
                   step={0.01}
                   value={ch.level}
                   aria-valuetext={`${Math.round(ch.level * 100)}%`}
-                  disabled={audio.allMuted || (key !== 'master' && audio.master.muted)}
+                  disabled={disabled}
                   onChange={(e) => setChannelLevel(key, Number(e.target.value))}
-                  className="flex-1 accent-emerald-500"
+                  className={`flex-1 ${disabled ? 'accent-slate-400' : 'accent-emerald-500'}`}
                 />
               </li>
             );

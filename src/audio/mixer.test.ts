@@ -4,11 +4,17 @@ import { effectiveGain, defaultAudioSettings, clampLevel, type AudioSettings } f
 const base = (): AudioSettings => defaultAudioSettings();
 
 describe('effectiveGain', () => {
-  it('defaults to full gain (1) for every channel', () => {
+  it('defaults to the master*channel product (0.7 * 0.7) for every channel', () => {
     const s = base();
+    expect(effectiveGain('sfx', s)).toBeCloseTo(0.49);
+    expect(effectiveGain('music', s)).toBeCloseTo(0.49);
+    expect(effectiveGain('voice', s)).toBeCloseTo(0.49);
+  });
+
+  it('gives unity gain when master and channel are both full', () => {
+    const s = base();
+    s.master.level = 1; s.sfx.level = 1;
     expect(effectiveGain('sfx', s)).toBe(1);
-    expect(effectiveGain('music', s)).toBe(1);
-    expect(effectiveGain('voice', s)).toBe(1);
   });
 
   it('multiplies master level by channel level', () => {
@@ -20,34 +26,27 @@ describe('effectiveGain', () => {
 
   it('channel mute zeroes only that channel', () => {
     const s = base();
+    s.master.level = 1; s.music.level = 1;
     s.sfx.muted = true;
     expect(effectiveGain('sfx', s)).toBe(0);
     expect(effectiveGain('music', s)).toBe(1);
   });
 
-  it('master mute zeroes every channel', () => {
-    const s = base();
+  it('master mute zeroes every channel (incl. itself, via sfx/music/voice)', () => {
+    const s = base(); // all channels full and unmuted — worst case
     s.master.muted = true;
-    expect(effectiveGain('sfx', s)).toBe(0);
-    expect(effectiveGain('voice', s)).toBe(0);
-  });
-
-  it('allMuted overrides everything', () => {
-    const s = base(); // all channels full and unmuted — worst case for override
-    s.allMuted = true;
     expect(effectiveGain('sfx', s)).toBe(0);
     expect(effectiveGain('music', s)).toBe(0);
     expect(effectiveGain('voice', s)).toBe(0);
   });
 
-  it('defaultAudioSettings returns an unmuted full-level mixer', () => {
+  it('defaultAudioSettings returns an unmuted mixer at 70% on every channel', () => {
     const s = defaultAudioSettings();
     expect(s).toEqual({
-      master: { level: 1, muted: false },
-      sfx: { level: 1, muted: false },
-      music: { level: 1, muted: false },
-      voice: { level: 1, muted: false },
-      allMuted: false,
+      master: { level: 0.7, muted: false },
+      sfx: { level: 0.7, muted: false },
+      music: { level: 0.7, muted: false },
+      voice: { level: 0.7, muted: false },
     });
   });
 });

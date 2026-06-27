@@ -16,7 +16,17 @@ export function RewardScreen() {
   const clearLevelUp = useGameStore((s) => s.clearLevelUp);
   const setScreen = useGameStore((s) => s.setScreen);
   const lastStageChange = useGameStore((s) => s.lastStageChange);
-  const { play } = useAudio();
+  const pendingStinger = useGameStore((s) => s.pendingStinger);
+  const clearPendingStinger = useGameStore((s) => s.clearPendingStinger);
+  const { play, playStinger } = useAudio();
+
+  // Boss (checkpoint) outcome: fire the queued win/lose stinger once, then clear.
+  useEffect(() => {
+    if (pendingStinger) {
+      playStinger(pendingStinger);
+      clearPendingStinger();
+    }
+  }, [pendingStinger, playStinger, clearPendingStinger]);
 
   // Capture the level-up info on mount so the callout persists after clearLevelUp() nulls the store.
   const levelUpRef = useRef(lastLevelUp);

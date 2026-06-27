@@ -10,21 +10,20 @@ export type AudioSettings = {
   sfx: Channel;
   music: Channel;
   voice: Channel;
-  allMuted: boolean;
 };
 
-/** Fresh mixer: every channel full and unmuted. */
+/** Fresh mixer: every channel at 70% and unmuted. */
 export function defaultAudioSettings(): AudioSettings {
-  const full = (): Channel => ({ level: 1, muted: false });
-  return { master: full(), sfx: full(), music: full(), voice: full(), allMuted: false };
+  const start = (): Channel => ({ level: 0.7, muted: false });
+  return { master: start(), sfx: start(), music: start(), voice: start() };
 }
 
 /**
  * Effective 0..1 gain for a channel.
- * Mute precedence: allMuted > master.muted > channel.muted > (master.level * channel.level).
+ * Mute precedence: master.muted > channel.muted > (master.level * channel.level).
+ * The Master channel's mute IS the global mute.
  */
 export function effectiveGain(channel: ChannelName, s: AudioSettings): number {
-  if (s.allMuted) return 0;
   if (s.master.muted) return 0;
   const ch = s[channel];
   if (ch.muted) return 0;

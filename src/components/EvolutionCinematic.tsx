@@ -17,7 +17,7 @@ export function EvolutionCinematic({
   from, to, species, onDone,
 }: { from: PetStage; to: PetStage; species: Species; onDone: () => void }) {
   const audio = useGameStore((s) => s.audio);
-  const toggleMuteAll = useGameStore((s) => s.toggleMuteAll);
+  const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
   const reduced = !!useReducedMotion();
   const { phase, swap, skip } = useEvolutionSequence({ reduced });
   const sound = useRef(getEvolutionSound());
@@ -68,11 +68,11 @@ export function EvolutionCinematic({
     >
       <button
         type="button"
-        aria-label={audio.allMuted ? 'Unmute sound' : 'Mute sound'}
-        onClick={(e) => { e.stopPropagation(); toggleMuteAll(); }}
+        aria-label={audio.master.muted ? 'Unmute sound' : 'Mute sound'}
+        onClick={(e) => { e.stopPropagation(); toggleChannelMute('master'); }}
         className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl text-white"
       >
-        {audio.allMuted ? '🔇' : '🔊'}
+        {audio.master.muted ? '🔇' : '🔊'}
       </button>
 
       {phase === 'announce' && (

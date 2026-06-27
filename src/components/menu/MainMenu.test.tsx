@@ -31,6 +31,9 @@ vi.mock('../../auth/useAuth', () => ({
   useAuth: () => ({ linkEmail: vi.fn().mockResolvedValue(undefined), signIn: vi.fn().mockResolvedValue(undefined) }),
 }));
 
+const { setZone } = vi.hoisted(() => ({ setZone: vi.fn() }));
+vi.mock('../../hooks/useAudio', () => ({ useAudio: () => ({ setZone }) }));
+
 import { MainMenu } from './MainMenu';
 
 function openChoose() {
@@ -39,6 +42,12 @@ function openChoose() {
 }
 
 describe('MainMenu', () => {
+  it("arms the title music zone on mount", () => {
+    setZone.mockClear();
+    render(<MainMenu onSignedUp={() => {}} />);
+    expect(setZone).toHaveBeenCalledWith('title');
+  });
+
   it('tapping the title reveals New Game and Continue', () => {
     openChoose();
     expect(screen.getByRole('button', { name: /new game/i })).toBeInTheDocument();

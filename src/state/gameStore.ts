@@ -8,12 +8,14 @@ import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
 import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
 import { purchase } from '../domain/shop';
-import type { TreatItem, DecorItem } from '../domain/shop';
+import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
+import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { findLesson } from '../content/model';
 import { useContentStore } from '../content/store';
+import type { StingerKind } from '../effects/music';
 
 export const STARTER_ID = 'starter-leaf';
 
@@ -52,11 +54,15 @@ interface GameState {
   lastPull: PetInstance | null;
   owned: string[];
   activeBackground: string | null;
+  activeTrack: string | null; // equipped overworld music track id; null = free default
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
   audio: AudioSettings;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
+  // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
+  // mount effect in RewardScreen. NOT persisted (excluded from PersistedState).
+  pendingStinger: StingerKind | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
@@ -65,15 +71,17 @@ interface GameState {
   feed: (group: FoodGroup) => void;
   buyTreat: (item: TreatItem) => void;
   buyDecor: (item: DecorItem) => void;
+  buyMusic: (item: MusicTrackItem) => void;
   pullEgg: () => void;
   equipBackground: (id: string | null) => void;
+  equipTrack: (id: string | null) => void;
   switchPet: (id: string) => void;
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
+  clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
-  toggleMuteAll: () => void;
   startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
@@ -83,13 +91,13 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 11;
+export const PERSIST_VERSION = 13;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey' | 'audio'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -106,6 +114,7 @@ export function selectPersisted(s: GameState): PersistedState {
     lastPull: s.lastPull,
     owned: s.owned,
     activeBackground: s.activeBackground,
+    activeTrack: s.activeTrack,
     journey: s.journey,
     audio: s.audio,
   };
@@ -161,11 +170,13 @@ function freshState() {
     lastPull: null as PetInstance | null,
     owned: [] as string[],
     activeBackground: null as string | null,
+    activeTrack: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
     audio: defaultAudioSettings(),
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
+    pendingStinger: null as StingerKind | null,
   };
 }
 
@@ -197,6 +208,19 @@ export const useGameStore = create<GameState>()(
         set((s) => {
           const group = DRILL_FOOD[drill];
           const lessonId = s.currentLessonId;
+          // Resolve whether the finished lesson was a boss (checkpoint) BEFORE we
+          // clear currentLessonId; if so, queue a win/lose stinger for RewardScreen.
+          const wasBoss = lessonId
+            ? !!findLesson(useContentStore.getState().bundle, lessonId)?.lesson?.isCheckpoint
+            : false;
+          // TODO refine win/lose/cleared threshold
+          // Boss → win/lose; a normal lesson → the 'cleared' jingle; no active
+          // lesson at all → nothing to celebrate, so leave it null.
+          const pendingStinger: StingerKind | null = !lessonId
+            ? null
+            : wasBoss
+              ? (stars >= 1 ? 'win' : 'lose')
+              : 'cleared';
           const journey = lessonId
             ? { lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, stars) } }
             : s.journey;
@@ -227,6 +251,7 @@ export const useGameStore = create<GameState>()(
             lastStageChange: stageChange,
             journey,
             currentLessonId: null,
+            pendingStinger,
             screen: 'reward',
           };
         }),
@@ -252,6 +277,13 @@ export const useGameStore = create<GameState>()(
           return { coins: res.coins, owned: res.owned };
         }),
 
+      buyMusic: (item) =>
+        set((s) => {
+          const res = buyMusic({ coins: s.coins, owned: s.owned }, item);
+          if (!res.ok) return s; // no-op; UI disables Buy when owned/too poor. SFX at call site.
+          return { coins: res.coins, owned: res.owned };
+        }),
+
       pullEgg: () =>
         set((s) => {
           const res = pullEggDomain(
@@ -264,19 +296,21 @@ export const useGameStore = create<GameState>()(
 
       equipBackground: (id) => set({ activeBackground: id }),
 
+      equipTrack: (id) => set({ activeTrack: id }),
+
       switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
 
       clearLevelUp: () => set({ lastLevelUp: null }),
 
       clearStageChange: () => set({ lastStageChange: null }),
 
+      clearPendingStinger: () => set({ pendingStinger: null }),
+
       setChannelLevel: (ch, v) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], level: clampLevel(v) } } })),
 
       toggleChannelMute: (ch) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], muted: !s.audio[ch].muted } } })),
-
-      toggleMuteAll: () => set((s) => ({ audio: { ...s.audio, allMuted: !s.audio.allMuted } })),
 
       renamePet: (id, name) =>
         set((s) => {
@@ -312,11 +346,12 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, ...rest } = s;
+        const { lastLevelUp, lastStageChange, currentLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
         void currentLessonId; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId'>;
+        void pendingStinger; // transient — not persisted
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
@@ -325,6 +360,9 @@ export const useGameStore = create<GameState>()(
       // v8->v9 backfills journey { lessonStars: {} }.
       // v9->v10 backfills soundEnabled (default true).
       // v10->v11 replaces soundEnabled with the audio mixer slice.
+      // v11->v12 backfills activeTrack (default null = free overworld loop).
+      // v12->v13 drops audio.allMuted (Master mute IS the global mute): a save with
+      //   allMuted:true lands as master.muted:true; the allMuted field is removed.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -340,6 +378,7 @@ export const useGameStore = create<GameState>()(
               inventory?: Partial<Record<FoodGroup, number>>;
               owned?: string[];
               activeBackground?: string | null;
+              activeTrack?: string | null;
               journey?: { lessonStars?: Record<string, number> };
             }
           | null;
@@ -353,16 +392,24 @@ export const useGameStore = create<GameState>()(
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
+          // v11->v12: backfill the equipped overworld track (null = free default loop).
+          activeTrack: st.activeTrack ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
-          audio:
-            (st as { audio?: AudioSettings }).audio ??
-            (() => {
-              // v10->v11: derive the mixer from the old boolean. soundEnabled:false -> mute all.
-              const a = defaultAudioSettings();
+          audio: (() => {
+            const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
+            const a = saved ? { ...saved } : defaultAudioSettings();
+            if (!saved) {
+              // v10->v11: derive the mixer from the old boolean. soundEnabled:false -> master mute.
               const legacy = (st as { soundEnabled?: boolean }).soundEnabled;
-              if (legacy === false) a.allMuted = true;
-              return a;
-            })(),
+              if (legacy === false) a.master = { ...a.master, muted: true };
+            } else if ((saved as { allMuted?: boolean }).allMuted) {
+              // v12->v13: a legacy global-mute save folds into Master mute.
+              a.master = { ...a.master, muted: true };
+            }
+            // v12->v13: the allMuted field no longer exists on AudioSettings.
+            delete (a as { allMuted?: boolean }).allMuted;
+            return a;
+          })(),
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.

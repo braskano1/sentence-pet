@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { AppShell } from '../AppShell';
 import { TitleScene } from './TitleScene';
 import { SignUpForm } from '../account/SignUpForm';
 import { SignInForm } from '../account/SignInForm';
+import { useAudio } from '../../hooks/useAudio';
 
 type View = 'title' | 'choose' | 'signup' | 'signin';
 
@@ -20,6 +21,13 @@ const SPRING = { type: 'spring' as const, stiffness: 380, damping: 34 };
 export function MainMenu({ onSignedUp }: { onSignedUp: () => void }) {
   const [view, setView] = useState<View>('title');
   const isForm = view === 'signup' || view === 'signin';
+
+  // Arm the title zone on mount; the first tap-to-start gesture flushes it via
+  // the global gesture listener so the title loop starts then (autoplay rule).
+  const { setZone } = useAudio();
+  useEffect(() => {
+    setZone('title');
+  }, [setZone]);
 
   return (
     <MotionConfig reducedMotion="user">
