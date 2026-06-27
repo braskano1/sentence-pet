@@ -282,7 +282,19 @@ export const SEED: ContentBundle = {
         { id: "u1-pattern", drill: "pattern", level: 1, itemIds: ["l1-1", "l1-2", "l1-3", "l1-4", "l1-5"] },
         { id: "u1-wordchoice", drill: "wordChoice", level: 1, itemIds: ["wc-l1-1", "wc-l1-2", "wc-l1-3", "wc-l1-4", "wc-l1-5"] },
         { id: "u1-grammar", drill: "grammar", level: 1, itemIds: ["gr-l1-1", "gr-l1-2", "gr-l1-3", "gr-l1-4", "gr-l1-5"] },
-        { id: "u1-checkpoint", drill: "mixed", level: 1, isCheckpoint: true, itemIds: ["mx-l1-1", "mx-l1-2", "mx-l1-3", "mx-l1-4", "mx-l1-5"] }
+        {
+          id: "u1-checkpoint",
+          drill: "mixed",
+          level: 1,
+          isCheckpoint: true,
+          itemIds: ["mx-l1-1", "mx-l1-2", "mx-l1-3", "mx-l1-4", "mx-l1-5"],
+          boss: {
+            tierId: 'tier-1',
+            element: 'fire',
+            name: 'Ember Rival',
+            rivalSprite: { species: 'fire', stage: 'young' },
+          },
+        }
       ]
     },
     {

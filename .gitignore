@@ -18,6 +18,11 @@ dist-ssr
 # Stray test stdout capture (never commit)
 test-output.txt
 
+# Playwright e2e artifacts
+test-results/
+playwright-report/
+.playwright/
+
 # Visual-companion brainstorm mockups (impeccable/superpowers)
 .superpowers/
 

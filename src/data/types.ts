@@ -20,7 +20,7 @@ export interface DrillItem {
   traps?: GrammarTrap[];  // near-miss tiles tied to tips (Grammar)
 }
 
-export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution';
+export type Screen = 'egg' | 'petRoom' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'bossPrep' | 'battle';
 
 export type PetStage = 'egg' | 'baby' | 'young' | 'adult';
 

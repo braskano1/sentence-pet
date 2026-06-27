@@ -11,12 +11,20 @@ import { currentLessonId, unitDone } from './journey/journeyView';
 export function JourneyMap() {
   const setScreen = useGameStore((s) => s.setScreen);
   const startLesson = useGameStore((s) => s.startLesson);
+  const startBoss = useGameStore((s) => s.startBoss);
   const stars = useGameStore((s) => s.journey.lessonStars);
   const bundle = useContentStore((s) => s.bundle);
   const units = useMemo(() => orderedUnits(bundle), [bundle]);
 
   const currentId = currentLessonId(units, stars);
   const totalStars = Object.values(stars).reduce((a, b) => a + b, 0);
+
+  // Checkpoints carrying a boss enter the battle flow; everything else is a normal lesson.
+  const onStart = (lessonId: string) => {
+    const lesson = units.flatMap((u) => u.lessons).find((l) => l.id === lessonId);
+    if (lesson?.isCheckpoint && lesson.boss) startBoss(lessonId);
+    else startLesson(lessonId);
+  };
 
   // Units the player has explicitly expanded despite being fully cleared.
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -67,7 +75,7 @@ export function JourneyMap() {
                   currentId={currentId}
                   folded={folded}
                   onToggle={toggle}
-                  onStart={startLesson}
+                  onStart={onStart}
                 />
               </motion.div>
             );
