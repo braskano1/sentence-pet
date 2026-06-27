@@ -219,8 +219,15 @@ export const useGameStore = create<GameState>()(
           const lessonId = s.currentBossLessonId;
           if (!lessonId) return s;
           if (!won) {
-            return { ...s, currentBossLessonId: null, pendingStinger: 'lose' as StingerKind, screen: 'reward' as Screen };
+            return {
+              ...s,
+              currentBossLessonId: null,
+              pendingStinger: 'lose' as StingerKind,
+              screen: 'reward' as Screen,
+              lastReward: { level: 1, stars: 0, food: 0, coins: 0, group: 'protein' as FoodGroup },
+            };
           }
+          const lvl = findLesson(useContentStore.getState().bundle, lessonId)?.lesson.level ?? 1;
           const firstClear = !(lessonId in s.journey.lessonStars);
           const r = GAME_CONFIG.battle.reward;
           const coinsGain = firstClear ? r.firstClearCoins : r.replayCoins;
@@ -250,6 +257,7 @@ export const useGameStore = create<GameState>()(
             lastPull,
             lastLevelUp,
             lastStageChange,
+            lastReward: { level: lvl, stars: 3, food: 0, coins: coinsGain, group: 'protein' as FoodGroup },
             journey: { ...s.journey, lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, 3) } },
             currentBossLessonId: null,
             pendingStinger: 'win' as StingerKind,

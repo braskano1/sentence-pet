@@ -855,4 +855,13 @@ describe('boss flow', () => {
     expect(s.pets.length).toBe(afterFirst);
     expect(s.coins).toBe(coinsAfterFirst + 8);
   });
+
+  it('finishBoss win populates lastReward so the reward screen renders', () => {
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const r = useGameStore.getState().lastReward;
+    expect(r).not.toBeNull();
+    expect(r!.stars).toBeGreaterThanOrEqual(1);
+    expect(r!.coins).toBeGreaterThan(0);
+  });
 });

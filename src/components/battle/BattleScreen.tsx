@@ -53,7 +53,10 @@ export function BattleScreen() {
   }, [snapshot, boss, pet, setScreen]);
 
   useEffect(() => {
-    if (snapshot?.outcome === 'win') finishBoss(true);
+    if (snapshot?.outcome === 'win') {
+      finishBoss(true);
+      useBattleStore.getState().reset();
+    }
   }, [snapshot?.outcome, finishBoss]);
 
   if (!snapshot || !boss || !pet || items.length === 0) return null;
@@ -182,7 +185,7 @@ export function BattleScreen() {
             <p className="mt-1 text-white/80">Your pet is tired. Try again?</p>
             <div className="mt-5 flex gap-2">
               <PressButton
-                onClick={() => setScreen('pickDrill')}
+                onClick={() => { useBattleStore.getState().reset(); setScreen('pickDrill'); }}
                 className="min-h-12 rounded-xl bg-slate-200 px-5 font-bold text-slate-700"
               >
                 Leave
