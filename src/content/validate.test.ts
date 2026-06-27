@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ContentBundle } from './model';
 import { validateContent, validateCourse } from './validate';
-import type { DrillItem } from '../data/types';
+import type { DrillItem, ContentItem } from '../data/types';
 import { isDragDrop } from '../data/types';
 import type { Course } from './course';
 import type { CheckpointBoss } from './model';
@@ -76,6 +76,38 @@ describe('validateContent', () => {
     const a = b.pool.a;
     if (isDragDrop(a)) b.pool.a = { ...a, traps: [{ slot: 5, word: 'runs', tip: 't' }] };
     expect(validateContent(b).ok).toBe(false);
+  });
+});
+
+describe('kind-aware validateItem', () => {
+  function bundleWith(item: ContentItem): ContentBundle {
+    return {
+      pool: { [item.id]: item },
+      units: [{ id: 'u1', title: 'U', emoji: '📘', order: 0, lessons: [
+        { id: 'l1', kind: item.kind, drill: 'pattern', level: 1, itemIds: [item.id], isCheckpoint: true },
+      ] }],
+    };
+  }
+  it('rejects flashcard missing back', () => {
+    const r = validateContent(bundleWith({ id: 'f1', kind: 'flashcard', level: 1, front: 'cat', back: '' }));
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e) => e.includes('f1'))).toBe(true);
+  });
+  it('rejects matching with <2 pairs', () => {
+    const r = validateContent(bundleWith({ id: 'm1', kind: 'matching', level: 1, pairs: [{ left: 'a', right: 'b' }] }));
+    expect(r.ok).toBe(false);
+  });
+  it('rejects fillblank without exactly one ___', () => {
+    const r = validateContent(bundleWith({ id: 'b1', kind: 'fillblank', level: 1, template: 'no blank', answer: 'x' }));
+    expect(r.ok).toBe(false);
+  });
+  it('accepts a valid fillblank', () => {
+    const r = validateContent(bundleWith({ id: 'b2', kind: 'fillblank', level: 1, template: 'I ___ rice', answer: 'eat' }));
+    expect(r.ok).toBe(true);
+  });
+  it('rejects empty l1.th when present', () => {
+    const r = validateContent(bundleWith({ id: 'f2', kind: 'flashcard', level: 1, front: 'a', back: 'b', l1: { th: '' } }));
+    expect(r.ok).toBe(false);
   });
 });
 
