@@ -1,5 +1,4 @@
 import { useState, useMemo, type KeyboardEvent } from 'react';
-import { SettingsSheet } from './SettingsSheet';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
@@ -29,7 +28,6 @@ export function PetRoom() {
   const bgSprite = activeBackground ? DECOR_SPRITES[activeBackground] : null;
   const [feedTrigger, setFeedTrigger] = useState(0);
   const [tab, setTab] = useState<Tab>('care');
-  const [showSettings, setShowSettings] = useState(false);
   const { play } = useAudio();
 
   const coins = useCountUp(walletCoins);
@@ -98,7 +96,6 @@ export function PetRoom() {
             <span className="rounded-full bg-amber-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-50 tabular-nums">🪙 {coins}</span>
             <div className="flex items-center gap-1">
               <PressButton onClick={() => setScreen('collection')} aria-label="My pets" className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-extrabold text-amber-950 shadow">🐾 My Pets · {pets.length}</PressButton>
-              <PressButton onClick={() => setShowSettings(true)} aria-label="Sound settings" className="rounded-full bg-white/85 px-2 py-1 text-[13px] shadow">⚙️</PressButton>
             </div>
           </div>
         </div>
@@ -185,7 +182,6 @@ export function PetRoom() {
           <PressButton onClick={() => setScreen('pickDrill')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Play ▶</PressButton>
         </div>
       </div>
-      {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

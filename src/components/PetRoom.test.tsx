@@ -128,16 +128,6 @@ describe('PetRoom tab keyboard navigation', () => {
   });
 });
 
-describe('PetRoom sound settings gear', () => {
-  beforeEach(() => useGameStore.getState().resetForTest());
-
-  it('clicking the gear button opens the audio settings dialog', async () => {
-    render(<PetRoom />);
-    await userEvent.click(screen.getByLabelText('Sound settings'));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-  });
-});
-
 describe('PetRoom feed button disabled state', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 
