@@ -163,6 +163,23 @@ describe('zone state machine (via injected fake elements)', () => {
     expect(newEl.volume).toBeCloseTo(0.5, 2);
   });
 
+  it('interrupting a crossfade still tears down the original outgoing loop (no leak)', () => {
+    const { m, created } = setup();
+    m.setZone('title', 1);
+    vi.advanceTimersByTime(500); // title fully ramped up
+    const titleEl = created[0];
+    expect(titleEl.src).toContain('title');
+
+    m.setZone('overworld', 1); // fade A: title -> overworld
+    vi.advanceTimersByTime(100); // interrupt fade A before it completes
+    // A track change (loadout / cloud-sync) lands mid-fade -> fade B starts:
+    m.setTrack('overworld', '/audio/tracks/jazz.mp3');
+    vi.advanceTimersByTime(500); // let fade B finish
+
+    // The title loop must have been paused; otherwise it keeps looping forever.
+    expect(titleEl.pauseCalls).toBeGreaterThan(0);
+  });
+
   it('null-track zone (multiplayer) leaves the current loop untouched', () => {
     const { m, created } = setup();
     m.setZone('overworld', 1);

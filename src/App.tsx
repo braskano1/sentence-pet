@@ -88,7 +88,7 @@ function CurrentScreen() {
     <AnimatePresence mode="wait">
       <motion.div
         key={key}
-        className="flex flex-1 flex-col"
+        className="flex flex-1 flex-col min-h-0"
         initial={{ opacity: 0, x: 24 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -24 }}

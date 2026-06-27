@@ -7,6 +7,7 @@ import { useAudio } from '../hooks/useAudio';
 import { TreatCard } from './TreatCard';
 import { DecorCard } from './DecorCard';
 import { MusicCard, type MusicRow } from './MusicCard';
+import { PanViewport } from './journey/PanViewport';
 import { isOwned } from '../domain/decor';
 import { DEFAULT_OVERWORLD_TRACK_URL } from '../domain/music';
 
@@ -107,7 +108,8 @@ export function Shop() {
       </header>
 
       {/* scroll zone */}
-      <main className="min-h-0 overflow-y-auto px-5 py-4">
+      <main className="min-h-0">
+        <PanViewport currentId={tab} contentClassName="px-5 py-4">
         {tab === 'treats' && (
           <div
             role="tabpanel"
@@ -179,6 +181,7 @@ export function Shop() {
             ))}
           </div>
         )}
+        </PanViewport>
       </main>
 
       {/* sticky back */}
