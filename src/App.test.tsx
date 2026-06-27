@@ -31,6 +31,7 @@ import { afterEach } from 'vitest';
 import App, { screenKeyAndNode, zoneForScreen } from './App';
 import type { DrillType, PosLabel } from './data/types';
 import { useGameStore } from './state/gameStore';
+import { useUiStore } from './state/uiStore';
 import { setMusicProvider, type Music } from './effects/music';
 import { resetSharedMusic, __resetAudioGestureForTest } from './hooks/useAudio';
 
@@ -99,6 +100,7 @@ describe('App — zone wiring pushes the current screen zone to the music engine
     resetSharedMusic();
     __resetAudioGestureForTest();
     useGameStore.getState().resetForTest();
+    useUiStore.setState({ settingsOpen: false });
   });
 
   function spyMusic() {

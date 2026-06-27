@@ -7,6 +7,7 @@ import { useAudio } from '../hooks/useAudio';
 import { TreatCard } from './TreatCard';
 import { DecorCard } from './DecorCard';
 import { MusicCard, type MusicRow } from './MusicCard';
+import { SettingsButton } from './SettingsButton';
 import { PanViewport } from './journey/PanViewport';
 import { isOwned } from '../domain/decor';
 import { DEFAULT_OVERWORLD_TRACK_URL } from '../domain/music';
@@ -75,9 +76,12 @@ export function Shop() {
       <header className="z-10 bg-amber-50/95 px-5 pt-5 pb-3 shadow-[0_6px_12px_-10px_rgba(0,0,0,.4)] backdrop-blur">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black tracking-tight text-slate-800">Shop</h2>
-          <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-amber-200">
-            <span className="text-lg leading-none" aria-hidden="true">🪙</span>
-            <span className="font-bold text-slate-700 tabular-nums">{shownCoins}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-amber-200">
+              <span className="text-lg leading-none" aria-hidden="true">🪙</span>
+              <span className="font-bold text-slate-700 tabular-nums">{shownCoins}</span>
+            </div>
+            <SettingsButton className="ring-amber-200" />
           </div>
         </div>
 

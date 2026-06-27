@@ -1,4 +1,5 @@
 import { useState, useMemo, type KeyboardEvent } from 'react';
+import { SettingsButton } from './SettingsButton';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PetSprite } from './PetSprite';
 import { useCountUp } from '../effects/useCountUp';
@@ -96,6 +97,7 @@ export function PetRoom() {
             <span className="rounded-full bg-amber-950/85 px-2.5 py-1 text-[11px] font-bold text-amber-50 tabular-nums">🪙 {coins}</span>
             <div className="flex items-center gap-1">
               <PressButton onClick={() => setScreen('collection')} aria-label="My pets" className="rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-extrabold text-amber-950 shadow">🐾 My Pets · {pets.length}</PressButton>
+              <SettingsButton className="h-7 w-7 text-[13px]" />
             </div>
           </div>
         </div>

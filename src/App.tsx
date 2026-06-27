@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useGameStore, selectActivePet } from './state/gameStore';
 import { useAudio } from './hooks/useAudio';
@@ -16,6 +16,7 @@ import { Collection } from './components/Collection';
 import { BossPrepScreen } from './components/battle/BossPrepScreen';
 import { BattleScreen } from './components/battle/BattleScreen';
 import { SettingsSheet } from './components/SettingsSheet';
+import { useUiStore } from './state/uiStore';
 import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
@@ -108,27 +109,19 @@ function CurrentScreen() {
 }
 
 export default function App({ onReplayIntro, onExitToMenu }: { onReplayIntro?: () => void; onExitToMenu?: () => void } = {}) {
-  const [showSettings, setShowSettings] = useState(false);
+  // The Settings entry (gear) lives in each hub screen's own top-right cluster
+  // via <SettingsButton>, so it reads as a peer of that screen's chrome instead
+  // of a floating orphan. The sheet itself is rendered once here off the shared
+  // UI flag, which both the per-screen gears and this render read.
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   return (
     <MotionConfig reducedMotion="user">
       <AppShell>
-        {/* Global settings entry — a persistent chrome slot, identical on every
-            screen. Pinned to the top-center notch, the one band left clear by
-            every screen's HUD (which loads its title/back on the left and its
-            coins/stars/progress pill on the right). Lives in AppShell's
-            positioned <main>, above each screen's HUD (z-40 > the z-20 HUDs). */}
-        <button
-          type="button"
-          aria-label="Settings"
-          onClick={() => setShowSettings(true)}
-          className="absolute left-1/2 top-2 z-40 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full bg-white/85 text-[15px] leading-none shadow ring-1 ring-black/5 backdrop-blur-sm transition-colors hover:bg-white"
-        >
-          ⚙️
-        </button>
         <CurrentScreen />
-        {showSettings && (
+        {settingsOpen && (
           <SettingsSheet
-            onClose={() => setShowSettings(false)}
+            onClose={() => setSettingsOpen(false)}
             onReplayIntro={onReplayIntro}
             onExitToMenu={onExitToMenu}
           />

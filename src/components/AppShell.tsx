@@ -15,7 +15,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <p className="text-lg">Please rotate your phone to portrait.</p>
       </div>
       <main
-        className="relative w-full max-w-md h-[100dvh] flex flex-col"
+        className="w-full max-w-md h-[100dvh] flex flex-col"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
           paddingBottom: 'env(safe-area-inset-bottom)',
