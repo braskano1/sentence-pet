@@ -822,3 +822,37 @@ describe('stage-change detection', () => {
     expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
   });
 });
+
+describe('boss flow', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('startBoss records the lesson id and routes to bossPrep', () => {
+    useGameStore.getState().startBoss('u1-checkpoint');
+    expect(useGameStore.getState().currentBossLessonId).toBe('u1-checkpoint');
+    expect(useGameStore.getState().screen).toBe('bossPrep');
+  });
+
+  it('finishBoss win marks the checkpoint cleared and grants the first-clear egg', () => {
+    const before = useGameStore.getState().pets.length;
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    expect(s.journey.lessonStars['u1-checkpoint']).toBeGreaterThanOrEqual(1);
+    expect(s.pets.length).toBe(before + 1);
+    expect(s.pendingStinger).toBe('win');
+    expect(s.screen).toBe('reward');
+    expect(s.currentBossLessonId).toBeNull();
+  });
+
+  it('a replay win grants no extra egg, only the coin trickle', () => {
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const afterFirst = useGameStore.getState().pets.length;
+    const coinsAfterFirst = useGameStore.getState().coins;
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    expect(s.pets.length).toBe(afterFirst);
+    expect(s.coins).toBe(coinsAfterFirst + 8);
+  });
+});

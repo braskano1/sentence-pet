@@ -83,6 +83,9 @@ interface GameState {
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
   startLesson: (lessonId: string) => void;
+  currentBossLessonId: string | null;
+  startBoss: (lessonId: string) => void;
+  finishBoss: (won: boolean) => void;
   stage: () => PetStage;
   // test helpers
   addXpForTest: (xp: number) => void;
@@ -176,6 +179,7 @@ function freshState() {
     audio: defaultAudioSettings(),
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
+    currentBossLessonId: null as string | null,
     pendingStinger: null as StingerKind | null,
   };
 }
@@ -203,6 +207,55 @@ export const useGameStore = create<GameState>()(
         get().startDrill(found.lesson.drill, found.lesson.level);
         set({ currentLessonId: lessonId });
       },
+
+      startBoss: (lessonId) => {
+        const found = findLesson(useContentStore.getState().bundle, lessonId);
+        if (!found?.lesson.boss) return; // not a boss checkpoint — defensive no-op
+        set({ currentBossLessonId: lessonId, screen: 'bossPrep' });
+      },
+
+      finishBoss: (won) =>
+        set((s) => {
+          const lessonId = s.currentBossLessonId;
+          if (!lessonId) return s;
+          if (!won) {
+            return { ...s, currentBossLessonId: null, pendingStinger: 'lose' as StingerKind, screen: 'reward' as Screen };
+          }
+          const firstClear = !(lessonId in s.journey.lessonStars);
+          const r = GAME_CONFIG.battle.reward;
+          const coinsGain = firstClear ? r.firstClearCoins : r.replayCoins;
+          let pets = s.pets;
+          let lastPull = s.lastPull;
+          let lastLevelUp: GameState['lastLevelUp'] = null;
+          let lastStageChange: StageChange | null = null;
+          if (firstClear) {
+            pets = updateActive(s, (p) => {
+              const withXp = applyXp(p, r.firstClearXp, rng);
+              lastLevelUp = withXp.levelUp;
+              lastStageChange = withXp.stageChange;
+              return withXp.pet;
+            });
+            const egg = makePet({
+              id: crypto.randomUUID(),
+              species: (['leaf', 'fire', 'air', 'water'] as const)[Math.floor(rng() * 4)],
+              stats: rollStats(rng),
+              rarity: 'common',
+            });
+            pets = [...pets, egg];
+            lastPull = egg;
+          }
+          return {
+            pets,
+            coins: s.coins + coinsGain,
+            lastPull,
+            lastLevelUp,
+            lastStageChange,
+            journey: { ...s.journey, lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, 3) } },
+            currentBossLessonId: null,
+            pendingStinger: 'win' as StingerKind,
+            screen: 'reward' as Screen,
+          };
+        }),
 
       finishRound: ({ drill, level, stars, correctCount }) =>
         set((s) => {
@@ -346,12 +399,13 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, pendingStinger, ...rest } = s;
+        const { lastLevelUp, lastStageChange, currentLessonId, currentBossLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
         void currentLessonId; // transient — not persisted
+        void currentBossLessonId; // transient — not persisted
         void pendingStinger; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'pendingStinger'>;
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'currentBossLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
