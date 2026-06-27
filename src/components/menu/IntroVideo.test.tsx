@@ -27,9 +27,18 @@ vi.mock('framer-motion', async () => {
   };
 });
 
+const { setZone } = vi.hoisted(() => ({ setZone: vi.fn() }));
+vi.mock('../../hooks/useAudio', () => ({ useAudio: () => ({ setZone }) }));
+
 import { IntroVideo } from './IntroVideo';
 
 describe('IntroVideo', () => {
+  it('stops music on mount (setZone(null)) so it does not clash with the video', () => {
+    setZone.mockClear();
+    render(<IntroVideo onDone={() => {}} />);
+    expect(setZone).toHaveBeenCalledWith(null);
+  });
+
   it('renders the placeholder while there is no real asset', () => {
     render(<IntroVideo onDone={() => {}} />);
     expect(screen.getByTestId('intro-placeholder')).toBeInTheDocument();

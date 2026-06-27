@@ -6,6 +6,7 @@ import {
   __createMusicWithFactory,
   type Music,
   type Zone,
+  type StingerKind,
 } from './music';
 
 afterEach(() => setMusicProvider(null));
@@ -84,7 +85,15 @@ describe('real factory in jsdom (no throw across a representative sequence)', ()
   it('a null-track zone (multiplayer) does not throw', () => {
     const m = createHtmlAudioMusic();
     expect(() => m.setZone('multiplayer', 1)).not.toThrow();
-    expect(() => m.setZone('title', 1)).not.toThrow();
+  });
+
+  it('drives setZone(title, ...) and playStinger(cleared, ...) without throwing', () => {
+    const m = createHtmlAudioMusic();
+    expect(() => {
+      m.setZone('title', 1); // title now has a real track
+      m.playStinger('cleared', 1);
+      m.stop();
+    }).not.toThrow();
   });
 });
 
@@ -248,5 +257,13 @@ describe('Zone type surface', () => {
   it('covers all zones', () => {
     const zones: Zone[] = ['title', 'overworld', 'drill', 'boss', 'multiplayer'];
     expect(zones.length).toBe(5);
+  });
+});
+
+describe('StingerKind surface', () => {
+  it("includes 'cleared' alongside win/lose", () => {
+    const kinds: StingerKind[] = ['win', 'lose', 'cleared'];
+    expect(kinds).toContain('cleared');
+    expect(kinds.length).toBe(3);
   });
 });

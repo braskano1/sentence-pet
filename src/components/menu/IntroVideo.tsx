@@ -1,8 +1,16 @@
+import { useEffect } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
 import { INTRO_VIDEO_SRC } from '../../config/intro';
+import { useAudio } from '../../hooks/useAudio';
 
 /** Full-screen intro cutscene. Placeholder until INTRO_VIDEO_SRC is set. Skip or end → onDone. */
 export function IntroVideo({ onDone }: { onDone: () => void }) {
+  // Stop the title loop while the intro plays — the video has its own audio.
+  const { setZone } = useAudio();
+  useEffect(() => {
+    setZone(null);
+  }, [setZone]);
+
   return (
     <MotionConfig reducedMotion="user">
       <motion.div

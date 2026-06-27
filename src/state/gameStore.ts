@@ -208,8 +208,14 @@ export const useGameStore = create<GameState>()(
           const wasBoss = lessonId
             ? !!findLesson(useContentStore.getState().bundle, lessonId)?.lesson?.isCheckpoint
             : false;
-          // TODO refine win/lose threshold
-          const pendingStinger: StingerKind | null = wasBoss ? (stars >= 1 ? 'win' : 'lose') : null;
+          // TODO refine win/lose/cleared threshold
+          // Boss → win/lose; a normal lesson → the 'cleared' jingle; no active
+          // lesson at all → nothing to celebrate, so leave it null.
+          const pendingStinger: StingerKind | null = !lessonId
+            ? null
+            : wasBoss
+              ? (stars >= 1 ? 'win' : 'lose')
+              : 'cleared';
           const journey = lessonId
             ? { lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, stars) } }
             : s.journey;

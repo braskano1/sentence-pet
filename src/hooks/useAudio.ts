@@ -88,11 +88,14 @@ export function useAudio() {
         // Taps/drops ARE user gestures — flush any armed zone on the first one.
         if (!gestureUnlocked) unlock();
       },
-      setZone(zone: Zone) {
-        armedZone = zone; // always record the latest desired zone
+      setZone(zone: Zone | null) {
+        // null legitimately means "stop": armedZone reuses its null = "nothing
+        // armed" state, so a deferred null simply starts nothing on unlock.
+        armedZone = zone;
         if (gestureUnlocked) {
           const { audio } = useGameStore.getState();
-          music().setZone(zone, effectiveGain('music', audio));
+          // null → stop (gain 0); the engine's setZone(null, ...) tears the loop down.
+          music().setZone(zone, zone === null ? 0 : effectiveGain('music', audio));
         }
       },
       playStinger(kind: StingerKind) {

@@ -117,6 +117,28 @@ describe('useAudio — music zone & gesture deferral', () => {
     result.current.setZone('overworld');
     expect(m.setZone).toHaveBeenCalledWith('overworld', 0);
   });
+
+  it('forwards setZone(null) as a stop (null zone, gain 0) once unlocked', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.play('tap'); // unlock
+    result.current.setZone(null);
+    expect(m.setZone).toHaveBeenCalledWith(null, 0);
+  });
+
+  it('does NOT start anything for a pre-gesture setZone(null)', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.setZone(null); // armed as "nothing", deferred
+    expect(m.setZone).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event('pointerdown')); // unlock flushes armed zone
+    expect(m.setZone).not.toHaveBeenCalled(); // null armed → nothing to start
+  });
 });
 
 describe('useAudio — stinger', () => {

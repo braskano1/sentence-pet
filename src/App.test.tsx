@@ -69,12 +69,20 @@ describe('zoneForScreen — screen key → music zone', () => {
     expect(zoneForScreen('drill', true)).toBe('boss');
   });
 
-  it.each(['pickDrill', 'petRoom', 'shop', 'gacha', 'collection', 'reward', 'evolution'])(
+  it.each(['pickDrill', 'petRoom', 'shop', 'gacha', 'collection'])(
     'maps overworld screen %s → overworld',
     (key) => {
       expect(zoneForScreen(key, false)).toBe('overworld');
     },
   );
+
+  it('maps reward → null (no overworld loop; the sting plays instead)', () => {
+    expect(zoneForScreen('reward', false)).toBeNull();
+  });
+
+  it('maps evolution → null (music stops during the cinematic)', () => {
+    expect(zoneForScreen('evolution', false)).toBeNull();
+  });
 
   it('falls back to overworld for an unknown key', () => {
     expect(zoneForScreen('totally-unknown', false)).toBe('overworld');

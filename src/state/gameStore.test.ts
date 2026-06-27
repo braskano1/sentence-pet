@@ -512,10 +512,10 @@ describe('boss (checkpoint) stinger queueing', () => {
     expect(useGameStore.getState().pendingStinger).toBe('lose');
   });
 
-  it('finishRound after a non-checkpoint lesson leaves pendingStinger null', () => {
+  it("finishRound after a non-checkpoint lesson queues the 'cleared' stinger", () => {
     useGameStore.getState().startLesson('u1-pattern');
     useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 0, correctCount: 0 });
-    expect(useGameStore.getState().pendingStinger).toBeNull();
+    expect(useGameStore.getState().pendingStinger).toBe('cleared');
   });
 
   it('finishRound with no active lesson leaves pendingStinger null', () => {

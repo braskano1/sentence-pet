@@ -12,7 +12,7 @@
 import { clampLevel } from '../audio/mixer';
 
 export type Zone = 'title' | 'overworld' | 'drill' | 'boss' | 'multiplayer';
-export type StingerKind = 'win' | 'lose';
+export type StingerKind = 'win' | 'lose' | 'cleared';
 
 export interface Music {
   /** Crossfade to the zone's loop; null stops all. Same-zone is a no-op. */
@@ -28,7 +28,7 @@ export interface Music {
 // Assets are served from public/audio/ so URLs are root-absolute. These files
 // do NOT exist yet — a null URL is a guarded no-op so the seam stays inert.
 const TRACKS: Record<Zone, string | null> = {
-  title: null, // optional; may be added later (cuttable, can alias overworld)
+  title: '/audio/title.mp3',
   overworld: '/audio/overworld.mp3',
   drill: '/audio/drill.mp3',
   boss: '/audio/boss.mp3',
@@ -38,6 +38,7 @@ const TRACKS: Record<Zone, string | null> = {
 const STINGERS: Record<StingerKind, string | null> = {
   win: '/audio/win.mp3',
   lose: '/audio/lose.mp3',
+  cleared: '/audio/cleared.mp3',
 };
 
 const CROSSFADE_MS = 400;

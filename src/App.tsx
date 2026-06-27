@@ -39,21 +39,25 @@ export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillT
 /**
  * Pure mapping from a resolved screen key (+ checkpoint flag) to a music Zone.
  * The overworld screens share one seamless loop (same-zone setZone is a no-op),
- * while drill/boss/title crossfade. Unknown keys fall back to overworld.
+ * while drill/boss/title crossfade. `null` stops music (evolution cinematic; the
+ * reward screen, where the cleared/win/lose sting plays instead). Unknown keys
+ * fall back to overworld.
  */
-export function zoneForScreen(key: string, isCheckpoint: boolean): Zone {
+export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
   switch (key) {
     case 'egg':
       return 'title';
     case 'drill':
       return isCheckpoint ? 'boss' : 'drill';
+    case 'evolution':
+      return null; // stop music during the cinematic; overworld resumes after
+    case 'reward':
+      return null; // no overworld loop on level-cleared; the sting plays instead
     case 'pickDrill':
     case 'petRoom':
     case 'shop':
     case 'gacha':
     case 'collection':
-    case 'reward':
-    case 'evolution':
       return 'overworld';
     default:
       return 'overworld';
