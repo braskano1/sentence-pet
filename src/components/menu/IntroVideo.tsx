@@ -37,7 +37,7 @@ export function IntroVideo({ onDone }: { onDone: () => void }) {
   return (
     <MotionConfig reducedMotion="user">
       <motion.div
-        className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-[#0b1020] text-white"
+        className="relative flex h-full min-h-0 flex-1 flex-col items-center justify-center overflow-hidden bg-[#0b1020] text-white"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}

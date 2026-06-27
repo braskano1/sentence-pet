@@ -29,7 +29,11 @@ export function PlayerRoot() {
       <div className="flex flex-1 items-center justify-center text-5xl">🥚</div>
     </AppShell>
   ) : showIntro ? (
-    <IntroVideo onDone={endIntro} />
+    // Framed in the same phone column as the menu/game so the cutscene matches
+    // the app's framing on wide viewports instead of stretching full-window.
+    <AppShell>
+      <IntroVideo onDone={endIntro} />
+    </AppShell>
   ) : inGame ? (
     <App
       onReplayIntro={() => setReplayIntro(true)}
