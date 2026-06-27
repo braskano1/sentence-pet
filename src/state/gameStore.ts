@@ -13,6 +13,7 @@ import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
+import { hydrateCourse } from '../content/load';
 import { findLesson } from '../content/model';
 import { useContentStore } from '../content/store';
 import type { StingerKind } from '../effects/music';
@@ -60,6 +61,7 @@ interface GameState {
   audio: AudioSettings;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
+  currentCourseId: string | null;
   // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
   // mount effect in RewardScreen. NOT persisted (excluded from PersistedState).
   pendingStinger: StingerKind | null;
@@ -83,6 +85,7 @@ interface GameState {
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
   startLesson: (lessonId: string) => void;
+  selectCourse: (courseId: string) => void;
   currentBossLessonId: string | null;
   startBoss: (lessonId: string) => void;
   finishBoss: (won: boolean) => void;
@@ -179,6 +182,7 @@ function freshState() {
     audio: defaultAudioSettings(),
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
+    currentCourseId: null as string | null,
     currentBossLessonId: null as string | null,
     pendingStinger: null as StingerKind | null,
   };
@@ -206,6 +210,12 @@ export const useGameStore = create<GameState>()(
         if (!found) return; // unknown id — defensive no-op
         get().startDrill(found.lesson.drill, found.lesson.level);
         set({ currentLessonId: lessonId });
+      },
+
+      selectCourse: (courseId) => {
+        // Optimistic: route now; hydrateCourse swaps content in when it resolves (mirrors startLesson).
+        void hydrateCourse(courseId);
+        set({ currentCourseId: courseId, currentLessonId: null, screen: 'pickDrill' });
       },
 
       startBoss: (lessonId) => {
@@ -407,13 +417,14 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, currentBossLessonId, pendingStinger, ...rest } = s;
+        const { lastLevelUp, lastStageChange, currentLessonId, currentCourseId, currentBossLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
         void currentLessonId; // transient — not persisted
+        void currentCourseId; // transient — not persisted
         void currentBossLessonId; // transient — not persisted
         void pendingStinger; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'currentBossLessonId' | 'pendingStinger'>;
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'currentCourseId' | 'currentBossLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
