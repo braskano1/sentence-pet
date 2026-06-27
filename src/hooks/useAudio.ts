@@ -3,6 +3,8 @@ import { getSfx, type Sfx, type SfxName } from '../effects/sfx';
 import { getMusic, type Music, type Zone, type StingerKind } from '../effects/music';
 import { effectiveGain } from '../audio/mixer';
 import { useGameStore } from '../state/gameStore';
+import { GAME_CONFIG } from '../config/gameConfig';
+import { overworldTrackUrl } from '../domain/music';
 
 let shared: Sfx | null = null;
 function sfx(): Sfx {
@@ -37,8 +39,11 @@ let armedZone: Zone | null = null;
 function unlock(): void {
   gestureUnlocked = true;
   if (armedZone !== null) {
-    const { audio } = useGameStore.getState();
-    music().setZone(armedZone, effectiveGain('music', audio));
+    const state = useGameStore.getState();
+    if (armedZone === 'overworld') {
+      music().setTrack('overworld', overworldTrackUrl(state.activeTrack, GAME_CONFIG.shop.music));
+    }
+    music().setZone(armedZone, effectiveGain('music', state.audio));
   }
 }
 
@@ -75,6 +80,16 @@ useGameStore.subscribe((state, prev) => {
   sharedMusic?.setGain(effectiveGain('music', state.audio));
 });
 
+// Live overworld-track push. When the equipped track changes, push the resolved
+// url to the engine. setTrack live-swaps ONLY if overworld is the current zone
+// (so equipping in the petroom crossfades; equipping elsewhere just records the
+// override for the next overworld entry). Optional sharedMusic so it never
+// force-creates audio before something is playing.
+useGameStore.subscribe((state, prev) => {
+  if (state.activeTrack === prev.activeTrack) return;
+  sharedMusic?.setTrack('overworld', overworldTrackUrl(state.activeTrack, GAME_CONFIG.shop.music));
+});
+
 /**
  * Stable audio facade. Callbacks read the mixer from getState() at call time,
  * so consumers (e.g. every PressButton) do NOT re-render when volume changes.
@@ -93,14 +108,25 @@ export function useAudio() {
         // armed" state, so a deferred null simply starts nothing on unlock.
         armedZone = zone;
         if (gestureUnlocked) {
-          const { audio } = useGameStore.getState();
+          const state = useGameStore.getState();
+          // For overworld, push the equipped track url BEFORE starting the loop so
+          // the right track plays. Harmless for other zones, but kept tidy/overworld-only.
+          if (zone === 'overworld') {
+            music().setTrack('overworld', overworldTrackUrl(state.activeTrack, GAME_CONFIG.shop.music));
+          }
           // null → stop (gain 0); the engine's setZone(null, ...) tears the loop down.
-          music().setZone(zone, zone === null ? 0 : effectiveGain('music', audio));
+          music().setZone(zone, zone === null ? 0 : effectiveGain('music', state.audio));
         }
       },
       playStinger(kind: StingerKind) {
         const { audio } = useGameStore.getState();
         music().playStinger(kind, effectiveGain('music', audio));
+      },
+      previewTrack(src: string) {
+        music().previewTrack(src, effectiveGain('music', useGameStore.getState().audio));
+      },
+      stopPreview() {
+        music().stopPreview();
       },
     }),
     [],

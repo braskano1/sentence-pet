@@ -29,6 +29,16 @@ export const GAME_CONFIG = {
       { id: 'decor:fire-room',   name: 'Fire Room',   kind: 'decor', price: 150, sprite: DECOR_SPRITES['decor:fire-room'] },
       { id: 'decor:water-room',  name: 'Water Room',  kind: 'decor', price: 150, sprite: DECOR_SPRITES['decor:water-room'] },
     ] satisfies ShopItem[],
+    // Buyable overworld music loops. The free default ("Cozy Theme") is NOT in
+    // this catalog — it is `activeTrack === null` (see overworldTrackUrl).
+    music: [
+      { id: 'music:lofi',     name: 'Lo-Fi Lounge', kind: 'music', price: 150, src: '/audio/tracks/lofi.mp3' },
+      { id: 'music:jazz',     name: 'Jazz Café',    kind: 'music', price: 150, src: '/audio/tracks/jazz.mp3' },
+      { id: 'music:arcade',   name: 'Arcade Pop',   kind: 'music', price: 150, src: '/audio/tracks/arcade.mp3' },
+      { id: 'music:musicbox', name: 'Music Box',    kind: 'music', price: 150, src: '/audio/tracks/musicbox.mp3' },
+      { id: 'music:celtic',   name: 'Celtic Trail', kind: 'music', price: 150, src: '/audio/tracks/celtic.mp3' },
+      { id: 'music:bossa',    name: 'Sunny Bossa',  kind: 'music', price: 150, src: '/audio/tracks/bossa.mp3' },
+    ] satisfies ShopItem[],
   },
   gacha: {
     eggPrice: 60,

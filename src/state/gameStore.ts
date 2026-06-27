@@ -8,8 +8,9 @@ import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
 import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
 import { purchase } from '../domain/shop';
-import type { TreatItem, DecorItem } from '../domain/shop';
+import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
+import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { findLesson } from '../content/model';
@@ -53,6 +54,7 @@ interface GameState {
   lastPull: PetInstance | null;
   owned: string[];
   activeBackground: string | null;
+  activeTrack: string | null; // equipped overworld music track id; null = free default
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
   audio: AudioSettings;
@@ -69,8 +71,10 @@ interface GameState {
   feed: (group: FoodGroup) => void;
   buyTreat: (item: TreatItem) => void;
   buyDecor: (item: DecorItem) => void;
+  buyMusic: (item: MusicTrackItem) => void;
   pullEgg: () => void;
   equipBackground: (id: string | null) => void;
+  equipTrack: (id: string | null) => void;
   switchPet: (id: string) => void;
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
@@ -88,13 +92,13 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 11;
+export const PERSIST_VERSION = 12;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'journey' | 'audio'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -111,6 +115,7 @@ export function selectPersisted(s: GameState): PersistedState {
     lastPull: s.lastPull,
     owned: s.owned,
     activeBackground: s.activeBackground,
+    activeTrack: s.activeTrack,
     journey: s.journey,
     audio: s.audio,
   };
@@ -166,6 +171,7 @@ function freshState() {
     lastPull: null as PetInstance | null,
     owned: [] as string[],
     activeBackground: null as string | null,
+    activeTrack: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
     audio: defaultAudioSettings(),
@@ -272,6 +278,13 @@ export const useGameStore = create<GameState>()(
           return { coins: res.coins, owned: res.owned };
         }),
 
+      buyMusic: (item) =>
+        set((s) => {
+          const res = buyMusic({ coins: s.coins, owned: s.owned }, item);
+          if (!res.ok) return s; // no-op; UI disables Buy when owned/too poor. SFX at call site.
+          return { coins: res.coins, owned: res.owned };
+        }),
+
       pullEgg: () =>
         set((s) => {
           const res = pullEggDomain(
@@ -283,6 +296,8 @@ export const useGameStore = create<GameState>()(
         }),
 
       equipBackground: (id) => set({ activeBackground: id }),
+
+      equipTrack: (id) => set({ activeTrack: id }),
 
       switchPet: (id) => set((s) => (s.pets.some((p) => p.id === id) ? { activePetId: id } : s)),
 
@@ -348,6 +363,7 @@ export const useGameStore = create<GameState>()(
       // v8->v9 backfills journey { lessonStars: {} }.
       // v9->v10 backfills soundEnabled (default true).
       // v10->v11 replaces soundEnabled with the audio mixer slice.
+      // v11->v12 backfills activeTrack (default null = free overworld loop).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -363,6 +379,7 @@ export const useGameStore = create<GameState>()(
               inventory?: Partial<Record<FoodGroup, number>>;
               owned?: string[];
               activeBackground?: string | null;
+              activeTrack?: string | null;
               journey?: { lessonStars?: Record<string, number> };
             }
           | null;
@@ -376,6 +393,8 @@ export const useGameStore = create<GameState>()(
           inventory: { ...freshInventory(), ...(st.inventory ?? {}) },
           owned: st.owned ?? [],
           activeBackground: st.activeBackground ?? null,
+          // v11->v12: backfill the equipped overworld track (null = free default loop).
+          activeTrack: st.activeTrack ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
           audio:
             (st as { audio?: AudioSettings }).audio ??

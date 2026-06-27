@@ -7,7 +7,7 @@ describe('selectPersisted', () => {
     const keys = Object.keys(snap).sort();
     expect(keys).toEqual(
       [
-        'activeBackground', 'activePetId', 'audio', 'coins', 'inventory', 'journey',
+        'activeBackground', 'activeTrack', 'activePetId', 'audio', 'coins', 'inventory', 'journey',
         'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
       ].sort(),
     );
@@ -18,7 +18,7 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(11);
+    expect(PERSIST_VERSION).toBe(12);
   });
 
   it('includes audio, defaulting to a full unmuted mixer', () => {

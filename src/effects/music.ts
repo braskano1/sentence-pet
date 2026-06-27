@@ -21,6 +21,21 @@ export interface Music {
   setGain(gain: number): void;
   /** One-shot, non-looping. onDone fires even when muted/missing (resume-loop contract). */
   playStinger(kind: StingerKind, gain: number, onDone?: () => void): void;
+  /**
+   * Override a zone's loop url (e.g. an equipped/buyable track). If `zone` is the
+   * current zone AND the resolved url differs from what's playing, live-crossfade
+   * to it; same url → no-op (no restart). A non-current zone just records the
+   * override, applied on the next setZone.
+   */
+  setTrack(zone: Zone, url: string): void;
+  /**
+   * Play a one-shot, non-looping audition element at `gain`, independent of the
+   * zone loop and stinger (does not stop/duck them). Replaces any in-flight
+   * preview. `gain <= 0` or empty url → no-op.
+   */
+  previewTrack(url: string, gain: number): void;
+  /** Pause/teardown the preview element. No-op if nothing is previewing. */
+  stopPreview(): void;
   /** Stop + cleanup everything. */
   stop(): void;
 }
@@ -44,7 +59,10 @@ const STINGERS: Record<StingerKind, string | null> = {
 const CROSSFADE_MS = 400;
 const TICK_MS = 16;
 
-const silent: Music = { setZone() {}, setGain() {}, playStinger() {}, stop() {} };
+const silent: Music = {
+  setZone() {}, setGain() {}, playStinger() {},
+  setTrack() {}, previewTrack() {}, stopPreview() {}, stop() {},
+};
 
 /** True when HTMLAudioElement can actually be constructed in this environment. */
 function audioElementAvailable(): boolean {
@@ -66,9 +84,17 @@ function defaultMakeAudio(url: string): HTMLAudioElement {
 export function __createMusicWithFactory(
   makeAudio: (url: string) => HTMLAudioElement,
 ): Music {
-  let current: { zone: Zone; el: HTMLAudioElement } | null = null;
+  let current: { zone: Zone; el: HTMLAudioElement; url: string } | null = null;
   let fadeTimer: ReturnType<typeof setInterval> | null = null;
   let stinger: HTMLAudioElement | null = null;
+  let preview: HTMLAudioElement | null = null;
+  // Per-instance url overrides (equipped/buyable tracks). Resolution everywhere is
+  // `override[zone] ?? TRACKS[zone]`.
+  const override: Partial<Record<Zone, string>> = {};
+
+  function resolveUrl(zone: Zone): string | null {
+    return override[zone] ?? TRACKS[zone];
+  }
 
   function clearFade(): void {
     if (fadeTimer !== null) {
@@ -131,7 +157,7 @@ export function __createMusicWithFactory(
       }
       // Null-track zone (e.g. multiplayer placeholder): no track to switch to,
       // so do nothing and leave the current loop untouched — keeps the seam inert.
-      const url = TRACKS[zone];
+      const url = resolveUrl(zone);
       if (!url) return;
       // Same zone → no-op; the loop keeps playing for seamless navigation.
       if (current && current.zone === zone) return;
@@ -142,7 +168,7 @@ export function __createMusicWithFactory(
       el.volume = 0; // start silent, then ramp up
       start(el);
       const outgoing = current ? current.el : null;
-      current = { zone, el };
+      current = { zone, el, url };
       crossfade(el, target, outgoing);
     },
 
@@ -173,6 +199,50 @@ export function __createMusicWithFactory(
       start(el);
     },
 
+    setTrack(zone, url) {
+      override[zone] = url;
+      // Only live-swap if this zone is the one currently playing. Otherwise the
+      // override is simply recorded and applied on the next setZone(zone).
+      if (!current || current.zone !== zone) return;
+      // Same resolved url already playing → no-op (don't restart the loop).
+      if (current.url === url) return;
+      const target = current.el.volume; // keep playing at the current gain
+      const el = makeAudio(url);
+      el.loop = true;
+      el.volume = 0;
+      start(el);
+      const outgoing = current.el;
+      current = { zone, el, url };
+      crossfade(el, target, outgoing);
+    },
+
+    previewTrack(url, gain) {
+      // Replace any in-flight preview first (independent of the zone loop).
+      if (preview) {
+        teardown(preview);
+        preview = null;
+      }
+      if (!url || gain <= 0) return;
+      const el = makeAudio(url);
+      el.loop = false;
+      el.volume = clampLevel(gain);
+      const onEnded = () => {
+        el.removeEventListener('ended', onEnded);
+        teardown(el);
+        if (preview === el) preview = null;
+      };
+      el.addEventListener('ended', onEnded);
+      preview = el;
+      start(el);
+    },
+
+    stopPreview() {
+      if (preview) {
+        teardown(preview);
+        preview = null;
+      }
+    },
+
     stop() {
       clearFade();
       if (current) {
@@ -182,6 +252,10 @@ export function __createMusicWithFactory(
       if (stinger) {
         teardown(stinger);
         stinger = null;
+      }
+      if (preview) {
+        teardown(preview);
+        preview = null;
       }
     },
   };

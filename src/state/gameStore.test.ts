@@ -187,6 +187,48 @@ describe('decor ownership', () => {
   });
 });
 
+describe('music ownership', () => {
+  const lofi = GAME_CONFIG.shop.music.find((t) => t.id === 'music:lofi')!;
+
+  it('starts with null activeTrack (free default)', () => {
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().activeTrack).toBeNull();
+  });
+
+  it('buyMusic with enough coins spends wallet coins and records ownership', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['music:lofi']);
+  });
+
+  it('buyMusic without enough coins is a no-op', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(10);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(10);
+    expect(useGameStore.getState().owned).toEqual([]);
+  });
+
+  it('buyMusic twice does not double-charge or duplicate', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().addCoinsForTest(200);
+    useGameStore.getState().buyMusic(lofi);
+    useGameStore.getState().buyMusic(lofi);
+    expect(useGameStore.getState().coins).toBe(50);
+    expect(useGameStore.getState().owned).toEqual(['music:lofi']);
+  });
+
+  it('equipTrack sets and clears the active track', () => {
+    useGameStore.getState().resetForTest();
+    useGameStore.getState().equipTrack('music:lofi');
+    expect(useGameStore.getState().activeTrack).toBe('music:lofi');
+    useGameStore.getState().equipTrack(null);
+    expect(useGameStore.getState().activeTrack).toBeNull();
+  });
+});
+
 describe('pullEgg action', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -621,6 +663,47 @@ describe('migrate -> v11 (audio mixer)', () => {
     const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
     expect(out.audio.allMuted).toBe(false);
     expect(out.soundEnabled).toBeUndefined();
+  });
+});
+
+describe('migrate -> v12 (activeTrack)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills activeTrack: null on a v11 save that lacks it, keeping other fields', () => {
+    const v11 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 100, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 42, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: ['decor:beach'], activeBackground: 'decor:beach',
+      journey: { lessonStars: { u1: 2 } }, audio: defaultAudioSettings(),
+    };
+    const out = getMigrate()(v11, 11) as {
+      activeTrack: string | null; coins: number; owned: string[]; activeBackground: string | null;
+    };
+    expect(out.activeTrack).toBeNull();
+    // other fields survive untouched
+    expect(out.coins).toBe(42);
+    expect(out.owned).toEqual(['decor:beach']);
+    expect(out.activeBackground).toBe('decor:beach');
+  });
+
+  it('preserves an already-set activeTrack', () => {
+    const v12 = {
+      pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+        bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+        stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+      activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      owned: ['music:lofi'], activeTrack: 'music:lofi',
+      journey: { lessonStars: {} }, audio: defaultAudioSettings(),
+    };
+    const out = getMigrate()(v12, 12) as { activeTrack: string | null };
+    expect(out.activeTrack).toBe('music:lofi');
   });
 });
 

@@ -1,4 +1,4 @@
-export type ShopItemKind = 'treat' | 'decor';
+export type ShopItemKind = 'treat' | 'decor' | 'music';
 
 interface ShopItemBase {
   id: string;
@@ -16,7 +16,12 @@ export interface DecorItem extends ShopItemBase {
   sprite: string; // imported webp url
 }
 
-export type ShopItem = TreatItem | DecorItem;
+export interface MusicTrackItem extends ShopItemBase {
+  kind: 'music';
+  src: string; // root-absolute url to the loop asset
+}
+
+export type ShopItem = TreatItem | DecorItem | MusicTrackItem;
 
 export type PurchaseResult =
   | { ok: true; coins: number; happiness: number }

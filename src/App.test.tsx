@@ -103,7 +103,10 @@ describe('App — zone wiring pushes the current screen zone to the music engine
 
   function spyMusic() {
     const setZone = vi.fn();
-    const instance: Music = { setZone, setGain: vi.fn(), playStinger: vi.fn(), stop: vi.fn() };
+    const instance: Music = {
+      setZone, setGain: vi.fn(), playStinger: vi.fn(),
+      setTrack: vi.fn(), previewTrack: vi.fn(), stopPreview: vi.fn(), stop: vi.fn(),
+    };
     setMusicProvider((): Music => instance);
     resetSharedMusic();
     return { setZone };

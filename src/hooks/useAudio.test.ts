@@ -17,6 +17,7 @@ afterEach(() => {
   setMusicProvider(null);
   resetSharedMusic();
   __resetAudioGestureForTest();
+  useGameStore.getState().equipTrack(null); // reset equipped track between cases
 });
 
 /** A music spy that records every call, installed via the provider seam. */
@@ -24,11 +25,14 @@ function spyMusic() {
   const setZone = vi.fn();
   const setGain = vi.fn();
   const playStinger = vi.fn();
+  const setTrack = vi.fn();
+  const previewTrack = vi.fn();
+  const stopPreview = vi.fn();
   const stop = vi.fn();
-  const instance: Music = { setZone, setGain, playStinger, stop };
+  const instance: Music = { setZone, setGain, playStinger, setTrack, previewTrack, stopPreview, stop };
   setMusicProvider((): Music => instance);
   resetSharedMusic();
-  return { setZone, setGain, playStinger, stop };
+  return { setZone, setGain, playStinger, setTrack, previewTrack, stopPreview, stop };
 }
 
 describe('useAudio — SFX', () => {
@@ -151,6 +155,94 @@ describe('useAudio — stinger', () => {
     const { result } = renderHook(() => useAudio());
     result.current.playStinger('win');
     expect(m.playStinger).toHaveBeenCalledWith('win', 0.3);
+  });
+});
+
+describe('useAudio — overworld track push', () => {
+  it('setZone(overworld) pushes setTrack(default url) BEFORE setZone once unlocked', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+    useGameStore.getState().equipTrack(null); // default
+
+    const { result } = renderHook(() => useAudio());
+    result.current.play('tap'); // unlock
+    result.current.setZone('overworld');
+
+    expect(m.setTrack).toHaveBeenCalledWith('overworld', '/audio/overworld.mp3');
+    expect(m.setZone).toHaveBeenCalledWith('overworld', 1);
+    // setTrack pushed before setZone
+    expect(m.setTrack.mock.invocationCallOrder[0]).toBeLessThan(
+      m.setZone.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('setZone(overworld) pushes the equipped track src when one is active', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+    useGameStore.getState().equipTrack('music:lofi');
+
+    const { result } = renderHook(() => useAudio());
+    result.current.play('tap'); // unlock
+    result.current.setZone('overworld');
+
+    expect(m.setTrack).toHaveBeenCalledWith('overworld', '/audio/tracks/lofi.mp3');
+  });
+
+  it('does NOT push setTrack for non-overworld zones', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.play('tap'); // unlock
+    result.current.setZone('drill');
+
+    expect(m.setTrack).not.toHaveBeenCalled();
+  });
+
+  it('changing activeTrack in the store live-pushes setTrack on the shared instance', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+
+    const { result } = renderHook(() => useAudio());
+    // Get something playing so sharedMusic is the spy.
+    result.current.play('tap'); // unlock
+    result.current.setZone('overworld');
+    m.setTrack.mockClear();
+
+    useGameStore.getState().equipTrack('music:jazz');
+    expect(m.setTrack).toHaveBeenCalledWith('overworld', '/audio/tracks/jazz.mp3');
+  });
+});
+
+describe('useAudio — preview', () => {
+  it('previewTrack forwards at the effective music gain', () => {
+    const m = spyMusic();
+    const a = defaultAudioSettings();
+    a.master.level = 0.5; a.music.level = 0.6;
+    useGameStore.setState({ audio: a });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.previewTrack('/audio/tracks/lofi.mp3');
+    expect(m.previewTrack).toHaveBeenCalledWith('/audio/tracks/lofi.mp3', 0.3);
+  });
+
+  it('previewTrack forwards gain 0 when music is muted', () => {
+    const m = spyMusic();
+    const a = defaultAudioSettings(); a.music.muted = true;
+    useGameStore.setState({ audio: a });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.previewTrack('/audio/tracks/lofi.mp3');
+    expect(m.previewTrack).toHaveBeenCalledWith('/audio/tracks/lofi.mp3', 0);
+  });
+
+  it('stopPreview forwards to the engine', () => {
+    const m = spyMusic();
+    useGameStore.setState({ audio: defaultAudioSettings() });
+
+    const { result } = renderHook(() => useAudio());
+    result.current.stopPreview();
+    expect(m.stopPreview).toHaveBeenCalled();
   });
 });
 
