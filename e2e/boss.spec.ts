@@ -30,6 +30,12 @@ type StoreState = {
   tickCharge: (dtMs: number) => void;
   resolveSwipe: (success: boolean) => void;
   snapshot: { petHp: number; petHpMax: number; bossHp: number } | null;
+  // P3 battle-store fields
+  phaseIndex: number;
+  bossPhases: number;
+  spell: { words: string[]; wrongIndex: number; tip: string } | null;
+  resolveSpell: (wordIndex: number) => void;
+  onCorrect: () => void;
 };
 
 async function waitForStore(page: Page) {
@@ -210,5 +216,64 @@ test.describe('boss battle', () => {
     });
     expect(after.petHp).toBe(after.before); // dodged → no damage
     expect(after.phase).toBe('answering');
+  });
+
+  test('D: tier-3 boss crosses a phase and opens the spot-the-error spell', async ({ page }) => {
+    await waitForStore(page);
+
+    const CP3 = 'u3-checkpoint';
+    await page.evaluate((id) => {
+      (window as unknown as { store: { getState: () => StoreState } }).store.getState().startBoss(id);
+    }, CP3);
+
+    const hasBattleStore = await page.evaluate(() =>
+      typeof (window as unknown as { battleStore?: { getState: () => unknown } }).battleStore?.getState === 'function',
+    ).catch(() => false);
+    test.skip(!hasBattleStore, 'battleStore not exposed on window in this build');
+
+    await page.waitForFunction(
+      () => typeof (window as unknown as { contentStore?: { getState: () => unknown } }).contentStore?.getState === 'function',
+      null, { timeout: 10_000 },
+    );
+
+    await page.evaluate((id) => {
+      const gs = (window as unknown as { store: { getState: () => StoreState } }).store.getState();
+      const pet = (gs.pets as Array<{ hatched: boolean }>).find((p) => p.hatched) ?? gs.pets[0];
+      const cs = (window as unknown as { contentStore: { getState: () => { bundle: { pool: Record<string, unknown>; units: Array<{ lessons: Array<{ id: string; boss?: unknown; itemIds: string[] }> }> } } } }).contentStore.getState();
+      let boss: unknown; let items: unknown[] = [];
+      for (const unit of cs.bundle.units) {
+        const lesson = unit.lessons.find((l) => l.id === id);
+        if (lesson?.boss) { boss = lesson.boss; items = lesson.itemIds.map((i) => cs.bundle.pool[i]); break; }
+      }
+      if (!boss) throw new Error(`No boss for ${id}`);
+      const bs = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore.getState();
+      bs.begin(pet, boss, () => 0, items); // rng=0 → no crit, deterministic spell pick
+    }, CP3);
+
+    const crossed = await page.evaluate(() => {
+      const ref = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore;
+      for (let i = 0; i < 300; i++) {
+        const s = ref.getState();
+        if (s.phaseIndex >= 1) break;
+        if (s.battlePhase === 'spell') break;
+        if (s.snapshot && (s.snapshot as { bossHp: number }).bossHp === 0) break; // safety: boss died
+        s.onCorrect();
+      }
+      const s = ref.getState();
+      return { phaseIndex: s.phaseIndex, battlePhase: s.battlePhase, hasSpell: s.spell !== null };
+    });
+    expect(crossed.phaseIndex).toBeGreaterThanOrEqual(1);
+    expect(crossed.battlePhase).toBe('spell');
+    expect(crossed.hasSpell).toBe(true);
+
+    const after = await page.evaluate(() => {
+      const ref = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore;
+      const wrongIndex = ref.getState().spell!.wrongIndex;
+      ref.getState().resolveSpell(wrongIndex);
+      const s = ref.getState();
+      return { battlePhase: s.battlePhase, spell: s.spell };
+    });
+    expect(after.battlePhase).toBe('answering');
+    expect(after.spell).toBeNull();
   });
 });
