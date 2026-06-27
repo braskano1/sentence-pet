@@ -1,11 +1,18 @@
 import type { ContentBundle } from './model';
+import type { Course } from './course';
+import type { DrillItem } from '../data/types';
 
-/** Validate a bundle's structural invariants. Used at author-save (block writes)
- *  and on live fetch (reject an invalid live doc → keep the current bundle). */
-export function validateContent(bundle: ContentBundle): { ok: boolean; errors: string[] } {
-  const errors: string[] = [];
-  const push = (m: string) => errors.push(m);
+/** Per-kind item checks. In P1 only dragdrop items exist; the other kinds are
+ *  validated structurally as they arrive in P2 (fields added then). */
+function validateItem(itemId: string, item: DrillItem, push: (m: string) => void): void {
+  if (item.answer.length !== item.slots.length) push(`item ${itemId} answer/slots length mismatch`);
+  for (const trap of item.traps ?? []) {
+    if (trap.slot < 0 || trap.slot >= item.slots.length) push(`item ${itemId} trap slot out of range`);
+  }
+}
 
+/** Structural invariants shared by legacy bundle + course. */
+function validateBundleShape(bundle: ContentBundle, push: (m: string) => void): void {
   if (bundle.units.length === 0) push('journey has no units');
 
   const unitIds = bundle.units.map((u) => u.id);
@@ -25,15 +32,40 @@ export function validateContent(bundle: ContentBundle): { ok: boolean; errors: s
       for (const itemId of lesson.itemIds) {
         const item = bundle.pool[itemId];
         if (!item) { push(`lesson ${lesson.id} references unknown item ${itemId}`); continue; }
-        if (item.answer.length !== item.slots.length) push(`item ${itemId} answer/slots length mismatch`);
-        for (const trap of item.traps ?? []) {
-          if (trap.slot < 0 || trap.slot >= item.slots.length) push(`item ${itemId} trap slot out of range`);
-        }
+        validateItem(itemId, item, push);
       }
     }
   }
 
   if (new Set(lessonIds).size !== lessonIds.length) push('duplicate lesson ids across journey');
+}
+
+/** Legacy bundle validation. Used at author-save (block writes) and on live
+ *  fetch / cache read (reject an invalid doc → keep the current bundle). */
+export function validateContent(bundle: ContentBundle): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  validateBundleShape(bundle, (m) => errors.push(m));
+  return { ok: errors.length === 0, errors };
+}
+
+/** Course validation: structural bundle checks (via a Course→ContentBundle
+ *  projection) + gate/final-boss reference checks. */
+export function validateCourse(course: Course): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const push = (m: string) => errors.push(m);
+
+  validateBundleShape({ pool: course.pool, units: course.units }, push);
+
+  const unitIds = new Set(course.units.map((u) => u.id));
+  const reviewBosses = [...course.gates, ...(course.finalBoss ? [course.finalBoss] : [])];
+  for (const b of reviewBosses) {
+    for (const uid of b.reviewsUnitIds ?? []) {
+      if (!unitIds.has(uid)) push(`boss ${b.id} reviews unknown unit ${uid}`);
+    }
+    for (const pid of b.pinnedItemIds ?? []) {
+      if (!course.pool[pid]) push(`boss ${b.id} pins unknown item ${pid}`);
+    }
+  }
 
   return { ok: errors.length === 0, errors };
 }
