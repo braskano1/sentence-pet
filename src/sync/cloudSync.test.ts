@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { startCloudSync, type SyncRepo } from './cloudSync';
 import type { PersistedState } from '../state/gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 import type { PetInstance } from '../data/types';
 
 function pet(id: string, xp = 0): PetInstance {
@@ -17,7 +18,7 @@ function state(coins: number, pets: PetInstance[]): PersistedState {
     screen: 'petRoom', pets, activePetId: pets[0].id, coins,
     inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
-    owned: [], activeBackground: null, journey: { lessonStars: {} }, soundEnabled: true,
+    owned: [], activeBackground: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
   };
 }
 

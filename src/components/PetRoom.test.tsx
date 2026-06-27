@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PetRoom } from './PetRoom';
 import { useGameStore } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
+
+const { play } = vi.hoisted(() => ({ play: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
 
 beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -65,6 +68,15 @@ describe('PetRoom', () => {
     expect(useGameStore.getState().inventory.protein).toBe(0);
   });
 
+  it('plays feed SFX when a feed button is clicked with food in inventory', () => {
+    play.mockClear();
+    useGameStore.getState().resetForTest();
+    useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })), inventory: { ...s.inventory, protein: 3 } }));
+    render(<PetRoom />);
+    fireEvent.click(screen.getByRole('button', { name: /feed protein/i }));
+    expect(play).toHaveBeenCalledWith('feed');
+  });
+
   it('switches to the Power tab', () => {
     useGameStore.getState().resetForTest();
     useGameStore.setState((s) => ({ pets: s.pets.map((p) => ({ ...p, hatched: true })) }));
@@ -113,6 +125,16 @@ describe('PetRoom tab keyboard navigation', () => {
     const powerTab = screen.getByRole('tab', { name: /power/i });
     fireEvent.keyDown(powerTab, { key: 'ArrowLeft' });
     expect(screen.getByRole('tab', { name: /care/i })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+describe('PetRoom sound settings gear', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('clicking the gear button opens the audio settings dialog', async () => {
+    render(<PetRoom />);
+    await userEvent.click(screen.getByLabelText('Sound settings'));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });
 

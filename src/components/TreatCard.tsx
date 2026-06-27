@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { canAfford, type TreatItem } from '../domain/shop';
 import { fireConfetti, buzz, buzzError } from '../effects/celebrate';
+import { useAudio } from '../hooks/useAudio';
 
 interface TreatCardProps {
   item: TreatItem;
@@ -16,6 +17,7 @@ export function TreatCard({ item, coins, full, index }: TreatCardProps) {
   const controls = useAnimationControls();
   const [floating, setFloating] = useState(false);
   const afford = canAfford(coins, item);
+  const { play } = useAudio();
 
   const reason = full ? 'Already happy!' : !afford ? 'Not enough coins' : '';
   const style = full
@@ -27,6 +29,7 @@ export function TreatCard({ item, coins, full, index }: TreatCardProps) {
   function handleClick() {
     if (afford) {
       buyTreat(item);
+      play('purchase');
       controls.start({ scale: [1, 1.08, 1], transition: { duration: 0.3 } });
       setFloating(true);
       fireConfetti();

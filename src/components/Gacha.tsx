@@ -8,6 +8,7 @@ import { EGG_SPRITE, SPRITES } from '../config/sprites';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 import { MAX_PET_NAME } from '../domain/petName';
 import { EvolutionCinematic } from './EvolutionCinematic';
+import { useAudio } from '../hooks/useAudio';
 
 export function Gacha() {
   const coins = useGameStore((s) => s.coins);
@@ -20,9 +21,11 @@ export function Gacha() {
   const [revealed, setRevealed] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [hatching, setHatching] = useState(false);
+  const { play } = useAudio();
 
   const onPull = () => {
     pullEgg();
+    play('pull');
     setRevealed(true);
     setHatching(true);
   };

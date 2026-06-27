@@ -1,6 +1,7 @@
 // src/components/useRoundFeedback.ts
 import { useEffect, useRef, useState } from 'react';
 import { buzz, fireConfetti } from '../effects/celebrate';
+import { useAudio } from '../hooks/useAudio';
 
 export type Feedback = 'correct' | 'wrong' | null;
 
@@ -14,6 +15,7 @@ const HOLD_MS = { correct: 1100, wrong: 700 } as const;
 export function useRoundFeedback() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { play: playSfx } = useAudio();
 
   function clear() {
     if (timer.current !== null) {
@@ -25,8 +27,8 @@ export function useRoundFeedback() {
   function play(kind: 'correct' | 'wrong', onDone: () => void) {
     clear();
     setFeedback(kind);
-    if (kind === 'wrong') buzz();
-    else fireConfetti();
+    if (kind === 'wrong') { buzz(); playSfx('wrong'); }
+    else { fireConfetti(); playSfx('correct'); }
     timer.current = setTimeout(() => {
       timer.current = null;
       setFeedback(null);

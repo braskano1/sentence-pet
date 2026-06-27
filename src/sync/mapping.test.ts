@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { toCloud, fromCloud, PERSIST_VERSION } from './mapping';
 import type { PersistedState } from '../state/gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 import type { PetInstance } from '../data/types';
 
 function pet(id: string): PetInstance {
@@ -17,7 +18,7 @@ const sample: PersistedState = {
   screen: 'petRoom', pets: [pet('a'), pet('b')], activePetId: 'a', coins: 7,
   inventory: { protein: 1, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 2, lastReward: null, lastPull: null,
-  owned: ['bg1'], activeBackground: 'bg1', journey: { lessonStars: { 'u1-pattern': 3 } }, soundEnabled: true,
+  owned: ['bg1'], activeBackground: 'bg1', journey: { lessonStars: { 'u1-pattern': 3 } }, audio: defaultAudioSettings(),
 };
 
 describe('mapping', () => {

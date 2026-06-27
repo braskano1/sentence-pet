@@ -31,28 +31,28 @@ describe('EvolutionCinematic', () => {
   });
 
   it('plays the reveal cue when sound is on, not when off', () => {
-    useGameStore.setState({ soundEnabled: true });
+    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
     const { unmount } = render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByTestId('evolution-stage'));
     expect(sound.reveal).toHaveBeenCalled();
     unmount();
 
     Object.values(sound).forEach((f) => f.mockClear());
-    useGameStore.setState({ soundEnabled: false });
+    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: true } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByTestId('evolution-stage'));
     expect(sound.reveal).not.toHaveBeenCalled();
   });
 
-  it('renders a sound toggle that flips soundEnabled', () => {
-    useGameStore.setState({ soundEnabled: true });
+  it('renders a sound toggle that flips allMuted', () => {
+    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
-    expect(useGameStore.getState().soundEnabled).toBe(false);
+    expect(useGameStore.getState().audio.allMuted).toBe(true);
   });
 
   it('stops in-flight audio when muted mid-sequence', () => {
-    useGameStore.setState({ soundEnabled: true });
+    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
     expect(sound.stop).toHaveBeenCalled();

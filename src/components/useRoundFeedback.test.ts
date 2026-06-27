@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 vi.mock('../effects/celebrate', () => ({ fireConfetti: vi.fn(), buzz: vi.fn() }));
+const { playSfxMock } = vi.hoisted(() => ({ playSfxMock: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play: playSfxMock }) }));
 import { fireConfetti, buzz } from '../effects/celebrate';
 import { useRoundFeedback } from './useRoundFeedback';
 
@@ -65,5 +67,19 @@ describe('useRoundFeedback', () => {
       vi.advanceTimersByTime(1100);
     });
     expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('plays the correct SFX on a correct round', () => {
+    playSfxMock.mockClear();
+    const { result } = renderHook(() => useRoundFeedback());
+    act(() => result.current.play('correct', () => {}));
+    expect(playSfxMock).toHaveBeenCalledWith('correct');
+  });
+
+  it('plays the wrong SFX on a wrong round', () => {
+    playSfxMock.mockClear();
+    const { result } = renderHook(() => useRoundFeedback());
+    act(() => result.current.play('wrong', () => {}));
+    expect(playSfxMock).toHaveBeenCalledWith('wrong');
   });
 });
