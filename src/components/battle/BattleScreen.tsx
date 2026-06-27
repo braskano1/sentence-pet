@@ -19,6 +19,7 @@ import { BossIntro } from './BossIntro';
 import { DodgeSwipe } from './DodgeSwipe';
 import { SpellOverlay } from './SpellOverlay';
 import { getSfx } from '../../effects/sfx';
+import { loadBattleSfx } from '../../effects/loadBattleSfx';
 import { petStageSprite, petDisplayName } from '../../config/petDisplay';
 
 export function BattleScreen() {
@@ -55,6 +56,8 @@ export function BattleScreen() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor),
   );
+
+  useEffect(() => { void loadBattleSfx(); }, []);
 
   useEffect(() => {
     if (!snapshot || !boss || !pet) setScreen('pickDrill');
