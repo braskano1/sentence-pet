@@ -1,0 +1,68 @@
+import { describe, it, expect } from 'vitest';
+import {
+  ELEMENT_BEATS, elementMultiplier, maxHpFromStat, mitigatedBase,
+  critChance, computeHit, dodgeChance, rollDodge, firstStrike,
+} from './battle';
+
+describe('elements', () => {
+  it('forms the 4-cycle fire>air>leaf>water>fire', () => {
+    expect(ELEMENT_BEATS).toEqual({ fire: 'air', air: 'leaf', leaf: 'water', water: 'fire' });
+  });
+  it('advantage = 1.5, disadvantage = 0.75, neutral = 1', () => {
+    expect(elementMultiplier('fire', 'air')).toBe(1.5);
+    expect(elementMultiplier('air', 'fire')).toBe(0.75);
+    expect(elementMultiplier('fire', 'leaf')).toBe(1);
+    expect(elementMultiplier('fire', 'fire')).toBe(1);
+  });
+});
+
+describe('hp pool & defense', () => {
+  it('hp pool = stat × hpMultiplier (8)', () => {
+    expect(maxHpFromStat(100)).toBe(800);
+    expect(maxHpFromStat(40)).toBe(320);
+  });
+  it('ratio defense never reaches zero and halves at def=C', () => {
+    expect(mitigatedBase(100, 0)).toBe(100);
+    expect(mitigatedBase(100, 100)).toBeCloseTo(50);
+    expect(mitigatedBase(100, 50)).toBeCloseTo(66.6667, 3);
+  });
+});
+
+describe('computeHit', () => {
+  const base = { atkStat: 100, defStat: 0, attackerSpecies: 'fire', defenderSpecies: 'leaf' } as const;
+  it('applies the combat scalar and rounds, min 1', () => {
+    expect(computeHit({ ...base, crit: false })).toBe(140);
+  });
+  it('doubles on crit', () => {
+    expect(computeHit({ ...base, crit: true })).toBe(280);
+  });
+  it('applies element advantage', () => {
+    expect(computeHit({ ...base, defenderSpecies: 'air', crit: false })).toBe(210);
+  });
+  it('floors at 1', () => {
+    expect(computeHit({ atkStat: 0, defStat: 90, attackerSpecies: 'fire', defenderSpecies: 'water', crit: false }))
+      .toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('crit & dodge & first strike', () => {
+  it('critChance scales with luk and caps', () => {
+    expect(critChance(0)).toBe(0);
+    expect(critChance(100)).toBeCloseTo(0.4);
+    expect(critChance(1000)).toBe(0.6);
+  });
+  it('dodgeChance uses the spd delta, clamped to [0, cap]', () => {
+    expect(dodgeChance(50, 50)).toBeCloseTo(0.05);
+    expect(dodgeChance(150, 50)).toBe(0.55);
+    expect(dodgeChance(0, 100)).toBe(0);
+  });
+  it('rollDodge is true when the rng draw is below the chance', () => {
+    expect(rollDodge(150, 50, () => 0.1)).toBe(true);
+    expect(rollDodge(150, 50, () => 0.9)).toBe(false);
+  });
+  it('firstStrike when the player outspeeds', () => {
+    expect(firstStrike(60, 50)).toBe(true);
+    expect(firstStrike(50, 60)).toBe(false);
+    expect(firstStrike(50, 50)).toBe(false);
+  });
+});

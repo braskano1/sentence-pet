@@ -34,7 +34,7 @@ describe('selectPersisted', () => {
     // drops the action functions. So the persisted DATA keys are:
     const persistedDataKeys = Object.keys(full)
       .filter((k) => typeof full[k] !== 'function')
-      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'currentLessonId' && k !== 'pendingStinger')
+      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'currentLessonId' && k !== 'currentBossLessonId' && k !== 'pendingStinger')
       .sort();
     const selectedKeys = Object.keys(selectPersisted(useGameStore.getState())).sort();
     expect(selectedKeys).toEqual(persistedDataKeys);
