@@ -250,6 +250,11 @@ export const useGameStore = create<GameState>()(
             };
           }
           const lvl = findLesson(useContentStore.getState().bundle, lessonId)?.lesson.level ?? 1;
+          const clearedLesson = findLesson(useContentStore.getState().bundle, lessonId)?.lesson;
+          const completesCourse = clearedLesson?.onClear === 'completeCourse' && !!s.currentCourseId;
+          const courseComplete = completesCourse
+            ? { ...s.courseComplete, [s.currentCourseId as string]: true }
+            : s.courseComplete;
           const firstClear = !(lessonId in s.journey.lessonStars);
           const r = GAME_CONFIG.battle.reward;
           const coinsGain = firstClear ? r.firstClearCoins : r.replayCoins;
@@ -281,6 +286,7 @@ export const useGameStore = create<GameState>()(
             lastStageChange,
             lastReward: { level: lvl, stars: 3, food: 0, coins: coinsGain, group: 'protein' as FoodGroup },
             journey: { ...s.journey, lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, 3) } },
+            courseComplete,
             currentBossLessonId: null,
             pendingStinger: 'win' as StingerKind,
             screen: 'reward' as Screen,
