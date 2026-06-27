@@ -230,7 +230,7 @@ describe('multi-phase ramp', () => {
 // ---------------------------------------------------------------------------
 
 const SPELL_ITEM: DrillItem = {
-  id: 'gr-spell', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
+  id: 'gr-spell', kind: 'dragdrop', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
   slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
   traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
 };

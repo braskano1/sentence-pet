@@ -5,7 +5,7 @@ import type { ContentBundle } from '../../content/model';
 import type { DrillItem } from '../../data/types';
 
 const item = (id: string): DrillItem =>
-  ({ id, drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
 
 function bundle(): ContentBundle {
   return {

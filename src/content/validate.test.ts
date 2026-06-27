@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import type { ContentBundle } from './model';
 import { validateContent, validateCourse } from './validate';
 import type { DrillItem } from '../data/types';
+import { isDragDrop } from '../data/types';
 import type { Course } from './course';
 import type { CheckpointBoss } from './model';
 
 const item = (id: string): DrillItem =>
-  ({ id, drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
 
 function good(): ContentBundle {
   return {
@@ -64,13 +65,16 @@ describe('validateContent', () => {
   });
 
   it('rejects an item whose answer length != slots length', () => {
-    const b = good(); b.pool.a = { ...b.pool.a, answer: ['I'] };
+    const b = good();
+    const a = b.pool.a;
+    if (isDragDrop(a)) b.pool.a = { ...a, answer: ['I'] };
     expect(validateContent(b).ok).toBe(false);
   });
 
   it('rejects a trap slot index out of range', () => {
     const b = good();
-    b.pool.a = { ...b.pool.a, traps: [{ slot: 5, word: 'runs', tip: 't' }] };
+    const a = b.pool.a;
+    if (isDragDrop(a)) b.pool.a = { ...a, traps: [{ slot: 5, word: 'runs', tip: 't' }] };
     expect(validateContent(b).ok).toBe(false);
   });
 });
@@ -81,7 +85,7 @@ const sampleBoss: CheckpointBoss = {
 
 const base: Course = {
   id: 'c', title: 'C',
-  pool: { a: { id: 'a', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
+  pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
   units: [{
     id: 'u', title: 'U', emoji: '🦊', order: 0, l1Enabled: false,
     lessons: [{ id: 'l', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: ['a'], isCheckpoint: true }],
@@ -94,7 +98,9 @@ describe('validateCourse', () => {
     expect(validateCourse(base).ok).toBe(true);
   });
   it('rejects a dragdrop item whose answer/slots length mismatch', () => {
-    const bad: Course = { ...base, pool: { a: { ...base.pool.a, answer: ['I', 'run'] } } };
+    const a = base.pool.a;
+    if (!isDragDrop(a)) throw new Error('fixture must be dragdrop');
+    const bad: Course = { ...base, pool: { a: { ...a, answer: ['I', 'run'] } } };
     const res = validateCourse(bad);
     expect(res.ok).toBe(false);
     expect(res.errors.join()).toMatch(/answer\/slots/);

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { SEED } from './seed';
 import { validateContent } from './validate';
 import { findLesson, itemsForLesson } from './model';
+import { isDragDrop } from '../data/types';
 
 describe('SEED content bundle', () => {
   it('passes validation', () => {
@@ -24,6 +25,7 @@ describe('SEED content bundle', () => {
   it('L2 grammar sentences differ from L1 grammar sentences', () => {
     const sentences = (level: number) =>
       Object.values(SEED.pool)
+        .filter(isDragDrop)
         .filter((i) => i.drill === 'grammar' && i.level === level)
         .map((i) => i.answer.join(' '))
         .sort();
@@ -48,7 +50,7 @@ describe('SEED content bundle', () => {
 
 describe('SEED.pool content invariants', () => {
   it('tokens are lowercase except "I" and all-caps acronyms like "TV"', () => {
-    const allWords = Object.values(SEED.pool).flatMap((item) => [
+    const allWords = Object.values(SEED.pool).filter(isDragDrop).flatMap((item) => [
       ...item.answer,
       ...(item.distractors ?? []),
       ...(item.traps ?? []).map((t) => t.word),
@@ -66,7 +68,7 @@ describe('SEED.pool content invariants', () => {
   });
 
   it('every grammar item has at least one trap and each trap.word differs from every answer word', () => {
-    const grammarItems = Object.values(SEED.pool).filter((i) => i.drill === 'grammar' || i.drill === 'mixed');
+    const grammarItems = Object.values(SEED.pool).filter(isDragDrop).filter((i) => i.drill === 'grammar' || i.drill === 'mixed');
     for (const item of grammarItems) {
       expect(item.traps?.length).toBeGreaterThan(0);
       for (const trap of item.traps ?? []) {
@@ -77,7 +79,7 @@ describe('SEED.pool content invariants', () => {
   });
 
   it('wordChoice items have distractors', () => {
-    const wcItems = Object.values(SEED.pool).filter((i) => i.drill === 'wordChoice');
+    const wcItems = Object.values(SEED.pool).filter(isDragDrop).filter((i) => i.drill === 'wordChoice');
     for (const item of wcItems) {
       expect(item.distractors?.length).toBeGreaterThan(0);
     }

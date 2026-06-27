@@ -46,6 +46,7 @@ describe('screenKeyAndNode — empty-items guard', () => {
   it('returns drill key when screen is drill and items are non-empty', () => {
     const item = {
       id: 'x1',
+      kind: 'dragdrop' as const,
       drill: DRILL,
       level: 1,
       thaiHint: 'test',

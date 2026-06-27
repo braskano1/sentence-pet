@@ -4,7 +4,7 @@ import { orderedUnits, findLesson, itemsForLesson, itemsForDrill, tutorialItem, 
 import type { DrillItem } from '../data/types';
 
 const item = (id: string, drill: DrillItem['drill'], level: number): DrillItem => ({
-  id, drill, level, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'],
+  id, kind: 'dragdrop', drill, level, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'],
 });
 
 const bundle: ContentBundle = {
@@ -58,14 +58,14 @@ describe('content/model accessors', () => {
 
 describe('trayWords', () => {
   const answerOnly: DrillItem = {
-    id: 'x', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'],
+    id: 'x', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'],
   };
   const withDistractors: DrillItem = {
-    id: 'y', drill: 'wordChoice', level: 1, thaiHint: 'y', slots: ['Pronoun', 'Verb'],
+    id: 'y', kind: 'dragdrop', drill: 'wordChoice', level: 1, thaiHint: 'y', slots: ['Pronoun', 'Verb'],
     answer: ['he', 'eats'], distractors: ['eat', 'eating'],
   };
   const withTraps: DrillItem = {
-    id: 'z', drill: 'grammar', level: 1, thaiHint: 'z',
+    id: 'z', kind: 'dragdrop', drill: 'grammar', level: 1, thaiHint: 'z',
     slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'],
     distractors: ['running'],
     traps: [{ slot: 1, word: 'walk', tip: 'tip' }],

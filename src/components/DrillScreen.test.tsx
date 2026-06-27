@@ -27,7 +27,7 @@ import { itemsForDrill } from '../content/model';
 import type { DrillItem } from '../data/types';
 
 const ITEM: DrillItem = {
-  id: 'i1', drill: 'pattern' as const, level: 1, thaiHint: 'เธอให้อาหารแมว',
+  id: 'i1', kind: 'dragdrop', drill: 'pattern' as const, level: 1, thaiHint: 'เธอให้อาหารแมว',
   slots: ['Pronoun', 'Verb', 'Object'],
   answer: ['She', 'feeds', 'the cat'],
   distractors: ['eats'],

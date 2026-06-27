@@ -3,7 +3,7 @@ import { bundleToDefaultCourse, DEFAULT_COURSE_ID } from './migrate';
 import type { ContentBundle } from './model';
 
 const legacy: ContentBundle = {
-  pool: { a: { id: 'a', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
+  pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
   units: [{
     id: 'u0', title: 'U0', emoji: '🐣', order: 0,
     // legacy units/lessons have neither l1Enabled nor kind:

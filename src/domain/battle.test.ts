@@ -85,12 +85,12 @@ describe('P2 charge timer', () => {
 });
 
 const trapItem: DrillItem = {
-  id: 'gr-x', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
+  id: 'gr-x', kind: 'dragdrop', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
   slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
   traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
 };
 const noTrapItem: DrillItem = {
-  id: 'p-x', drill: 'pattern', level: 1, thaiHint: 'x',
+  id: 'p-x', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x',
   slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
 };
 
