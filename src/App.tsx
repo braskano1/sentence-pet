@@ -17,18 +17,25 @@ import { BossPrepScreen } from './components/battle/BossPrepScreen';
 import { BattleScreen } from './components/battle/BattleScreen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { useUiStore } from './state/uiStore';
-import type { DrillItem, DrillType } from './data/types';
+import type { DrillItem, DrillType, ContentKind } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
+import { CourseSelect } from './components/CourseSelect';
+import { ComingSoon } from './components/ComingSoon';
 
-export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number, items: DrillItem[]) {
+export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number, items: DrillItem[], kind: ContentKind) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
+    case 'pickCourse': return { key: 'pickCourse', node: <CourseSelect /> };
     case 'pickDrill': return { key: 'pickDrill', node: <JourneyMap /> };
-    case 'drill':
-      return items.length === 0
-        ? { key: 'pickDrill', node: <JourneyMap /> }
-        : { key: 'drill', node: <DrillScreen items={items} drill={drill} level={level} /> };
+    case 'drill': {
+      if (items.length === 0) return { key: 'pickDrill', node: <JourneyMap /> };
+      // Boss lessons route via startBoss → bossPrep/battle, never the drill screen.
+      // Guard defensively so a boss-kind node never renders the ComingSoon placeholder.
+      if (kind === 'boss') return { key: 'pickDrill', node: <JourneyMap /> };
+      if (kind === 'dragdrop') return { key: 'drill', node: <DrillScreen items={items} drill={drill} level={level} /> };
+      return { key: 'comingSoon', node: <ComingSoon kind={kind} /> };
+    }
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'evolution': return { key: 'evolution', node: <EvolutionScreen /> };
     case 'shop': return { key: 'shop', node: <Shop /> };
@@ -61,6 +68,8 @@ export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
       return null; // stop music during the cinematic; overworld resumes after
     case 'reward':
       return null; // no overworld loop on level-cleared; the sting plays instead
+    case 'pickCourse':
+    case 'comingSoon':
     case 'pickDrill':
     case 'petRoom':
     case 'shop':
@@ -84,7 +93,8 @@ function CurrentScreen() {
     () => (lesson ? itemsForLesson(bundle, lesson) : itemsForDrill(bundle, drill, level)),
     [bundle, lesson, drill, level],
   );
-  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items);
+  const kind: ContentKind = lesson?.kind ?? 'dragdrop';
+  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items, kind);
 
   const { setZone } = useAudio();
   const zone = zoneForScreen(key, !!lesson?.isCheckpoint);

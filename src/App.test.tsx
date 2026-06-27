@@ -39,7 +39,7 @@ const DRILL: DrillType = 'pattern';
 
 describe('screenKeyAndNode — empty-items guard', () => {
   it('returns pickDrill (JourneyMap) when screen is drill but items is empty', () => {
-    const result = screenKeyAndNode('drill', /* hatched */ true, DRILL, 1, []);
+    const result = screenKeyAndNode('drill', /* hatched */ true, DRILL, 1, [], 'dragdrop');
     expect(result.key).toBe('pickDrill');
   });
 
@@ -52,7 +52,7 @@ describe('screenKeyAndNode — empty-items guard', () => {
       slots: ['Pronoun' as PosLabel],
       answer: ['I'],
     };
-    const result = screenKeyAndNode('drill', true, DRILL, 1, [item]);
+    const result = screenKeyAndNode('drill', true, DRILL, 1, [item], 'dragdrop');
     expect(result.key).toBe('drill');
   });
 });
