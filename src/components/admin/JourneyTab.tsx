@@ -62,7 +62,13 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
             <p className="font-semibold">Lesson: {selected.l.id}</p>
             <label>kind
               <select className="border px-1" value={selected.l.kind ?? 'dragdrop'}
-                onChange={(e) => patchLesson(selected.u.id, selected.l.id, { kind: e.target.value as ContentKind })}>
+                onChange={(e) => {
+                  const kind = e.target.value as ContentKind;
+                  patchLesson(selected.u.id, selected.l.id, {
+                    kind,
+                    itemIds: selected.l.itemIds.filter((id) => bundle.pool[id]?.kind === kind),
+                  });
+                }}>
                 {['flashcard', 'matching', 'dragdrop', 'fillblank'].map((k) => <option key={k}>{k}</option>)}
               </select>
             </label>

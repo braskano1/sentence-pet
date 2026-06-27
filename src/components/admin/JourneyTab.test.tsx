@@ -55,6 +55,25 @@ describe('JourneyTab', () => {
     expect(next.units[0].lessons[0].kind).toBe('flashcard');
   });
 
+  it('changing the lesson kind prunes itemIds of the old kind', () => {
+    const onChange = vi.fn();
+    const b: ContentBundle = {
+      pool: {
+        d1: { id: 'd1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: [], answer: [] },
+        f1: { id: 'f1', kind: 'flashcard', level: 1, front: 'a', back: 'b' },
+      },
+      units: [{ id: 'u1', title: 'One', emoji: '🐣', order: 1, lessons: [
+        { id: 'u1-l1', drill: 'pattern', level: 1, kind: 'dragdrop', itemIds: ['d1'] },
+      ]}],
+    };
+    render(<JourneyTab bundle={b} onChange={onChange} />);
+    fireEvent.click(screen.getByText('u1-l1'));
+    fireEvent.change(screen.getByLabelText(/kind/i), { target: { value: 'flashcard' } });
+    const next = onChange.mock.calls.at(-1)![0] as ContentBundle;
+    expect(next.units[0].lessons[0].kind).toBe('flashcard');
+    expect(next.units[0].lessons[0].itemIds).not.toContain('d1');
+  });
+
   it('toggling unit l1Enabled writes unit.l1Enabled', () => {
     const onChange = vi.fn();
     render(<JourneyTab bundle={bundle()} onChange={onChange} />);
