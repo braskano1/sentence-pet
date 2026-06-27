@@ -83,6 +83,7 @@ export function DevPanel() {
   const hatch = useGameStore((s) => s.hatch);
   const { signIn, signOut } = useAuth();
   const bundle = useContentStore((s) => s.bundle);
+  const startBoss = useGameStore((s) => s.startBoss);
 
   // First few real (non-checkpoint) lesson ids, marked cleared in the loadout.
   const clearedLessonIds = orderedUnits(bundle)
@@ -92,6 +93,27 @@ export function DevPanel() {
   const applyLoadout = () => useGameStore.setState(devTestLoadout({ clearedLessonIds }));
   const viewAsTest = () =>
     void viewAsTestAccount({ signIn, seed: applyLoadout }).catch((e) => console.error('[dev] test account:', e));
+
+  // Every checkpoint (boss) in journey order.
+  const checkpoints = orderedUnits(bundle).flatMap((u) =>
+    u.lessons.filter((l) => l.isCheckpoint).map((l) => ({ unit: u, lesson: l })),
+  );
+
+  // Unlock the journey right up to `targetId` and jump into that boss's prep.
+  // Clears every unit's non-checkpoint lessons (opens each checkpoint) and every
+  // checkpoint BEFORE the target (unlocks later units), leaving the target itself
+  // uncleared so it plays as a fresh fight.
+  function unlockTo(targetId: string) {
+    const targetIdx = checkpoints.findIndex((c) => c.lesson.id === targetId);
+    const stars: Record<string, number> = {};
+    checkpoints.forEach(({ unit }, i) => {
+      for (const l of unit.lessons) if (!l.isCheckpoint) stars[l.id] = 3;
+      if (i < targetIdx) stars[checkpoints[i].lesson.id] = 3;
+    });
+    if (!useGameStore.getState().pets.some((p) => p.hatched)) applyLoadout();
+    useGameStore.setState((s) => ({ journey: { ...s.journey, lessonStars: stars } }));
+    startBoss(targetId);
+  }
 
   if (!open) {
     return (
@@ -160,6 +182,24 @@ export function DevPanel() {
         <button type="button" className={btn} onClick={applyLoadout}>🎒 loadout</button>
         <button type="button" className={btn} onClick={viewAsTest}>🧪 test acct</button>
       </div>
+
+      {checkpoints.length > 0 && (
+        <>
+          <div className="mb-1 text-fuchsia-300">JOURNEY → BOSS</div>
+          <div className="mb-2 grid grid-cols-1 gap-1">
+            {checkpoints.map(({ unit, lesson }) => (
+              <button
+                key={lesson.id}
+                type="button"
+                className={btn}
+                onClick={() => unlockTo(lesson.id)}
+              >
+                ⚔️ {unit.title}: {lesson.boss?.name ?? lesson.id}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {!pet.hatched && (
         <div className="grid grid-cols-3 gap-1">
