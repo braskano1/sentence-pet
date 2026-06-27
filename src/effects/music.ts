@@ -86,6 +86,10 @@ export function __createMusicWithFactory(
 ): Music {
   let current: { zone: Zone; el: HTMLAudioElement; url: string } | null = null;
   let fadeTimer: ReturnType<typeof setInterval> | null = null;
+  // The element the in-flight fade is fading OUT. It is torn down when the fade
+  // completes; tracked here so an interrupted fade can still tear it down (else
+  // an interrupted loop keeps playing in the background — e.g. title under overworld).
+  let fadingOut: HTMLAudioElement | null = null;
   let stinger: HTMLAudioElement | null = null;
   let preview: HTMLAudioElement | null = null;
   // True while a preview has paused the zone loop, so we know to resume it.
@@ -102,6 +106,12 @@ export function __createMusicWithFactory(
     if (fadeTimer !== null) {
       clearInterval(fadeTimer);
       fadeTimer = null;
+      // The fade was cut short before its completion teardown ran: stop the loop
+      // it was fading out so it can't keep looping behind the new one.
+      if (fadingOut) {
+        teardown(fadingOut);
+        fadingOut = null;
+      }
     }
   }
 
@@ -144,6 +154,7 @@ export function __createMusicWithFactory(
     outgoing: HTMLAudioElement | null,
   ): void {
     clearFade();
+    fadingOut = outgoing; // tracked so an interrupted fade can still tear this down
     const fromIn = incoming ? incoming.volume : 0;
     const fromOut = outgoing ? outgoing.volume : 0;
     const steps = Math.max(1, Math.round(CROSSFADE_MS / TICK_MS));
@@ -154,8 +165,12 @@ export function __createMusicWithFactory(
       if (incoming) incoming.volume = clampLevel(fromIn + (incomingTarget - fromIn) * t);
       if (outgoing) outgoing.volume = clampLevel(fromOut + (0 - fromOut) * t);
       if (t >= 1) {
-        clearFade();
+        if (fadeTimer !== null) {
+          clearInterval(fadeTimer);
+          fadeTimer = null;
+        }
         if (outgoing) teardown(outgoing);
+        fadingOut = null;
       }
     }, TICK_MS);
   }
