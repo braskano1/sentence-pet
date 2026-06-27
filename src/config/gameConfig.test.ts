@@ -56,4 +56,8 @@ describe('battle.timer (P2)', () => {
     expect(GAME_CONFIG.battle.timer.wrongLurchFrac).toBeGreaterThan(0);
     expect(GAME_CONFIG.battle.timer.wrongLurchFrac).toBeLessThan(1);
   });
+  it('swipe window is shorter than the charge cycle', () => {
+    expect(GAME_CONFIG.battle.timer.swipeWindowMs)
+      .toBeLessThan(GAME_CONFIG.battle.timer.chargeMs);
+  });
 });
