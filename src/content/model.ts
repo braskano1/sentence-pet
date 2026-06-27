@@ -1,4 +1,12 @@
-import type { DrillItem, DrillType } from '../data/types';
+import type { DrillItem, DrillType, Species, PetStage } from '../data/types';
+
+/** Per-checkpoint boss: a rival pet (reused sprite) parameterised by tier + element. */
+export interface CheckpointBoss {
+  tierId: string;            // references a BossTier (src/domain/bossTiers.ts)
+  element: Species;          // boss element for the matchup wheel
+  name: string;              // display name
+  rivalSprite: { species: Species; stage: Exclude<PetStage, 'egg'> }; // pet art reused as the boss
+}
 
 /** One node on the journey: references explicit pool item ids.
  *  isCheckpoint marks the unit's final node (the future B-3 boss seam). */
@@ -9,6 +17,7 @@ export interface Lesson {
   itemIds: string[];
   isCheckpoint?: boolean;
   title?: string;
+  boss?: CheckpointBoss;
 }
 
 /** A themed cluster of lessons. Cleared checkpoint unlocks the next unit. */
