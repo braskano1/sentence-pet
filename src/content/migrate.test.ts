@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bundleToDefaultCourse, DEFAULT_COURSE_ID } from './migrate';
 import type { ContentBundle } from './model';
+import { isDragDrop } from '../data/types';
 
 const legacy: ContentBundle = {
   pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
@@ -30,5 +31,19 @@ describe('bundleToDefaultCourse', () => {
     expect(twice.units[0].l1Enabled).toBe(false);
     expect(twice.units[0].lessons[0].kind).toBe('dragdrop');
     expect(twice.id).toBe(DEFAULT_COURSE_ID);
+  });
+});
+
+describe('migrate stamps kind', () => {
+  it('legacy items without kind become dragdrop', () => {
+    const legacy = {
+      pool: { d1: { id: 'd1', drill: 'pattern', level: 1, thaiHint: 'แมว', slots: ['Pronoun'], answer: ['I'] } },
+      units: [{ id: 'u1', title: 'U', emoji: '📘', order: 0, lessons: [
+        { id: 'l1', drill: 'pattern', level: 1, itemIds: ['d1'], isCheckpoint: true },
+      ] }],
+    } as never;
+    const course = bundleToDefaultCourse(legacy);
+    expect(isDragDrop(course.pool.d1)).toBe(true);
+    expect(course.pool.d1.kind).toBe('dragdrop');
   });
 });
