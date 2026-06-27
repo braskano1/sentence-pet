@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { gradeFillBlank, hintAt } from '../domain/fillblank';
 import { computeStars } from '../domain/scoring';
+import { showL1 } from '../content/l1';
 import { L1Toggle } from './L1Toggle';
 import type { FillBlankItem } from '../data/types';
 
@@ -10,10 +11,11 @@ import type { FillBlankItem } from '../data/types';
  * `answer ∪ alternates`. Wrong → escalating hint (L1 → first-letter → length-dots → reveal),
  * NO auto-advance: the learner must type a correct answer to move on. Wrong attempts count as
  * mistakes feeding computeStars. The L1 toggle (gated by unit.l1Enabled) is the per-unit helper
- * control; the hint ladder is its own scaffold and surfaces item.l1 directly as its first step.
+ * control; the hint ladder's first rung is the Thai helper ONLY when the L1 gate (showL1) permits.
  */
 export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit: { l1Enabled?: boolean } }) {
   const finishRound = useGameStore((s) => s.finishRound);
+  const l1Mode = useGameStore((s) => s.l1Mode);
   const [index, setIndex] = useState(0);
   const [value, setValue] = useState('');
   const [wrongCount, setWrongCount] = useState(0);
@@ -23,6 +25,7 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
   if (items.length === 0) return null;
 
   const item = items[index];
+  const l1 = showL1(unit, l1Mode, item.l1);
   const [a, b] = item.template.split('___');
 
   function submit() {
@@ -41,7 +44,7 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
       setWrongCount(0);
       setHint(null);
     } else {
-      setHint(hintAt(item, wrongCount));
+      setHint(hintAt(item, wrongCount, l1));
       setWrongCount((w) => w + 1);
     }
   }

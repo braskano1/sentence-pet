@@ -13,14 +13,26 @@ describe('FillBlankScreen', () => {
     useGameStore.getState().resetForTest();
   });
 
-  it('shows an escalating hint on a wrong answer (no auto-advance)', () => {
+  it('hides Thai when L1 is off: first wrong hint is the first-letter rung', () => {
     render(<FillBlankScreen items={items} unit={{ l1Enabled: false }} />);
     fireEvent.change(screen.getByLabelText('answer'), { target: { value: 'drink' } });
     fireEvent.click(screen.getByRole('button', { name: /check/i }));
 
-    // First wrong attempt → first ladder step (the L1 helper).
-    expect(screen.getByText('กิน')).toBeInTheDocument();
+    // L1 gate closed (l1Enabled: false) → first ladder step is first-letter, NOT Thai.
+    expect(screen.getByText('e…')).toBeInTheDocument();
+    expect(screen.queryByText('กิน')).not.toBeInTheDocument();
     // Still on the practice screen — no advance to reward.
+    expect(useGameStore.getState().screen).toBe('egg');
+  });
+
+  it('shows Thai as first hint when L1 enabled and mode === TH', () => {
+    useGameStore.getState().setL1Mode('TH'); // default is 'TH', but be explicit
+    render(<FillBlankScreen items={items} unit={{ l1Enabled: true }} />);
+    fireEvent.change(screen.getByLabelText('answer'), { target: { value: 'drink' } });
+    fireEvent.click(screen.getByRole('button', { name: /check/i }));
+
+    // L1 gate open → first ladder step is the Thai helper.
+    expect(screen.getByText('กิน')).toBeInTheDocument();
     expect(useGameStore.getState().screen).toBe('egg');
   });
 
