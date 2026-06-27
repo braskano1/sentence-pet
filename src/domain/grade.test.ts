@@ -2,55 +2,28 @@ import { describe, it, expect } from 'vitest';
 import { gradePlacement, slotResults } from './grade';
 import type { DrillItem } from '../data/types';
 
-// minimal grammar item: 'he eats', with an agreement trap 'eat' on the verb slot
-const flagItem: Pick<DrillItem, 'answer' | 'traps' | 'strictness'> = {
+// grammar item: 'he eats', with an agreement trap 'eat' on the verb slot
+const grammarItem: Pick<DrillItem, 'answer' | 'traps'> = {
   answer: ['he', 'eats'],
   traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
-  strictness: 'flag',
 };
-const enforceItem = { ...flagItem, strictness: 'enforce' as const };
 const patternItem: Pick<DrillItem, 'answer'> = { answer: ['I', 'run'] };
 
 describe('gradePlacement', () => {
-  it('exact answer -> ideal, passes, no flags', () => {
-    expect(gradePlacement(['he', 'eats'], flagItem)).toEqual({
-      status: 'ideal', passes: true, flags: [],
-    });
+  it('exact answer -> ideal, passes', () => {
+    expect(gradePlacement(['he', 'eats'], grammarItem)).toEqual({ status: 'ideal', passes: true });
   });
 
-  it('near-miss in flag mode -> flagged, passes, carries the tip', () => {
-    expect(gradePlacement(['he', 'eat'], flagItem)).toEqual({
-      status: 'flagged', passes: true, flags: ['เขา → he eats 👍'],
-    });
-  });
-
-  it('near-miss in enforce mode -> flagged, does NOT pass', () => {
-    expect(gradePlacement(['he', 'eat'], enforceItem)).toEqual({
-      status: 'flagged', passes: false, flags: ['เขา → he eats 👍'],
-    });
+  it('a registered near-miss trap -> wrong, does NOT pass', () => {
+    expect(gradePlacement(['he', 'eat'], grammarItem)).toEqual({ status: 'wrong', passes: false });
   });
 
   it('an unregistered wrong word -> wrong, does not pass', () => {
-    expect(gradePlacement(['he', 'table'], flagItem)).toEqual({
-      status: 'wrong', passes: false, flags: [],
-    });
+    expect(gradePlacement(['he', 'table'], grammarItem)).toEqual({ status: 'wrong', passes: false });
   });
 
   it('a null (unfilled) slot -> wrong, does not pass', () => {
-    expect(gradePlacement(['he', null], flagItem)).toEqual({
-      status: 'wrong', passes: false, flags: [],
-    });
-  });
-
-  it('wrong takes precedence over a flagged slot', () => {
-    const item = {
-      answer: ['he', 'eats'],
-      traps: [{ slot: 1, word: 'eat', tip: 't' }],
-      strictness: 'flag' as const,
-    };
-    // slot 0 wrong ('she'), slot 1 flagged ('eat') -> overall wrong
-    expect(gradePlacement(['she', 'eat'], item).status).toBe('wrong');
-    expect(gradePlacement(['she', 'eat'], item).passes).toBe(false);
+    expect(gradePlacement(['he', null], grammarItem)).toEqual({ status: 'wrong', passes: false });
   });
 
   it('trap-less item (Pattern/WC) -> only ideal or wrong', () => {
@@ -58,32 +31,12 @@ describe('gradePlacement', () => {
     expect(gradePlacement(['run', 'I'], patternItem).status).toBe('wrong');
   });
 
-  it('placed longer than answer -> wrong (no silent ideal)', () => {
-    const g = gradePlacement(['he', 'eats', 'extra'], flagItem);
-    expect(g).toEqual({ status: 'wrong', passes: false, flags: [] });
+  it('placed longer than answer -> wrong', () => {
+    expect(gradePlacement(['he', 'eats', 'extra'], grammarItem)).toEqual({ status: 'wrong', passes: false });
   });
 
   it('placed shorter than answer -> wrong', () => {
-    const g = gradePlacement(['he'], flagItem);
-    expect(g).toEqual({ status: 'wrong', passes: false, flags: [] });
-  });
-
-  it('Mixed item (enforce, S+V+O): exact passes, trap flagged-no-pass, distractor wrong', () => {
-    const mixedItem: Pick<DrillItem, 'answer' | 'traps' | 'strictness'> = {
-      answer: ['I', 'eat', 'rice'],
-      traps: [{ slot: 1, word: 'eats', tip: 'ฉัน → I eat 👍' }],
-      strictness: 'enforce',
-    };
-    // exact -> ideal, passes
-    expect(gradePlacement(['I', 'eat', 'rice'], mixedItem)).toEqual({
-      status: 'ideal', passes: true, flags: [],
-    });
-    // agreement trap in its slot -> flagged but enforce blocks the pass
-    expect(gradePlacement(['I', 'eats', 'rice'], mixedItem)).toEqual({
-      status: 'flagged', passes: false, flags: ['ฉัน → I eat 👍'],
-    });
-    // distractor placed in the object slot -> wrong
-    expect(gradePlacement(['I', 'eat', 'bread'], mixedItem).status).toBe('wrong');
+    expect(gradePlacement(['he'], grammarItem)).toEqual({ status: 'wrong', passes: false });
   });
 });
 
@@ -91,16 +44,12 @@ describe('slotResults', () => {
   const item = {
     answer: ['She', 'feeds', 'the cat'],
     traps: [{ slot: 1, word: 'feed', tip: 'feeds (he/she) takes -s' }],
-    strictness: undefined as 'flag' | 'enforce' | undefined,
   };
   it('marks exact matches ok and others wrong', () => {
     expect(slotResults(['She', 'eats', 'the cat'], item)).toEqual(['ok', 'wrong', 'ok']);
   });
-  it('treats an accepted near-miss trap (non-enforce) as ok', () => {
-    expect(slotResults(['She', 'feed', 'the cat'], item)).toEqual(['ok', 'ok', 'ok']);
-  });
-  it('treats a trap under enforce as wrong', () => {
-    expect(slotResults(['She', 'feed', 'the cat'], { ...item, strictness: 'enforce' })).toEqual(['ok', 'wrong', 'ok']);
+  it('marks a near-miss trap slot wrong (no longer accepted)', () => {
+    expect(slotResults(['She', 'feed', 'the cat'], item)).toEqual(['ok', 'wrong', 'ok']);
   });
   it('marks an unfilled slot wrong', () => {
     expect(slotResults(['She', null, 'the cat'], item)).toEqual(['ok', 'wrong', 'ok']);

@@ -69,24 +69,6 @@ describe('useRoundFeedback', () => {
     expect(onDone).not.toHaveBeenCalled();
   });
 
-  it('flag: fires confetti (soft accept), does not buzz, clears after hold', () => {
-    const onDone = vi.fn();
-    const { result } = renderHook(() => useRoundFeedback());
-
-    act(() => result.current.play('flag', onDone));
-    expect(result.current.feedback).toBe('flag');
-    expect(result.current.locked).toBe(true);
-    expect(fireConfetti).toHaveBeenCalledTimes(1);
-    expect(buzz).not.toHaveBeenCalled();
-
-    act(() => {
-      vi.advanceTimersByTime(1400);
-    });
-    expect(onDone).toHaveBeenCalledTimes(1);
-    expect(result.current.feedback).toBeNull();
-    expect(result.current.locked).toBe(false);
-  });
-
   it('plays the correct SFX on a correct round', () => {
     playSfxMock.mockClear();
     const { result } = renderHook(() => useRoundFeedback());

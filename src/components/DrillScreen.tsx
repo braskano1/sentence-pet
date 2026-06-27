@@ -20,9 +20,11 @@ import { DrillPet, type PetReaction } from './drill/DrillPet';
 import { WhyTip } from './drill/WhyTip';
 import { HintButton } from './drill/HintButton';
 import { SubmitBar } from './drill/SubmitBar';
+import { PressButton } from './PressButton';
 
 export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill: DrillType; level: number }) {
   const finishRound = useGameStore((s) => s.finishRound);
+  const setScreen = useGameStore((s) => s.setScreen);
   const pet = useGameStore(selectActivePet);
 
   const [index, setIndex] = useState(0);
@@ -34,6 +36,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   const [why, setWhy] = useState<string | null>(null);
   const [reaction, setReaction] = useState<PetReaction>('idle');
   const [activeWord, setActiveWord] = useState<string | null>(null);
+  const [confirmExit, setConfirmExit] = useState(false);
   const { feedback, play, locked } = useRoundFeedback();
   const { play: playAudio } = useAudio(); // `play` is taken by useRoundFeedback
   const speak = useSpeech();
@@ -110,8 +113,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
     }
     speak.speakSentence(item.answer.join(' '));
     setReaction('correct');
-    const kind = action.flags.length ? 'flag' : 'correct';
-    play(kind, () => applyAction(action, filled));
+    play('correct', () => applyAction(action, filled));
   }
 
   function applyAction(action: RoundAction, filled: (string | null)[]) {
@@ -120,8 +122,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
         finishRound({ drill, level, stars: action.stars, correctCount: items.length });
         break;
       case 'advance':
-        setStreak((s) => (action.flags.length ? 0 : s + 1));
-        if (action.flags.length) setMistakes((m) => m + 1);
+        setStreak((s) => s + 1);
         setIndex(action.nextIndex);
         loadItem(action.nextIndex);
         break;
@@ -170,7 +171,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
-        <DrillHeader streak={streak} index={index} total={items.length} />
+        <DrillHeader streak={streak} index={index} total={items.length} onExit={() => setConfirmExit(true)} />
 
         <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} />
 
@@ -188,7 +189,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
 
         <div
           className={`relative flex flex-1 flex-col items-center justify-center gap-3 rounded-xl ${
-            feedback === 'correct' || feedback === 'flag' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
+            feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
           }`}
         >
           <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
@@ -197,7 +198,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
             <div
               aria-hidden
               className={`pop-check pointer-events-none absolute text-6xl font-bold ${
-                feedback === 'wrong' ? 'text-rose-500' : feedback === 'flag' ? 'text-sky-500' : 'text-emerald-500'
+                feedback === 'wrong' ? 'text-rose-500' : 'text-emerald-500'
               }`}
             >
               {feedback === 'wrong' ? '✗' : '✓'}
@@ -210,6 +211,34 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>
+
+        {confirmExit && (
+          <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-6">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Leave drill?"
+              className="w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-xl"
+            >
+              <p className="text-base font-extrabold text-slate-800">Leave drill?</p>
+              <p className="mt-1 text-sm text-slate-500">Your progress won't be saved.</p>
+              <div className="mt-4 flex gap-2">
+                <PressButton
+                  onClick={() => setConfirmExit(false)}
+                  className="min-h-11 flex-1 rounded-xl bg-slate-100 px-3 py-2 text-sm font-extrabold text-slate-700"
+                >
+                  Stay
+                </PressButton>
+                <PressButton
+                  onClick={() => setScreen('pickDrill')}
+                  className="min-h-11 flex-1 rounded-xl bg-rose-500 px-3 py-2 text-sm font-extrabold text-white"
+                >
+                  Leave
+                </PressButton>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <DragOverlay>
         {activeWord ? (

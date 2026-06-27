@@ -1,58 +1,35 @@
 import type { DrillItem } from '../data/types';
 
-export type GradeStatus = 'ideal' | 'flagged' | 'wrong';
+export type GradeStatus = 'ideal' | 'wrong';
 
 export interface Grade {
   status: GradeStatus;
-  passes: boolean;   // may the round advance/finish on this placement?
-  flags: string[];   // tip strings for flagged near-miss tiles, in slot order
+  passes: boolean; // may the round advance/finish on this placement?
 }
 
-type GradeItem = Pick<DrillItem, 'answer' | 'traps' | 'strictness'>;
+type GradeItem = Pick<DrillItem, 'answer' | 'traps'>;
 
 /**
  * Grades a fully- or partially-placed sentence against an item.
- * - Exact match in every slot -> 'ideal'.
- * - Every off slot is a registered near-miss trap -> 'flagged'
- *   (passes only when strictness !== 'enforce').
- * - Any off slot that is not a trap (including an unfilled null) -> 'wrong'.
+ * - Exact match in every slot -> 'ideal' (passes).
+ * - Anything else (a registered near-miss trap, an unknown word, or an
+ *   unfilled null) -> 'wrong' (does not pass). Near-miss traps no longer
+ *   pass; their teaching tip is surfaced on retry by round.ts.
  */
 export function gradePlacement(placed: (string | null)[], item: GradeItem): Grade {
-  const { answer, traps, strictness } = item;
+  const { answer } = item;
   if (placed.length !== answer.length) {
-    return { status: 'wrong', passes: false, flags: [] };
+    return { status: 'wrong', passes: false };
   }
-  const flags: string[] = [];
-  let wrong = false;
-
   for (let i = 0; i < answer.length; i++) {
-    const word = placed[i];
-    if (word === answer[i]) continue;
-    const trap = traps?.find((t) => t.slot === i && t.word === word);
-    if (trap) {
-      flags.push(trap.tip);
-    } else {
-      wrong = true;
-    }
+    if (placed[i] !== answer[i]) return { status: 'wrong', passes: false };
   }
-
-  if (wrong) return { status: 'wrong', passes: false, flags: [] };
-  if (flags.length > 0) {
-    return { status: 'flagged', passes: strictness !== 'enforce', flags };
-  }
-  return { status: 'ideal', passes: true, flags: [] };
+  return { status: 'ideal', passes: true };
 }
 
 export type SlotResult = 'ok' | 'wrong';
 
-/** Per-slot correctness for partial retry. An accepted near-miss (trap, non-enforce) counts ok. */
+/** Per-slot correctness for partial retry. Only an exact match is ok. */
 export function slotResults(placed: (string | null)[], item: GradeItem): SlotResult[] {
-  const { answer, traps, strictness } = item;
-  return answer.map((ans, i) => {
-    const word = placed[i];
-    if (word === ans) return 'ok';
-    const trap = traps?.find((t) => t.slot === i && t.word === word);
-    if (trap && strictness !== 'enforce') return 'ok';
-    return 'wrong';
-  });
+  return item.answer.map((ans, i) => (placed[i] === ans ? 'ok' : 'wrong'));
 }

@@ -3,11 +3,11 @@ import { gradePlacement, slotResults } from './grade';
 import { computeStars } from './scoring';
 
 export type RoundAction =
-  | { type: 'finish'; stars: number; flags: string[] }
-  | { type: 'advance'; nextIndex: number; flags: string[] }
+  | { type: 'finish'; stars: number }
+  | { type: 'advance'; nextIndex: number }
   | { type: 'retry'; wrongSlots: number[]; tip: string | null };
 
-type RoundItem = Pick<DrillItem, 'answer' | 'traps' | 'strictness'>;
+type RoundItem = Pick<DrillItem, 'answer' | 'traps'>;
 
 function firstTrapTip(item: RoundItem, filled: (string | null)[], wrongSlots: number[]): string | null {
   for (const i of wrongSlots) {
@@ -34,9 +34,8 @@ export function resolveRound(params: {
     return { type: 'retry', wrongSlots, tip: firstTrapTip(item, filled, wrongSlots) };
   }
 
-  const slips = mistakes + (grade.status === 'flagged' ? 1 : 0);
   if (index === total - 1) {
-    return { type: 'finish', stars: computeStars({ hints: 0, mistakes: slips }), flags: grade.flags };
+    return { type: 'finish', stars: computeStars({ hints: 0, mistakes }) };
   }
-  return { type: 'advance', nextIndex: index + 1, flags: grade.flags };
+  return { type: 'advance', nextIndex: index + 1 };
 }

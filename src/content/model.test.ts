@@ -65,7 +65,7 @@ describe('trayWords', () => {
     answer: ['he', 'eats'], distractors: ['eat', 'eating'],
   };
   const withTraps: DrillItem = {
-    id: 'z', drill: 'grammar', level: 1, strictness: 'flag', thaiHint: 'z',
+    id: 'z', drill: 'grammar', level: 1, thaiHint: 'z',
     slots: ['Pronoun', 'Verb'], answer: ['she', 'walks'],
     distractors: ['running'],
     traps: [{ slot: 1, word: 'walk', tip: 'tip' }],
