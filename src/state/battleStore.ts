@@ -8,7 +8,9 @@ import {
 } from '../domain/battleSession';
 import {
   computeHit, rollCrit, rollDodge, chargeFraction, lurchedFraction,
+  buildSpellChallenge, type SpellChallenge,
 } from '../domain/battle';
+import type { DrillItem } from '../data/types';
 import { GAME_CONFIG } from '../config/gameConfig';
 
 /** A one-shot event the UI animates (bolt, crit, dodge, etc.). */
@@ -18,7 +20,8 @@ export type BattleEvent =
   | { kind: 'dodge' }
   | { kind: 'miss' }
   | { kind: 'bossCharge' }
-  | { kind: 'chargedHit'; dmg: number };
+  | { kind: 'chargedHit'; dmg: number }
+  | { kind: 'spellBreak'; dmg: number };
 
 interface BattleState {
   snapshot: BattleSnapshot | null;
@@ -29,20 +32,27 @@ interface BattleState {
   lastEvent: BattleEvent | null;
   rng: () => number;
   charge: number;                     // 0..1 ring fill for the current item
-  battlePhase: 'answering' | 'charged';
+  battlePhase: 'answering' | 'charged' | 'spell';
   phaseIndex: number;
   bossPhases: number;
-  begin: (pet: PetInstance, boss: CheckpointBoss, rng?: () => number) => void;
+  spellItems: DrillItem[];
+  spell: SpellChallenge | null;
+  begin: (pet: PetInstance, boss: CheckpointBoss, rng?: () => number, items?: DrillItem[]) => void;
   onCorrect: () => void;
   onWrong: () => void;
   reset: () => void;
   tickCharge: (dtMs: number) => void;
   resolveSwipe: (success: boolean) => void;
+  resolveSpell: (wordIndex: number) => void;
 }
 
 const COUNTER_EVERY = 2; // P1 turn-based cadence (mirrors GAME_CONFIG.battle.bossCounterEveryNItems)
 const TIMER = GAME_CONFIG.battle.timer;
 const RAMP = GAME_CONFIG.battle.phaseRamp;
+
+/** Boss attack scaled by current phase (DRY helper used in onWrong, resolveSwipe, resolveSpell). */
+const rampedBossAtk = (bossAtk: number, phaseIndex: number) =>
+  bossAtk * Math.pow(RAMP.atkMult, phaseIndex);
 
 export const useBattleStore = create<BattleState>((set) => ({
   snapshot: null,
@@ -56,8 +66,10 @@ export const useBattleStore = create<BattleState>((set) => ({
   battlePhase: 'answering',
   phaseIndex: 0,
   bossPhases: 1,
+  spellItems: [],
+  spell: null,
 
-  begin: (pet, boss, rng = Math.random) => {
+  begin: (pet, boss, rng = Math.random, items = []) => {
     const tier = findTier(boss.tierId);
     if (!tier) return;
     const ds = displayStats(pet);
@@ -73,6 +85,8 @@ export const useBattleStore = create<BattleState>((set) => ({
       battlePhase: 'answering',
       phaseIndex: 0,
       bossPhases: tier.phases,
+      spellItems: items.filter((i) => (i.traps?.length ?? 0) > 0),
+      spell: null,
     });
   },
 
@@ -101,7 +115,19 @@ export const useBattleStore = create<BattleState>((set) => ({
       const ratio = snapshot.bossHp / snapshot.bossHpMax;
       const newPhase = phaseFromHp(ratio, phaseThresholds(s.bossPhases));
       if (newPhase <= s.phaseIndex) return base;
-      return { ...base, phaseIndex: newPhase };
+      // A big crit can jump phaseIndex by >1 (only possible on a 3-phase boss);
+      // the spell opens at the highest crossed phase. Acceptable for current content.
+      const pool = s.spellItems;
+      const challenge =
+        pool.length > 0
+          ? buildSpellChallenge(pool[Math.floor(s.rng() * pool.length) % pool.length], s.rng)
+          : null;
+      return {
+        ...base,
+        phaseIndex: newPhase,
+        battlePhase: challenge ? ('spell' as const) : ('answering' as const),
+        spell: challenge,
+      };
     }),
 
   onWrong: () =>
@@ -118,7 +144,7 @@ export const useBattleStore = create<BattleState>((set) => ({
         return { itemsAnswered: items, charge, lastEvent: { kind: 'dodge' } };
       }
       const dmg = computeHit({
-        atkStat: s.bossStats!.atk * Math.pow(RAMP.atkMult, s.phaseIndex),
+        atkStat: rampedBossAtk(s.bossStats!.atk, s.phaseIndex),
         defStat: ds.def,
         attackerSpecies: s.boss.element,
         defenderSpecies: s.pet.species,
@@ -153,7 +179,7 @@ export const useBattleStore = create<BattleState>((set) => ({
         return { charge: 0, battlePhase: 'answering', lastEvent: { kind: 'dodge' } };
       }
       const dmg = computeHit({
-        atkStat: s.bossStats!.atk * Math.pow(RAMP.atkMult, s.phaseIndex),
+        atkStat: rampedBossAtk(s.bossStats!.atk, s.phaseIndex),
         defStat: ds.def,
         attackerSpecies: s.boss.element,
         defenderSpecies: s.pet.species,
@@ -164,6 +190,43 @@ export const useBattleStore = create<BattleState>((set) => ({
         charge: 0,
         battlePhase: 'answering',
         lastEvent: { kind: 'chargedHit', dmg },
+      };
+    }),
+
+  resolveSpell: (wordIndex) =>
+    set((s) => {
+      if (!s.snapshot || !s.pet || !s.boss || s.battlePhase !== 'spell' || !s.spell) return s;
+      const ds = displayStats(s.pet);
+      if (wordIndex === s.spell.wrongIndex) {
+        const base = computeHit({
+          atkStat: ds.atk,
+          defStat: s.bossStats!.def,
+          attackerSpecies: s.pet.species,
+          defenderSpecies: s.boss.element,
+          crit: false,
+        });
+        const dmg = Math.round(base * RAMP.spellBreakMult);
+        return {
+          snapshot: applyPlayerHit(s.snapshot, dmg),
+          charge: 0,
+          battlePhase: 'answering' as const,
+          spell: null,
+          lastEvent: { kind: 'spellBreak' as const, dmg },
+        };
+      }
+      const dmg = computeHit({
+        atkStat: rampedBossAtk(s.bossStats!.atk, s.phaseIndex),
+        defStat: ds.def,
+        attackerSpecies: s.boss.element,
+        defenderSpecies: s.pet.species,
+        crit: false,
+      });
+      return {
+        snapshot: applyBossHit(s.snapshot, dmg),
+        charge: 0,
+        battlePhase: 'answering' as const,
+        spell: null,
+        lastEvent: { kind: 'bossHit' as const, dmg },
       };
     }),
 
@@ -179,5 +242,7 @@ export const useBattleStore = create<BattleState>((set) => ({
     battlePhase: 'answering',
     phaseIndex: 0,
     bossPhases: 1,
+    spellItems: [],
+    spell: null,
   }),
 }));

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useBattleStore } from './battleStore';
 import { makePet } from '../domain/pets';
-import type { PetInstance } from '../data/types';
+import type { PetInstance, DrillItem } from '../data/types';
 import type { CheckpointBoss } from '../content/model';
 import { BOSS_TIERS } from '../domain/bossTiers';
 import { GAME_CONFIG } from '../config/gameConfig';
@@ -222,5 +222,100 @@ describe('multi-phase ramp', () => {
     const s = useBattleStore.getState();
     expect(s.snapshot!.outcome).toBe('win');
     expect(s.phaseIndex).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P3 spot-the-error spell sub-mode tests
+// ---------------------------------------------------------------------------
+
+const SPELL_ITEM: DrillItem = {
+  id: 'gr-spell', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
+  slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
+  traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
+};
+
+describe('spot-the-error spell', () => {
+  beforeEach(() => useBattleStore.getState().reset());
+
+  const PHASE_BOSS: CheckpointBoss = {
+    tierId: 'tier-3', element: 'fire', name: 'Phase Rival',
+    rivalSprite: { species: 'fire', stage: 'young' },
+  };
+
+  function driveToCross() {
+    const bigPet: PetInstance = { ...PET, stats: { ...PET.stats, atk: 100 } };
+    useBattleStore.getState().begin(bigPet, PHASE_BOSS, () => 0, [SPELL_ITEM]);
+    let guard = 0;
+    while (useBattleStore.getState().phaseIndex === 0 && guard++ < 100) {
+      if (useBattleStore.getState().battlePhase === 'spell') break;
+      useBattleStore.getState().onCorrect();
+    }
+  }
+
+  it('a phase cross opens the spell sub-mode with a built challenge', () => {
+    driveToCross();
+    const s = useBattleStore.getState();
+    expect(s.phaseIndex).toBe(1);
+    expect(s.battlePhase).toBe('spell');
+    expect(s.spell).not.toBeNull();
+    expect(s.spell!.wrongIndex).toBe(1);
+  });
+
+  it('tapping the wrong word breaks the spell → bonus boss damage, back to answering', () => {
+    driveToCross();
+    const before = useBattleStore.getState().snapshot!.bossHp;
+    useBattleStore.getState().resolveSpell(1); // correct = the trap slot
+    const s = useBattleStore.getState();
+    expect(s.snapshot!.bossHp).toBeLessThan(before);
+    expect(s.lastEvent?.kind).toBe('spellBreak');
+    expect(s.battlePhase).toBe('answering');
+    expect(s.spell).toBeNull();
+  });
+
+  it('a wrong tap lets the boss hit the pet', () => {
+    driveToCross();
+    const before = useBattleStore.getState().snapshot!.petHp;
+    useBattleStore.getState().resolveSpell(0); // wrong word
+    const s = useBattleStore.getState();
+    expect(s.snapshot!.petHp).toBeLessThan(before);
+    expect(s.lastEvent?.kind).toBe('bossHit');
+    expect(s.battlePhase).toBe('answering');
+  });
+
+  it('with no trap-bearing items the cross enrages but skips the spell', () => {
+    const bigPet: PetInstance = { ...PET, stats: { ...PET.stats, atk: 100 } };
+    useBattleStore.getState().begin(bigPet, PHASE_BOSS, () => 0.99, []);
+    let guard = 0;
+    while (useBattleStore.getState().phaseIndex === 0 && guard++ < 100) {
+      useBattleStore.getState().onCorrect();
+    }
+    const s = useBattleStore.getState();
+    expect(s.phaseIndex).toBe(1);
+    expect(s.battlePhase).toBe('answering');
+    expect(s.spell).toBeNull();
+  });
+});
+
+describe('boss atk ramp damage', () => {
+  beforeEach(() => useBattleStore.getState().reset());
+  const FIRE_BOSS: CheckpointBoss = {
+    tierId: 'tier-3', element: 'fire', name: 'R', rivalSprite: { species: 'fire', stage: 'young' },
+  };
+  it('phase-1 boss counter hits harder than phase-0', () => {
+    // phase 0 counter (every 2nd wrong)
+    useBattleStore.getState().begin(PET, FIRE_BOSS, () => 0.99);
+    const max = useBattleStore.getState().snapshot!.petHpMax;
+    useBattleStore.getState().onWrong();
+    useBattleStore.getState().onWrong(); // 2nd → boss hit
+    const dmg0 = max - useBattleStore.getState().snapshot!.petHp;
+    // phase 1 counter
+    useBattleStore.getState().begin(PET, FIRE_BOSS, () => 0.99);
+    useBattleStore.setState({ phaseIndex: 1 });
+    const max1 = useBattleStore.getState().snapshot!.petHpMax;
+    useBattleStore.getState().onWrong();
+    useBattleStore.getState().onWrong();
+    const dmg1 = max1 - useBattleStore.getState().snapshot!.petHp;
+    expect(dmg1).toBeGreaterThan(dmg0);
   });
 });
