@@ -5,5 +5,6 @@ export const db = getFirestore(firebaseApp);
 
 // Point at the local Firestore emulator when explicitly enabled.
 if (import.meta.env.VITE_USE_EMULATOR === 'true') {
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  const host = import.meta.env.VITE_EMULATOR_HOST ?? '127.0.0.1';
+  connectFirestoreEmulator(db, host, 8080);
 }
