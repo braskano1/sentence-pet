@@ -1,13 +1,33 @@
-/** Round status: streak chip + a node per item (done / current / pending). Cosmetic. */
-export function DrillHeader({ streak, index, total }: { streak: number; index: number; total: number }) {
+/** Round status: an exit (✕) + streak chip + a node per item (done / current / pending). Cosmetic. */
+export function DrillHeader({
+  streak,
+  index,
+  total,
+  onExit,
+}: {
+  streak: number;
+  index: number;
+  total: number;
+  onExit: () => void;
+}) {
   return (
     <div className="flex items-center justify-between">
-      <span
-        data-testid="streak"
-        className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-extrabold text-orange-700 ring-1 ring-inset ring-orange-200"
-      >
-        🔥 {streak}
-      </span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onExit}
+          aria-label="Leave drill"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-lg font-bold text-slate-500 shadow ring-1 ring-inset ring-slate-200"
+        >
+          ✕
+        </button>
+        <span
+          data-testid="streak"
+          className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-extrabold text-orange-700 ring-1 ring-inset ring-orange-200"
+        >
+          🔥 {streak}
+        </span>
+      </div>
       <div className="flex gap-1.5">
         {Array.from({ length: total }, (_, i) => (
           <span

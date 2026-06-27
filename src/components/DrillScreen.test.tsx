@@ -154,4 +154,22 @@ describe('DrillScreen', () => {
     // and the trap's teaching tip is shown
     expect(screen.getByTestId('why-tip')).toHaveTextContent('เขา → he eats 👍');
   });
+
+  it('exit ✕ opens a confirm; Stay keeps the drill mounted', () => {
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByRole('button', { name: /leave drill/i }));
+    expect(screen.getByText(/won't be saved/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /stay/i }));
+    expect(screen.queryByText(/won't be saved/i)).not.toBeInTheDocument();
+    expect(useGameStore.getState().screen).not.toBe('pickDrill');
+  });
+
+  it('exit ✕ -> Leave returns to the journey map without finishing the round', () => {
+    const finishSpy = vi.spyOn(useGameStore.getState(), 'finishRound');
+    render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
+    fireEvent.click(screen.getByRole('button', { name: /leave drill/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^leave$/i }));
+    expect(useGameStore.getState().screen).toBe('pickDrill');
+    expect(finishSpy).not.toHaveBeenCalled();
+  });
 });
