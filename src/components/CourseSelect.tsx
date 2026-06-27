@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { loadCoursesIndex } from '../content/load';
 import type { CourseIndexEntry } from '../content/course';
-import { isCourseLocked } from './courseLock';
+import { isCourseLocked } from '../domain/courseLock';
 
 /** First screen of the journey flow: pick a course, then enter its unit map. */
 export function CourseSelect() {
