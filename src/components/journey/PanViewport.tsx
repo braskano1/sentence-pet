@@ -4,8 +4,10 @@ import { PressButton } from '../PressButton';
 import { clampPan, centerOffset, isOffscreen } from './panMath';
 
 interface PanViewportProps {
-  /** The lesson id of the current node (the camera's home), or null. */
+  /** Id of the focal node to center on (and a re-center trigger when it changes), or null. */
   currentId: string | null;
+  /** Tailwind padding/classes for the inner pannable world. Defaults to the Journey trail's. */
+  contentClassName?: string;
   children: React.ReactNode;
 }
 
@@ -17,7 +19,7 @@ const SPRING = { type: 'spring' as const, stiffness: 260, damping: 30 };
  * with auto-centering on the current node, a recenter button, wheel-to-pan,
  * keyboard-focus centering, and an instant path under reduced motion.
  */
-export function PanViewport({ currentId, children }: PanViewportProps) {
+export function PanViewport({ currentId, contentClassName = 'px-4 pb-10 pt-2', children }: PanViewportProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const y = useMotionValue(0);
@@ -127,7 +129,7 @@ export function PanViewport({ currentId, children }: PanViewportProps) {
         dragMomentum={!reduce}
         onDragEnd={refreshRecenter}
         onFocusCapture={onFocusCapture}
-        className="px-4 pb-10 pt-2"
+        className={contentClassName}
       >
         {children}
       </motion.div>
