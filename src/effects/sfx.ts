@@ -7,7 +7,8 @@ export type SfxName =
   | 'tap' | 'nav'
   | 'drop' | 'correct' | 'wrong'
   | 'coin' | 'purchase' | 'pull' | 'reveal' | 'feed'
-  | 'coo';
+  | 'coo'
+  | 'hit' | 'crit' | 'dodge' | 'bossCharge' | 'bossHit' | 'enrage' | 'fizzle';
 
 export interface Sfx {
   /** Play a one-shot at the given effective gain (0..1). gain<=0 is a no-op. */
@@ -87,6 +88,13 @@ function createWebAudioSfx(): Sfx {
     reveal:   (c, v) => [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) => ping(hz, 'triangle', c.currentTime + i * 0.08, 0.4, 0.16 * v)),
     feed:     (c, v) => ping(300, 'sine', c.currentTime, 0.12, 0.14 * v, 160),
     coo:      (c, v) => ping(440, 'sine', c.currentTime, 0.22, 0.08 * v, 560),
+    hit:        (c, v) => { ping(440, 'square', c.currentTime, 0.1, 0.14 * v, 220); noise(0.08, 0.06 * v, 1200, 400); },
+    crit:       (c, v) => { ping(660, 'square', c.currentTime, 0.14, 0.18 * v, 990); ping(990, 'square', c.currentTime + 0.06, 0.12, 0.16 * v); },
+    dodge:      (_c, v) => noise(0.22, 0.08 * v, 300, 3000),
+    bossCharge: (c, v) => ping(160, 'sawtooth', c.currentTime, 0.6, 0.1 * v, 520),
+    bossHit:    (c, v) => { ping(140, 'sawtooth', c.currentTime, 0.22, 0.16 * v, 70); noise(0.12, 0.08 * v, 800, 200); },
+    enrage:     (c, v) => { ping(110, 'sawtooth', c.currentTime, 0.5, 0.18 * v, 440); ping(220, 'square', c.currentTime + 0.08, 0.4, 0.12 * v, 660); },
+    fizzle:     (c, v) => { ping(300, 'sawtooth', c.currentTime, 0.3, 0.1 * v, 120); noise(0.18, 0.05 * v, 2000, 300); },
   };
 
   return {

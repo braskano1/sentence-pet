@@ -5,6 +5,7 @@
 // no production store API is added for dev tooling.
 import { useState } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
+import { useBattleStore } from '../state/battleStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
 import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
@@ -83,6 +84,26 @@ export function DevPanel() {
   const hatch = useGameStore((s) => s.hatch);
   const { signIn, signOut } = useAuth();
   const bundle = useContentStore((s) => s.bundle);
+  const startBoss = useGameStore((s) => s.startBoss);
+
+  // Live battle state (for testing the P3 multi-phase + spell flow).
+  const battlePhase = useBattleStore((s) => s.battlePhase);
+  const phaseIndex = useBattleStore((s) => s.phaseIndex);
+  const bossPhases = useBattleStore((s) => s.bossPhases);
+  const spellItemCount = useBattleStore((s) => s.spellItems.length);
+  const bSnapshot = useBattleStore((s) => s.snapshot);
+
+  // Drop boss HP just above the next phase threshold, then land a correct hit
+  // so the real onCorrect cross path fires (enrage + spell). No console needed.
+  function forceCross() {
+    const bs = useBattleStore.getState();
+    if (!bs.snapshot) return;
+    const thresholds = bossPhases > 1 ? Array.from({ length: bossPhases - 1 }, (_, i) => (bossPhases - 1 - i) / bossPhases) : [];
+    const next = thresholds.find((t) => bs.snapshot!.bossHp / bs.snapshot!.bossHpMax > t);
+    if (next === undefined) return;
+    useBattleStore.setState({ snapshot: { ...bs.snapshot, bossHp: Math.floor(bs.snapshot.bossHpMax * next) + 1 } });
+    useBattleStore.getState().onCorrect();
+  }
 
   // First few real (non-checkpoint) lesson ids, marked cleared in the loadout.
   const clearedLessonIds = orderedUnits(bundle)
@@ -92,6 +113,27 @@ export function DevPanel() {
   const applyLoadout = () => useGameStore.setState(devTestLoadout({ clearedLessonIds }));
   const viewAsTest = () =>
     void viewAsTestAccount({ signIn, seed: applyLoadout }).catch((e) => console.error('[dev] test account:', e));
+
+  // Every checkpoint (boss) in journey order.
+  const checkpoints = orderedUnits(bundle).flatMap((u) =>
+    u.lessons.filter((l) => l.isCheckpoint).map((l) => ({ unit: u, lesson: l })),
+  );
+
+  // Unlock the journey right up to `targetId` and jump into that boss's prep.
+  // Clears every unit's non-checkpoint lessons (opens each checkpoint) and every
+  // checkpoint BEFORE the target (unlocks later units), leaving the target itself
+  // uncleared so it plays as a fresh fight.
+  function unlockTo(targetId: string) {
+    const targetIdx = checkpoints.findIndex((c) => c.lesson.id === targetId);
+    const stars: Record<string, number> = {};
+    checkpoints.forEach(({ unit }, i) => {
+      for (const l of unit.lessons) if (!l.isCheckpoint) stars[l.id] = 3;
+      if (i < targetIdx) stars[checkpoints[i].lesson.id] = 3;
+    });
+    if (!useGameStore.getState().pets.some((p) => p.hatched)) applyLoadout();
+    useGameStore.setState((s) => ({ journey: { ...s.journey, lessonStars: stars } }));
+    startBoss(targetId);
+  }
 
   if (!open) {
     return (
@@ -160,6 +202,37 @@ export function DevPanel() {
         <button type="button" className={btn} onClick={applyLoadout}>🎒 loadout</button>
         <button type="button" className={btn} onClick={viewAsTest}>🧪 test acct</button>
       </div>
+
+      {checkpoints.length > 0 && (
+        <>
+          <div className="mb-1 text-fuchsia-300">JOURNEY → BOSS</div>
+          <div className="mb-2 grid grid-cols-1 gap-1">
+            {checkpoints.map(({ unit, lesson }) => (
+              <button
+                key={lesson.id}
+                type="button"
+                className={btn}
+                onClick={() => unlockTo(lesson.id)}
+              >
+                ⚔️ {unit.title}: {lesson.boss?.name ?? lesson.id}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {bSnapshot && (
+        <>
+          <div className="mb-1 text-fuchsia-300">BATTLE</div>
+          <div className="mb-1 leading-5">
+            <div>phase <b>{phaseIndex + 1}/{bossPhases}</b> · mode <b>{battlePhase}</b></div>
+            <div>bossHP <b>{bSnapshot.bossHp}</b>/{bSnapshot.bossHpMax} · spellItems <b>{spellItemCount}</b></div>
+          </div>
+          <div className="mb-2 grid grid-cols-1 gap-1">
+            <button type="button" className={btn} onClick={forceCross}>⚡ force next phase cross</button>
+          </div>
+        </>
+      )}
 
       {!pet.hatched && (
         <div className="grid grid-cols-3 gap-1">

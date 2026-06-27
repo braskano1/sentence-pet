@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   ELEMENT_BEATS, elementMultiplier, maxHpFromStat, mitigatedBase,
   critChance, computeHit, dodgeChance, rollDodge, firstStrike,
-  chargeFraction, lurchedFraction,
+  chargeFraction, lurchedFraction, buildSpellChallenge,
 } from './battle';
+import type { DrillItem } from '../data/types';
 
 describe('elements', () => {
   it('forms the 4-cycle fire>air>leaf>water>fire', () => {
@@ -81,4 +82,27 @@ describe('P2 charge timer', () => {
     expect(lurchedFraction(0.9, 0.3)).toBe(1);
   });
 
+});
+
+const trapItem: DrillItem = {
+  id: 'gr-x', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
+  slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
+  traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
+};
+const noTrapItem: DrillItem = {
+  id: 'p-x', drill: 'pattern', level: 1, thaiHint: 'x',
+  slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
+};
+
+describe('buildSpellChallenge', () => {
+  it('injects the trap word at its slot and marks that index wrong', () => {
+    const c = buildSpellChallenge(trapItem, () => 0);
+    expect(c).not.toBeNull();
+    expect(c!.words).toEqual(['he', 'eat']); // slot 1 replaced by the trap word
+    expect(c!.wrongIndex).toBe(1);
+    expect(c!.tip).toBe('เขา → he eats 👍');
+  });
+  it('returns null when the item has no traps', () => {
+    expect(buildSpellChallenge(noTrapItem, () => 0)).toBeNull();
+  });
 });

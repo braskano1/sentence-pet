@@ -23,3 +23,12 @@ describe('sfx provider seam', () => {
     expect(names.length).toBe(11);
   });
 });
+
+describe('battle sfx recipes', () => {
+  it('plays every battle one-shot without throwing (silent in jsdom)', () => {
+    const sfx = getSfx();
+    for (const name of ['hit', 'crit', 'dodge', 'bossCharge', 'bossHit', 'enrage', 'fizzle'] as const) {
+      expect(() => sfx.play(name, 0.5)).not.toThrow();
+    }
+  });
+});

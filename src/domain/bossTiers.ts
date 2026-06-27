@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../config/gameConfig';
+
 /** A reusable boss template the admin picks from. `phases` is reserved for P3
  *  (P1 treats every boss as single-phase). `hpStatEquivalent` is the hp-stat the
  *  recommended-power comparison uses (so it is comparable to a pet's petPower). */
@@ -29,4 +31,26 @@ export function findTier(id: string): BossTier | undefined {
 /** Recommended pet power to face this tier — comparable to petPower(pet). */
 export function recommendedPower(tier: BossTier): number {
   return tier.hpStatEquivalent + tier.atk + tier.def + tier.spd;
+}
+
+/** Evenly-spaced HP-fraction thresholds for an N-phase boss, descending.
+ *  1 → [] · 2 → [0.5] · 3 → [2/3, 1/3]. */
+export function phaseThresholds(phases: number): number[] {
+  const out: number[] = [];
+  for (let i = phases - 1; i >= 1; i--) out.push(i / phases);
+  return out;
+}
+
+/** Current phase index from the boss HP ratio: how many thresholds it has passed
+ *  (ratio at or below the threshold counts as crossed). */
+export function phaseFromHp(hpRatio: number, thresholds: number[]): number {
+  return thresholds.filter((t) => hpRatio <= t).length;
+}
+
+/** Sprite scale within the reserved (largest-phase) box. Final phase = 1.0;
+ *  earlier phases interpolate up from spriteScaleMin. Single-phase → 1.0. */
+export function phaseScale(phaseIndex: number, phases: number): number {
+  if (phases <= 1) return 1;
+  const min = GAME_CONFIG.battle.phaseRamp.spriteScaleMin;
+  return min + (1 - min) * (phaseIndex / (phases - 1));
 }

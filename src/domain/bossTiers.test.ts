@@ -1,21 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { BOSS_TIERS, findTier, recommendedPower } from './bossTiers';
+import { phaseThresholds, phaseScale, phaseFromHp } from './bossTiers';
 
-describe('boss tiers', () => {
-  it('ships a 5-rung ladder, ordered weakest → strongest by hpPool', () => {
-    expect(BOSS_TIERS).toHaveLength(5);
-    const hps = BOSS_TIERS.map((t) => t.hpPool);
-    expect([...hps].sort((a, b) => a - b)).toEqual(hps);
+describe('phaseThresholds', () => {
+  it('1 phase has no thresholds', () => {
+    expect(phaseThresholds(1)).toEqual([]);
   });
-  it('every tier has a unique id', () => {
-    expect(new Set(BOSS_TIERS.map((t) => t.id)).size).toBe(5);
+  it('2 phases cross at 50%', () => {
+    expect(phaseThresholds(2)).toEqual([0.5]);
   });
-  it('findTier resolves by id, undefined when unknown', () => {
-    expect(findTier(BOSS_TIERS[0].id)?.id).toBe(BOSS_TIERS[0].id);
-    expect(findTier('nope')).toBeUndefined();
+  it('3 phases cross at 2/3 and 1/3, descending', () => {
+    const t = phaseThresholds(3);
+    expect(t).toHaveLength(2);
+    expect(t[0]).toBeCloseTo(2 / 3, 5);
+    expect(t[1]).toBeCloseTo(1 / 3, 5);
   });
-  it('recommendedPower sums the tier combat stats', () => {
-    const t = BOSS_TIERS[0];
-    expect(recommendedPower(t)).toBe(t.hpStatEquivalent + t.atk + t.def + t.spd);
+});
+
+describe('phaseFromHp', () => {
+  const t2 = phaseThresholds(2); // [0.5]
+  it('full hp is phase 0', () => expect(phaseFromHp(1, t2)).toBe(0));
+  it('just above threshold is phase 0', () => expect(phaseFromHp(0.51, t2)).toBe(0));
+  it('at threshold is phase 1', () => expect(phaseFromHp(0.5, t2)).toBe(1));
+  it('below threshold is phase 1', () => expect(phaseFromHp(0.2, t2)).toBe(1));
+  it('3-phase boss at 0.3 hp is phase 2', () =>
+    expect(phaseFromHp(0.3, phaseThresholds(3))).toBe(2));
+});
+
+describe('phaseScale', () => {
+  it('single phase is full scale', () => expect(phaseScale(0, 1)).toBe(1));
+  it('final phase fills the box', () => {
+    expect(phaseScale(1, 2)).toBe(1);
+    expect(phaseScale(2, 3)).toBe(1);
+  });
+  it('earlier phases are smaller, bounded by spriteScaleMin (0.7)', () => {
+    expect(phaseScale(0, 2)).toBeCloseTo(0.7, 5);
+    expect(phaseScale(0, 3)).toBeCloseTo(0.7, 5);
+    expect(phaseScale(1, 3)).toBeCloseTo(0.85, 5);
   });
 });

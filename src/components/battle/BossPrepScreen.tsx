@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { useBattleStore } from '../../state/battleStore';
 import { useContentStore } from '../../content/store';
-import { findLesson } from '../../content/model';
+import { findLesson, itemsForLesson } from '../../content/model';
 import { findTier, recommendedPower } from '../../domain/bossTiers';
 import { petPower, petDisplayName, ELEMENT_EMOJI, petStageSprite } from '../../config/petDisplay';
 import { PressButton } from '../PressButton';
@@ -14,7 +14,9 @@ export function BossPrepScreen() {
   const bundle = useContentStore((s) => s.bundle);
   const begin = useBattleStore((s) => s.begin);
 
-  const boss = lessonId ? findLesson(bundle, lessonId)?.lesson.boss : undefined;
+  const lessonObj = lessonId ? findLesson(bundle, lessonId)?.lesson : undefined;
+  const boss = lessonObj?.boss;
+  const items = lessonObj ? itemsForLesson(bundle, lessonObj) : [];
   const tier = boss ? findTier(boss.tierId) : undefined;
   const hatched = useMemo(() => pets.filter((p) => p.hatched), [pets]);
   const [picked, setPicked] = useState(hatched[0]?.id ?? '');
@@ -48,7 +50,7 @@ export function BossPrepScreen() {
       <div className="mt-auto flex gap-2">
         <PressButton onClick={() => setScreen('pickDrill')}
           className="min-h-12 flex-1 rounded-xl bg-slate-200 font-bold text-slate-700">Back</PressButton>
-        <PressButton onClick={() => { begin(pet, boss); setScreen('battle'); }}
+        <PressButton onClick={() => { begin(pet, boss, undefined, items); setScreen('battle'); }}
           className="min-h-12 flex-[2] rounded-xl bg-indigo-600 font-extrabold text-white">Fight! ⚔️</PressButton>
       </div>
     </div>

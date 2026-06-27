@@ -305,8 +305,36 @@ export const SEED: ContentBundle = {
       lessons: [
         { id: "u2-pattern", drill: "pattern", level: 2, itemIds: ["l2-1", "l2-2", "l2-3", "l2-4", "l2-5"] },
         { id: "u2-grammar", drill: "grammar", level: 2, itemIds: ["gr-l2-1", "gr-l2-2", "gr-l2-3", "gr-l2-4", "gr-l2-5"] },
-        { id: "u2-checkpoint", drill: "mixed", level: 1, isCheckpoint: true, itemIds: ["mx-l1-1", "mx-l1-2", "mx-l1-3", "mx-l1-4", "mx-l1-5"] }
+        {
+          id: "u2-checkpoint", drill: "mixed", level: 1, isCheckpoint: true,
+          itemIds: ["mx-l1-1", "mx-l1-2", "mx-l1-3", "mx-l1-4", "mx-l1-5"],
+          boss: {
+            tierId: 'tier-2',
+            element: 'water',
+            name: 'Tidal Rival',
+            rivalSprite: { species: 'water', stage: 'young' },
+          },
+        }
       ]
+    },
+    {
+      id: "u3-challenge",
+      title: "Challenge",
+      emoji: "🔥",
+      order: 3,
+      lessons: [
+        { id: "u3-grammar", drill: "grammar", level: 1, itemIds: ["gr-l1-1", "gr-l1-2", "gr-l1-3", "gr-l1-4", "gr-l1-5"] },
+        {
+          id: "u3-checkpoint", drill: "mixed", level: 1, isCheckpoint: true,
+          itemIds: ["gr-l1-1", "gr-l1-2", "gr-l1-3", "mx-l1-1", "mx-l1-2"],
+          boss: {
+            tierId: 'tier-3',
+            element: 'leaf',
+            name: 'Thornlord',
+            rivalSprite: { species: 'leaf', stage: 'adult' },
+          },
+        },
+      ],
     }
   ]
 };
