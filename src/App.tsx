@@ -17,14 +17,23 @@ import { BossPrepScreen } from './components/battle/BossPrepScreen';
 import { BattleScreen } from './components/battle/BattleScreen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { useUiStore } from './state/uiStore';
-import type { DrillItem, DrillType, ContentKind } from './data/types';
-import { isDragDrop } from './data/types';
+import type { ContentItem, DrillType, ContentKind } from './data/types';
+import { isDragDrop, isFlashcard } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
 import { CourseSelect } from './components/CourseSelect';
 import { ComingSoon } from './components/ComingSoon';
+import { FlashcardScreen } from './components/FlashcardScreen';
 
-export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillType, level: number, items: DrillItem[], kind: ContentKind) {
+export function screenKeyAndNode(
+  screen: string,
+  hatched: boolean,
+  drill: DrillType,
+  level: number,
+  items: ContentItem[],
+  kind: ContentKind,
+  unit: { l1Enabled?: boolean } = {},
+) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
     case 'pickCourse': return { key: 'pickCourse', node: <CourseSelect /> };
@@ -34,7 +43,8 @@ export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillT
       // Boss lessons route via startBoss → bossPrep/battle, never the drill screen.
       // Guard defensively so a boss-kind node never renders the ComingSoon placeholder.
       if (kind === 'boss') return { key: 'pickDrill', node: <JourneyMap /> };
-      if (kind === 'dragdrop') return { key: 'drill', node: <DrillScreen items={items} drill={drill} level={level} /> };
+      if (kind === 'dragdrop') return { key: 'drill', node: <DrillScreen items={items.filter(isDragDrop)} drill={drill} level={level} /> };
+      if (kind === 'flashcard') return { key: 'flashcard', node: <FlashcardScreen items={items.filter(isFlashcard)} unit={unit} /> };
       return { key: 'comingSoon', node: <ComingSoon kind={kind} /> };
     }
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
@@ -71,6 +81,7 @@ export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
       return null; // no overworld loop on level-cleared; the sting plays instead
     case 'pickCourse':
     case 'comingSoon':
+    case 'flashcard':
     case 'pickDrill':
     case 'petRoom':
     case 'shop':
@@ -89,16 +100,17 @@ function CurrentScreen() {
   const level = useGameStore((s) => s.selectedLevel);
   const bundle = useContentStore((s) => s.bundle);
   const currentLessonId = useGameStore((s) => s.currentLessonId);
-  const lesson = currentLessonId ? findLesson(bundle, currentLessonId)?.lesson : undefined;
+  const found = currentLessonId ? findLesson(bundle, currentLessonId) : undefined;
+  const lesson = found?.lesson;
+  // The active unit gates the L1 (TH/ENG) helper; free-practice has no unit, so {}.
+  const unit = useMemo(() => ({ l1Enabled: found?.unit.l1Enabled }), [found]);
   const items = useMemo(
     () => (lesson ? itemsForLesson(bundle, lesson) : itemsForDrill(bundle, drill, level)),
     [bundle, lesson, drill, level],
   );
   const kind: ContentKind = lesson?.kind ?? 'dragdrop';
-  // The drill screen seam is dragdrop-only today; non-dragdrop kinds route to ComingSoon
-  // via `kind` (per-kind screens land in later tasks). Narrow the widened pool here.
-  const dragItems = useMemo(() => items.filter(isDragDrop), [items]);
-  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, dragItems, kind);
+  // Pass the full widened pool; each kind branch narrows it (dragdrop/flashcard/...).
+  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items, kind, unit);
 
   const { setZone } = useAudio();
   const zone = zoneForScreen(key, !!lesson?.isCheckpoint);

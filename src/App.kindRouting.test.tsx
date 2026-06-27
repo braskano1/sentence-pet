@@ -13,9 +13,12 @@ describe('kind-routed lesson rendering', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, items, 'dragdrop');
     expect(key).toBe('drill');
   });
-  it('renders ComingSoon for a not-yet-built kind', () => {
-    const { key } = screenKeyAndNode('drill', true, 'pattern', 1, items, 'flashcard');
-    expect(key).toBe('comingSoon');
+  it('renders the FlashcardScreen for a flashcard lesson', () => {
+    const flashItems = [
+      { id: 'fc', kind: 'flashcard' as const, level: 1, front: 'cat', back: 'แมว' },
+    ];
+    const { key } = screenKeyAndNode('drill', true, 'pattern', 1, flashItems, 'flashcard');
+    expect(key).toBe('flashcard');
   });
   it('routes a boss-kind lesson back to the map, not ComingSoon', () => {
     const { key } = screenKeyAndNode('drill', true, 'pattern', 1, items, 'boss');
