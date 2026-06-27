@@ -6,14 +6,19 @@ import { displayStats } from '../config/petDisplay';
 import {
   initBattle, applyPlayerHit, applyBossHit, type BattleSnapshot,
 } from '../domain/battleSession';
-import { computeHit, rollCrit, rollDodge } from '../domain/battle';
+import {
+  computeHit, rollCrit, rollDodge, chargeFraction, lurchedFraction,
+} from '../domain/battle';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 /** A one-shot event the UI animates (bolt, crit, dodge, etc.). */
 export type BattleEvent =
   | { kind: 'playerHit'; dmg: number; crit: boolean }
   | { kind: 'bossHit'; dmg: number }
   | { kind: 'dodge' }
-  | { kind: 'miss' };
+  | { kind: 'miss' }
+  | { kind: 'bossCharge' }
+  | { kind: 'chargedHit'; dmg: number };
 
 interface BattleState {
   snapshot: BattleSnapshot | null;
@@ -23,13 +28,18 @@ interface BattleState {
   itemsAnswered: number;
   lastEvent: BattleEvent | null;
   rng: () => number;
+  charge: number;                     // 0..1 ring fill for the current item
+  battlePhase: 'answering' | 'charged';
   begin: (pet: PetInstance, boss: CheckpointBoss, rng?: () => number) => void;
   onCorrect: () => void;
   onWrong: () => void;
   reset: () => void;
+  tickCharge: (dtMs: number) => void;
+  resolveSwipe: (success: boolean) => void;
 }
 
 const COUNTER_EVERY = 2; // P1 turn-based cadence (mirrors GAME_CONFIG.battle.bossCounterEveryNItems)
+const TIMER = GAME_CONFIG.battle.timer;
 
 export const useBattleStore = create<BattleState>((set) => ({
   snapshot: null,
@@ -39,6 +49,8 @@ export const useBattleStore = create<BattleState>((set) => ({
   itemsAnswered: 0,
   lastEvent: null,
   rng: Math.random,
+  charge: 0,
+  battlePhase: 'answering',
 
   begin: (pet, boss, rng = Math.random) => {
     const tier = findTier(boss.tierId);
@@ -52,12 +64,15 @@ export const useBattleStore = create<BattleState>((set) => ({
       itemsAnswered: 0,
       lastEvent: null,
       rng,
+      charge: 0,
+      battlePhase: 'answering',
     });
   },
 
   onCorrect: () =>
     set((s) => {
       if (!s.snapshot || !s.pet || !s.boss) return s;
+      if (s.battlePhase === 'charged') return s; // charged attack must resolve via resolveSwipe first
       const ds = displayStats(s.pet);
       const crit = rollCrit(ds.luk, s.rng);
       const dmg = computeHit({
@@ -71,19 +86,23 @@ export const useBattleStore = create<BattleState>((set) => ({
         snapshot: applyPlayerHit(s.snapshot, dmg),
         itemsAnswered: s.itemsAnswered + 1,
         lastEvent: { kind: 'playerHit', dmg, crit },
+        charge: 0,
+        battlePhase: 'answering',
       };
     }),
 
   onWrong: () =>
     set((s) => {
       if (!s.snapshot || !s.pet || !s.boss) return s;
+      if (s.battlePhase === 'charged') return s; // charged attack must resolve via resolveSwipe first
+      const charge = lurchedFraction(s.charge, TIMER.wrongLurchFrac);
       const items = s.itemsAnswered + 1;
       if (items % COUNTER_EVERY !== 0) {
-        return { itemsAnswered: items, lastEvent: { kind: 'miss' } };
+        return { itemsAnswered: items, charge, lastEvent: { kind: 'miss' } };
       }
       const ds = displayStats(s.pet);
       if (rollDodge(ds.spd, s.bossStats!.spd, s.rng)) {
-        return { itemsAnswered: items, lastEvent: { kind: 'dodge' } };
+        return { itemsAnswered: items, charge, lastEvent: { kind: 'dodge' } };
       }
       const dmg = computeHit({
         atkStat: s.bossStats!.atk,
@@ -95,7 +114,42 @@ export const useBattleStore = create<BattleState>((set) => ({
       return {
         snapshot: applyBossHit(s.snapshot, dmg),
         itemsAnswered: items,
+        charge,
         lastEvent: { kind: 'bossHit', dmg },
+      };
+    }),
+
+  tickCharge: (dtMs) =>
+    set((s) => {
+      if (!s.snapshot || s.snapshot.outcome || s.battlePhase !== 'answering') return s;
+      const elapsed = s.charge * TIMER.chargeMs + dtMs;
+      const charge = chargeFraction(elapsed, TIMER.chargeMs);
+      if (charge >= 1) {
+        return { charge: 1, battlePhase: 'charged', lastEvent: { kind: 'bossCharge' } };
+      }
+      return { charge };
+    }),
+
+  resolveSwipe: (success) =>
+    set((s) => {
+      if (!s.snapshot || !s.pet || !s.boss || s.battlePhase !== 'charged') return s;
+      const ds = displayStats(s.pet);
+      const dodged = success || rollDodge(ds.spd, s.bossStats!.spd, s.rng);
+      if (dodged) {
+        return { charge: 0, battlePhase: 'answering', lastEvent: { kind: 'dodge' } };
+      }
+      const dmg = computeHit({
+        atkStat: s.bossStats!.atk,
+        defStat: ds.def,
+        attackerSpecies: s.boss.element,
+        defenderSpecies: s.pet.species,
+        crit: false,
+      });
+      return {
+        snapshot: applyBossHit(s.snapshot, dmg),
+        charge: 0,
+        battlePhase: 'answering',
+        lastEvent: { kind: 'chargedHit', dmg },
       };
     }),
 
@@ -107,5 +161,7 @@ export const useBattleStore = create<BattleState>((set) => ({
     itemsAnswered: 0,
     lastEvent: null,
     rng: Math.random,
+    charge: 0,
+    battlePhase: 'answering',
   }),
 }));

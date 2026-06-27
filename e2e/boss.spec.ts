@@ -23,6 +23,13 @@ type StoreState = {
   journey: { lessonStars: Record<string, number> };
   startBoss: (id: string) => void;
   finishBoss: (won: boolean) => void;
+  // battle store fields
+  charge: number;
+  battlePhase: 'answering' | 'charged';
+  begin: (pet: unknown, boss: unknown, rng?: () => number) => void;
+  tickCharge: (dtMs: number) => void;
+  resolveSwipe: (success: boolean) => void;
+  snapshot: { petHp: number; petHpMax: number; bossHp: number } | null;
 };
 
 async function waitForStore(page: Page) {
@@ -134,5 +141,74 @@ test.describe('boss battle', () => {
     // Continue leaves the reward screen without error.
     await page.getByRole('button', { name: /Continue/i }).click();
     await expect(page.getByText(/Level cleared/i)).toBeHidden();
+  });
+
+  test('C: charged attack fires at ring-full and a swipe dodges it (store-level)', async ({ page }) => {
+    await waitForStore(page);
+
+    // Enter the boss and seed a real battle via the prep → begin path the UI uses.
+    await page.evaluate((id) => {
+      (window as unknown as { store: { getState: () => StoreState } }).store.getState().startBoss(id);
+    }, BOSS_LESSON);
+
+    // Check battleStore is exposed; skip gracefully if not.
+    const hasBattleStore = await page.evaluate(() =>
+      typeof (window as unknown as { battleStore?: { getState: () => unknown } }).battleStore?.getState === 'function',
+    ).catch(() => false);
+    test.skip(!hasBattleStore, 'battleStore not exposed on window in this build');
+
+    // Wait for contentStore to be ready before reading the bundle.
+    await page.waitForFunction(
+      () => typeof (window as unknown as { contentStore?: { getState: () => unknown } }).contentStore?.getState === 'function',
+      null, { timeout: 10_000 },
+    );
+
+    // Establish a real battle: read the active pet from the game store and the boss
+    // from the content store (both exposed in DEV), then call battleStore.begin().
+    await page.evaluate((id) => {
+      const gs = (window as unknown as { store: { getState: () => StoreState } }).store.getState();
+      // Active (first hatched) pet — same selection logic as BossPrepScreen.
+      const pet = (gs.pets as Array<{ hatched: boolean }>).find((p) => p.hatched) ?? gs.pets[0];
+
+      // Boss from the content bundle — same lookup as BossPrepScreen.
+      const cs = (window as unknown as { contentStore: { getState: () => { bundle: { units: Array<{ lessons: Array<{ id: string; boss?: unknown }> }> } } } }).contentStore.getState();
+      let boss: unknown;
+      for (const unit of cs.bundle.units) {
+        const lesson = unit.lessons.find((l) => l.id === id);
+        if (lesson?.boss) { boss = lesson.boss; break; }
+      }
+      if (!boss) throw new Error(`No boss found for lesson ${id}`);
+
+      const bsStore = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore;
+      const bs = bsStore.getState();
+      bs.begin(pet, boss);
+      if (!bsStore.getState().snapshot) throw new Error('battleStore.begin() did not initialise a snapshot — check the seeded boss tierId is valid');
+    }, BOSS_LESSON);
+
+    // Drive the battle store directly: fill the ring, assert the charged phase opens.
+    // Re-read state after each mutation — Zustand set() is synchronous but the local
+    // reference captured before the call is stale; always use getState() for post-mutation reads.
+    const phase = await page.evaluate(() => {
+      const bsRef = (window as unknown as {
+        battleStore: { getState: () => StoreState };
+      }).battleStore;
+      bsRef.getState().tickCharge(99_999); // tick well past chargeMs to guarantee crossing into 'charged'
+      return bsRef.getState().battlePhase; // fresh read after the set()
+    });
+
+    expect(phase).toBe('charged');
+
+    // A successful swipe dodges: pet HP unchanged, phase re-arms to answering.
+    const after = await page.evaluate(() => {
+      const bsRef = (window as unknown as {
+        battleStore: { getState: () => StoreState };
+      }).battleStore;
+      const before = bsRef.getState().snapshot!.petHp; // read before swipe
+      bsRef.getState().resolveSwipe(true);
+      const s = bsRef.getState(); // fresh read after the set()
+      return { before, petHp: s.snapshot!.petHp, phase: s.battlePhase };
+    });
+    expect(after.petHp).toBe(after.before); // dodged → no damage
+    expect(after.phase).toBe('answering');
   });
 });

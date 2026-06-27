@@ -66,3 +66,13 @@ export function rollCrit(lukStat: number, rng: () => number): boolean {
 export function firstStrike(playerSpd: number, bossSpd: number): boolean {
   return playerSpd > bossSpd;
 }
+
+/** Charge ring fill fraction: elapsed/chargeMs, clamped to [0, 1]. */
+export function chargeFraction(elapsedMs: number, chargeMs: number): number {
+  return Math.min(1, Math.max(0, elapsedMs / chargeMs));
+}
+
+/** A wrong answer pushes the ring forward; never past full. */
+export function lurchedFraction(frac: number, lurch: number): number {
+  return Math.min(1, frac + lurch);
+}
