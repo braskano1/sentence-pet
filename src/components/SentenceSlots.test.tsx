@@ -44,4 +44,35 @@ describe('SentenceSlots', () => {
     );
     expect(screen.getByTestId('slot-1')).toHaveClass('bg-emerald-100');
   });
+
+  describe('hidePos', () => {
+    it('shows the POS label when hidePos is false', () => {
+      render(
+        <DndContext>
+          <SentenceSlots slots={['Pronoun']} placed={[null]} onClearSlot={() => {}} hidePos={false} />
+        </DndContext>,
+      );
+      expect(screen.getByText('Pronoun')).toBeInTheDocument();
+    });
+
+    it('hides the POS label when hidePos is true', () => {
+      render(
+        <DndContext>
+          <SentenceSlots slots={['Pronoun']} placed={[null]} onClearSlot={() => {}} hidePos />
+        </DndContext>,
+      );
+      expect(screen.queryByText('Pronoun')).toBeNull();
+    });
+
+    it('skips the POS color tint on a filled slot when hidePos is true', () => {
+      render(
+        <DndContext>
+          <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} hidePos />
+        </DndContext>,
+      );
+      const filled = screen.getByTestId('slot-1');
+      expect(filled).not.toHaveClass('bg-emerald-100');
+      expect(filled).toHaveClass('bg-white'); // neutral fallback
+    });
+  });
 });

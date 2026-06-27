@@ -192,7 +192,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
             feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
           }`}
         >
-          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} hidePos={item.hidePos} />
           {why && <WhyTip text={why} />}
           {feedback && (
             <div
