@@ -26,6 +26,7 @@ export function SettingsSheet({ onClose, onReplayIntro, onExitToMenu }: {
 }) {
   const { isAnonymous, user, signOut } = useAuth();
   const [saving, setSaving] = useState(false); // guest tapped "Save your progress"
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const audio = useGameStore((s) => s.audio);
   const setChannelLevel = useGameStore((s) => s.setChannelLevel);
   const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
@@ -49,7 +50,11 @@ export function SettingsSheet({ onClose, onReplayIntro, onExitToMenu }: {
         <section aria-label="Account" className="mb-6">
           {isAnonymous ? (
             saving ? (
-              <SignUpForm onDone={onClose} />
+              <SignUpForm
+                onDone={onClose}
+                title="Save your progress"
+                subtitle="Create an account to keep this pet and your coins."
+              />
             ) : (
               <div className="flex flex-col gap-3">
                 <p className="text-sm leading-snug text-slate-500">
@@ -71,18 +76,33 @@ export function SettingsSheet({ onClose, onReplayIntro, onExitToMenu }: {
               </div>
             )
           ) : (
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-[0.7rem] font-bold uppercase tracking-wide text-slate-400">Signed in</p>
-                <span className="block truncate text-sm font-semibold text-slate-700">{user?.email}</span>
+            <div>
+              <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-wide text-slate-400">Signed in</p>
+                  <span className="block truncate text-sm font-semibold text-slate-700">{user?.email}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSignOutError(null);
+                    try {
+                      await signOut();
+                      onExitToMenu?.();
+                    } catch {
+                      // Sign-out hit Firebase and failed (offline / timeout). Keep
+                      // the user signed in and tell them, rather than dead-button them.
+                      setSignOutError("Couldn't sign out. Check your connection and try again.");
+                    }
+                  }}
+                  className="shrink-0 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+                >
+                  Sign out
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={async () => { await signOut(); onExitToMenu?.(); }}
-                className="shrink-0 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
-              >
-                Sign out
-              </button>
+              {signOutError && (
+                <p role="alert" className="mt-2 text-sm font-medium text-red-600">{signOutError}</p>
+              )}
             </div>
           )}
 

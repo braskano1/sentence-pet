@@ -17,6 +17,18 @@ describe('SignUpForm', () => {
     await waitFor(() => expect(linkEmail).toHaveBeenCalledWith('k@s.th', 'pw123456'));
   });
 
+  it('defaults to the "New Game" heading', () => {
+    render(<SignUpForm onDone={() => {}} />);
+    expect(screen.getByRole('heading', { name: /new game/i })).toBeInTheDocument();
+  });
+
+  it('uses a custom title + subtitle when provided (save-progress flow)', () => {
+    render(<SignUpForm onDone={() => {}} title="Save your progress" subtitle="Keep this pet." />);
+    expect(screen.getByRole('heading', { name: /save your progress/i })).toBeInTheDocument();
+    expect(screen.getByText(/keep this pet/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /new game/i })).toBeNull();
+  });
+
   it('shows an error message when linking fails', async () => {
     linkEmail.mockRejectedValueOnce(new Error('email-already-in-use'));
     render(<SignUpForm onDone={() => {}} />);

@@ -4,8 +4,21 @@ import { useAuth } from '../../auth/useAuth';
 const fieldClass =
   'rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 outline-none transition-shadow focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
 
-/** New Game — links the anonymous user to an email account. Lives in the menu's reveal sheet. */
-export function SignUpForm({ onDone }: { onDone: () => void }) {
+/**
+ * Links the anonymous user to an email account. Used in two places with
+ * different framing: the menu's New Game flow (defaults) and the in-game
+ * "Save your progress" flow (which passes its own title/subtitle so a guest
+ * mid-game isn't told they're starting a "New Game").
+ */
+export function SignUpForm({
+  onDone,
+  title = 'New Game',
+  subtitle = 'Create an account to save your pets.',
+}: {
+  onDone: () => void;
+  title?: string;
+  subtitle?: string;
+}) {
   const { linkEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,8 +42,8 @@ export function SignUpForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      <h2 className="text-xl font-black text-slate-900">New Game</h2>
-      <p className="-mt-1 text-sm text-slate-500">Create an account to save your pets.</p>
+      <h2 className="text-xl font-black text-slate-900">{title}</h2>
+      <p className="-mt-1 text-sm text-slate-500">{subtitle}</p>
 
       <label className="flex flex-col gap-1 text-sm font-semibold text-slate-700">
         Email

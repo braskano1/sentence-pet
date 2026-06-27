@@ -74,6 +74,17 @@ describe('SettingsSheet — Account section', () => {
     expect(onExitToMenu).toHaveBeenCalled();
   });
 
+  it('a failed sign-out shows an error and does NOT exit to menu', async () => {
+    const signOut = vi.fn().mockRejectedValue(new Error('network'));
+    const onExitToMenu = vi.fn();
+    authValue = { isAnonymous: false, user: { email: 'k@s.th' }, signOut, linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={onExitToMenu} />);
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(signOut).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't sign out/i);
+    expect(onExitToMenu).not.toHaveBeenCalled();
+  });
+
   it('a guest sees Save your progress and Exit to menu (no email, no sign-out)', () => {
     authValue = { isAnonymous: true, user: null, signOut: vi.fn(), linkEmail: vi.fn() };
     render(<SettingsSheet onClose={() => {}} onExitToMenu={() => {}} />);
