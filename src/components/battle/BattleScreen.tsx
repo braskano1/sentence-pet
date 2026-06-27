@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor, TouchSensor, KeyboardSensor,
   closestCenter, useSensor, useSensors, type DragEndEvent, type DragStartEvent,
@@ -17,6 +17,7 @@ import { HpBar } from './HpBar';
 import { DamageNumber } from './DamageNumber';
 import { BossIntro } from './BossIntro';
 import { DodgeSwipe } from './DodgeSwipe';
+import { SpellOverlay } from './SpellOverlay';
 import { petStageSprite, petDisplayName } from '../../config/petDisplay';
 
 export function BattleScreen() {
@@ -36,6 +37,9 @@ export function BattleScreen() {
   const begin = useBattleStore((s) => s.begin);
   const battlePhase = useBattleStore((s) => s.battlePhase);
   const resolveSwipe = useBattleStore((s) => s.resolveSwipe);
+  const phaseIndex = useBattleStore((s) => s.phaseIndex);
+  const spell = useBattleStore((s) => s.spell);
+  const resolveSpell = useBattleStore((s) => s.resolveSpell);
 
   const [intro, setIntro] = useState(true);
   const [index, setIndex] = useState(0);
@@ -77,6 +81,16 @@ export function BattleScreen() {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [intro, snapshot?.outcome]);
+
+  const prevPhase = useRef(0);
+  const [enrageKey, setEnrageKey] = useState(0);
+  useEffect(() => {
+    if (phaseIndex > prevPhase.current) {
+      prevPhase.current = phaseIndex;
+      setEnrageKey((k) => k + 1);
+      // TODO(P3 Task 10): play 'enrage' sfx here
+    }
+  }, [phaseIndex]);
 
   if (!snapshot || !boss || !pet || items.length === 0) return null;
   if (intro) return <BossIntro boss={boss} onDone={() => setIntro(false)} />;
@@ -213,7 +227,7 @@ export function BattleScreen() {
               </PressButton>
               <PressButton
                 onClick={() => {
-                  begin(pet, boss);
+                  begin(pet, boss, undefined, items);
                   setIntro(false);
                   setIndex(0);
                   loadItem(0);
@@ -237,6 +251,17 @@ export function BattleScreen() {
 
       {battlePhase === 'charged' && (
         <DodgeSwipe onResolve={resolveSwipe} />
+      )}
+
+      {battlePhase === 'spell' && spell && (
+        <SpellOverlay challenge={spell} onResolve={resolveSpell} />
+      )}
+
+      {enrageKey > 0 && (
+        <div
+          key={enrageKey}
+          className="pointer-events-none fixed inset-0 z-30 animate-[pulse_0.4s_ease-out] bg-rose-600/30"
+        />
       )}
     </DndContext>
   );
