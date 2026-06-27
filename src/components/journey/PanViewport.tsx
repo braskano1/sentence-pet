@@ -123,9 +123,12 @@ export function PanViewport({ currentId, contentClassName = 'px-4 pb-10 pt-2', c
       <motion.div
         ref={worldRef}
         style={{ y }}
-        drag="y"
+        // Only draggable when the content overflows; firm bounds (no elastic
+        // over-drag) so content can't be pulled past its edges into the fixed
+        // header/footer.
+        drag={minY < 0 ? 'y' : false}
         dragConstraints={{ top: minY, bottom: 0 }}
-        dragElastic={0.15}
+        dragElastic={0}
         dragMomentum={!reduce}
         onDragEnd={refreshRecenter}
         onFocusCapture={onFocusCapture}
