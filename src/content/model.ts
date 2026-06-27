@@ -20,6 +20,7 @@ export interface Lesson {
   isCheckpoint?: boolean;
   title?: string;
   boss?: CheckpointBoss;
+  onClear?: 'completeCourse'; // set only on a synthetic final-boss lesson (see content/journey.ts)
 }
 
 /** A themed cluster of lessons. Cleared checkpoint unlocks the next unit. */
