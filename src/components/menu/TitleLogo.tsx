@@ -12,7 +12,7 @@ export function TitleLogo() {
 
   return (
     <motion.div
-      className="relative w-[min(82vw,28rem)] select-none"
+      className="relative w-[min(72vw,20rem)] select-none"
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.95 }}
       animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}

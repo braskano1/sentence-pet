@@ -6,6 +6,7 @@ import { useContentStore } from '../content/store';
 import { UnitSection } from './journey/UnitSection';
 import { PanViewport } from './journey/PanViewport';
 import { PressButton } from './PressButton';
+import { SettingsButton } from './SettingsButton';
 import { currentLessonId, unitDone } from './journey/journeyView';
 
 export function JourneyMap() {
@@ -55,6 +56,7 @@ export function JourneyMap() {
           <span className="text-slate-700">{totalStars}</span>
           <span className="sr-only">stars earned</span>
         </div>
+        <SettingsButton className="h-10 w-10 text-indigo-700" />
       </header>
 
       <PanViewport currentId={currentId}>

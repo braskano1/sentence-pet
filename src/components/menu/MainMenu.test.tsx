@@ -36,15 +36,16 @@ vi.mock('../../hooks/useAudio', () => ({ useAudio: () => ({ setZone }) }));
 
 import { MainMenu } from './MainMenu';
 
+const onPlayGuest = vi.fn();
 function openChoose() {
-  render(<MainMenu onSignedUp={() => {}} />);
+  render(<MainMenu onSignedUp={() => {}} onPlayGuest={onPlayGuest} />);
   fireEvent.click(screen.getByRole('button', { name: /tap to start/i }));
 }
 
 describe('MainMenu', () => {
   it("arms the title music zone on mount", () => {
     setZone.mockClear();
-    render(<MainMenu onSignedUp={() => {}} />);
+    render(<MainMenu onSignedUp={() => {}} onPlayGuest={() => {}} />);
     expect(setZone).toHaveBeenCalledWith('title');
   });
 
@@ -73,5 +74,12 @@ describe('MainMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: /new game/i }));
     fireEvent.click(screen.getByRole('button', { name: /back/i }));
     expect(screen.getByRole('button', { name: /new game/i })).toBeInTheDocument();
+  });
+
+  it('Play as guest fires onPlayGuest (enter the game without an account)', () => {
+    onPlayGuest.mockClear();
+    openChoose();
+    fireEvent.click(screen.getByRole('button', { name: /play as guest/i }));
+    expect(onPlayGuest).toHaveBeenCalled();
   });
 });

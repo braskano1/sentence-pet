@@ -15,7 +15,8 @@ import { Gacha } from './components/Gacha';
 import { Collection } from './components/Collection';
 import { BossPrepScreen } from './components/battle/BossPrepScreen';
 import { BattleScreen } from './components/battle/BattleScreen';
-import { AccountButton } from './components/account/AccountButton';
+import { SettingsSheet } from './components/SettingsSheet';
+import { useUiStore } from './state/uiStore';
 import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
@@ -107,12 +108,24 @@ function CurrentScreen() {
   );
 }
 
-export default function App({ onReplayIntro }: { onReplayIntro?: () => void } = {}) {
+export default function App({ onReplayIntro, onExitToMenu }: { onReplayIntro?: () => void; onExitToMenu?: () => void } = {}) {
+  // The Settings entry (gear) lives in each hub screen's own top-right cluster
+  // via <SettingsButton>, so it reads as a peer of that screen's chrome instead
+  // of a floating orphan. The sheet itself is rendered once here off the shared
+  // UI flag, which both the per-screen gears and this render read.
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   return (
     <MotionConfig reducedMotion="user">
       <AppShell>
-        <div className="px-3 pt-2"><AccountButton onReplayIntro={onReplayIntro} /></div>
         <CurrentScreen />
+        {settingsOpen && (
+          <SettingsSheet
+            onClose={() => setSettingsOpen(false)}
+            onReplayIntro={onReplayIntro}
+            onExitToMenu={onExitToMenu}
+          />
+        )}
       </AppShell>
     </MotionConfig>
   );

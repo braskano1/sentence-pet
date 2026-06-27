@@ -8,6 +8,18 @@ import { SettingsSheet } from './SettingsSheet';
 const { play } = vi.hoisted(() => ({ play: vi.fn() }));
 vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
 
+let authValue: {
+  isAnonymous: boolean;
+  user: { email: string | null } | null;
+  signOut: () => void;
+  linkEmail: (e: string, p: string) => Promise<void>;
+};
+vi.mock('../auth/useAuth', () => ({ useAuth: () => authValue }));
+
+beforeEach(() => {
+  authValue = { isAnonymous: false, user: { email: 'k@s.th' }, signOut: vi.fn(), linkEmail: vi.fn().mockResolvedValue(undefined) };
+});
+
 beforeEach(() => useGameStore.setState({ audio: defaultAudioSettings() }));
 
 describe('SettingsSheet', () => {
@@ -47,5 +59,60 @@ describe('SettingsSheet', () => {
     expect(screen.getByLabelText(/voice volume/i)).toBeDisabled();
     // Master's own slider greys too (via its own mute)
     expect(screen.getByLabelText(/master volume/i)).toBeDisabled();
+  });
+});
+
+describe('SettingsSheet — Account section', () => {
+  it('a real user sees their email and a sign-out that also exits to menu', async () => {
+    const signOut = vi.fn().mockResolvedValue(undefined);
+    const onExitToMenu = vi.fn();
+    authValue = { isAnonymous: false, user: { email: 'k@s.th' }, signOut, linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={onExitToMenu} />);
+    expect(screen.getByText(/k@s\.th/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(signOut).toHaveBeenCalled();
+    expect(onExitToMenu).toHaveBeenCalled();
+  });
+
+  it('a failed sign-out shows an error and does NOT exit to menu', async () => {
+    const signOut = vi.fn().mockRejectedValue(new Error('network'));
+    const onExitToMenu = vi.fn();
+    authValue = { isAnonymous: false, user: { email: 'k@s.th' }, signOut, linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={onExitToMenu} />);
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(signOut).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't sign out/i);
+    expect(onExitToMenu).not.toHaveBeenCalled();
+  });
+
+  it('a guest sees Save your progress and Exit to menu (no email, no sign-out)', () => {
+    authValue = { isAnonymous: true, user: null, signOut: vi.fn(), linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={() => {}} />);
+    expect(screen.getByRole('button', { name: /save your progress/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /exit to menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
+  });
+
+  it('guest Save your progress opens the sign-up form', () => {
+    authValue = { isAnonymous: true, user: null, signOut: vi.fn(), linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /save your progress/i }));
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create & play/i })).toBeInTheDocument();
+  });
+
+  it('guest Exit to menu calls onExitToMenu', () => {
+    const onExitToMenu = vi.fn();
+    authValue = { isAnonymous: true, user: null, signOut: vi.fn(), linkEmail: vi.fn() };
+    render(<SettingsSheet onClose={() => {}} onExitToMenu={onExitToMenu} />);
+    fireEvent.click(screen.getByRole('button', { name: /exit to menu/i }));
+    expect(onExitToMenu).toHaveBeenCalled();
+  });
+
+  it('Replay intro fires the callback', () => {
+    const onReplayIntro = vi.fn();
+    render(<SettingsSheet onClose={() => {}} onReplayIntro={onReplayIntro} onExitToMenu={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /replay intro/i }));
+    expect(onReplayIntro).toHaveBeenCalled();
   });
 });

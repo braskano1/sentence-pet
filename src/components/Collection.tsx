@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
+import { SettingsButton } from './SettingsButton';
 import { StatRadar } from './StatRadar';
 import { useCountUp } from '../effects/useCountUp';
 import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, displayStats, petDisplayName, petLevel, petPower, petSpecialty, petStageSprite } from '../config/petDisplay';
@@ -52,13 +53,16 @@ export function Collection() {
     <div className="flex h-full flex-col bg-amber-50">
       <div className="flex items-center justify-between border-b-2 border-amber-900/15 px-5 py-3">
         <h2 className="text-lg font-extrabold text-amber-950">My Pets ({pets.length})</h2>
-        <PressButton
-          onClick={() => setScreen('petRoom')}
-          aria-label="Back to room"
-          className="rounded-xl bg-amber-900/15 px-3 py-1.5 text-sm font-bold text-amber-950"
-        >
-          ← Room
-        </PressButton>
+        <div className="flex items-center gap-2">
+          <PressButton
+            onClick={() => setScreen('petRoom')}
+            aria-label="Back to room"
+            className="rounded-xl bg-amber-900/15 px-3 py-1.5 text-sm font-bold text-amber-950"
+          >
+            ← Room
+          </PressButton>
+          <SettingsButton className="bg-amber-900/10 ring-amber-900/15" />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5">

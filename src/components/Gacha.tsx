@@ -4,6 +4,7 @@ import { useGameStore } from '../state/gameStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
+import { SettingsButton } from './SettingsButton';
 import { EGG_SPRITE, SPRITES } from '../config/sprites';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 import { MAX_PET_NAME } from '../domain/petName';
@@ -44,7 +45,8 @@ export function Gacha() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 bg-indigo-50 p-6">
+    <div className="relative flex h-full flex-col items-center justify-center gap-6 bg-indigo-50 p-6">
+      <SettingsButton className="absolute right-4 top-4 text-indigo-700" />
       <h2 className="text-xl font-bold text-slate-700">Mystery Egg</h2>
       <span className="rounded-full bg-slate-800 px-3 py-1 text-sm font-bold text-amber-50 tabular-nums">
         🪙 {shownCoins}
