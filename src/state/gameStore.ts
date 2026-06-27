@@ -249,9 +249,9 @@ export const useGameStore = create<GameState>()(
               lastReward: { level: 1, stars: 0, food: 0, coins: 0, group: 'protein' as FoodGroup },
             };
           }
-          const lvl = findLesson(useContentStore.getState().bundle, lessonId)?.lesson.level ?? 1;
-          const clearedLesson = findLesson(useContentStore.getState().bundle, lessonId)?.lesson;
-          const completesCourse = clearedLesson?.onClear === 'completeCourse' && !!s.currentCourseId;
+          const cleared = findLesson(useContentStore.getState().bundle, lessonId)?.lesson;
+          const lvl = cleared?.level ?? 1;
+          const completesCourse = cleared?.onClear === 'completeCourse' && !!s.currentCourseId;
           const courseComplete = completesCourse
             ? { ...s.courseComplete, [s.currentCourseId as string]: true }
             : s.courseComplete;
