@@ -18,6 +18,7 @@ import { DamageNumber } from './DamageNumber';
 import { BossIntro } from './BossIntro';
 import { DodgeSwipe } from './DodgeSwipe';
 import { SpellOverlay } from './SpellOverlay';
+import { getSfx } from '../../effects/sfx';
 import { petStageSprite, petDisplayName } from '../../config/petDisplay';
 
 export function BattleScreen() {
@@ -88,9 +89,25 @@ export function BattleScreen() {
     if (phaseIndex > prevPhase.current) {
       prevPhase.current = phaseIndex;
       setEnrageKey((k) => k + 1);
-      // TODO(P3 Task 10): play 'enrage' sfx here
+      getSfx().play('enrage', 0.5);
     }
   }, [phaseIndex]);
+
+  useEffect(() => {
+    if (!lastEvent) return;
+    const map: Partial<Record<'playerHit'|'bossHit'|'chargedHit'|'dodge'|'miss'|'bossCharge'|'spellBreak', [import('../../effects/sfx').SfxName, number]>> = {
+      playerHit: ['hit', 0.5],
+      bossHit: ['bossHit', 0.5],
+      chargedHit: ['bossHit', 0.5],
+      dodge: ['dodge', 0.5],
+      miss: ['fizzle', 0.5],
+      bossCharge: ['bossCharge', 0.4],
+      spellBreak: ['crit', 0.5],
+    };
+    const entry = map[lastEvent.kind];
+    if (entry) getSfx().play(entry[0], entry[1]);
+    if (lastEvent.kind === 'playerHit' && lastEvent.crit) getSfx().play('crit', 0.5);
+  }, [lastEvent]);
 
   if (!snapshot || !boss || !pet || items.length === 0) return null;
   if (intro) return <BossIntro boss={boss} onDone={() => setIntro(false)} />;
