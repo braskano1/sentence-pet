@@ -25,6 +25,7 @@ export function DodgeSwipe({ onResolve }: { onResolve: (success: boolean) => voi
   return (
     <div
       className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-rose-950/60 backdrop-blur-sm"
+      style={{ touchAction: 'none' }}
       onPointerDown={(e) => { startX.current = e.clientX; }}
       onPointerUp={(e) => {
         if (startX.current !== null && Math.abs(e.clientX - startX.current) >= SWIPE_PX) {
@@ -32,6 +33,7 @@ export function DodgeSwipe({ onResolve }: { onResolve: (success: boolean) => voi
         }
         startX.current = null;
       }}
+      onPointerCancel={() => { startX.current = null; }}
     >
       <p className="text-4xl font-black text-white drop-shadow">⚡ SWIPE! ⚡</p>
       <p className="mt-1 text-white/80">Swipe to dodge!</p>
