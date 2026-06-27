@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ContentBundle, Lesson, Unit } from '../../content/model';
+import { isDragDrop } from '../../data/types';
 
 export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChange: (b: ContentBundle) => void }) {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(
@@ -72,7 +73,7 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
               {poolIds.map((id) => (
                 <label key={id}>
                   <input type="checkbox" aria-label={`item ${id}`} checked={selected.l.itemIds.includes(id)}
-                    onChange={() => toggleItem(selected.u.id, selected.l, id)} /> {id} <span className="text-xs text-slate-400">({bundle.pool[id].drill}·{bundle.pool[id].level})</span>
+                    onChange={() => toggleItem(selected.u.id, selected.l, id)} /> {id} <span className="text-xs text-slate-400">({(() => { const it = bundle.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{bundle.pool[id].level})</span>
                 </label>
               ))}
             </div>

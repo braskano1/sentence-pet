@@ -1,4 +1,5 @@
-import type { DrillItem, DrillType, Species, PetStage, ContentKind } from '../data/types';
+import type { ContentItem, DrillItem, DrillType, Species, PetStage, ContentKind } from '../data/types';
+import { isDragDrop } from '../data/types';
 
 /** Per-checkpoint boss: a rival pet (reused sprite) parameterised by tier + element. */
 export interface CheckpointBoss {
@@ -33,7 +34,7 @@ export interface Unit {
 
 /** Everything the player and admin operate on: a shared item pool + the journey. */
 export interface ContentBundle {
-  pool: Record<string, DrillItem>;
+  pool: Record<string, ContentItem>;
   units: Unit[];
 }
 
@@ -52,18 +53,18 @@ export function findLesson(bundle: ContentBundle, id: string): { unit: Unit; les
 }
 
 /** Resolve a lesson's itemIds to pool items, in order; unknown ids are skipped. */
-export function itemsForLesson(bundle: ContentBundle, lesson: Lesson): DrillItem[] {
-  return lesson.itemIds.map((id) => bundle.pool[id]).filter((i): i is DrillItem => i !== undefined);
+export function itemsForLesson(bundle: ContentBundle, lesson: Lesson): ContentItem[] {
+  return lesson.itemIds.map((id) => bundle.pool[id]).filter((i): i is ContentItem => i !== undefined);
 }
 
-/** Free-practice fallback: all pool items of a given drill + level. */
+/** Free-practice fallback: all dragdrop pool items of a given drill + level. */
 export function itemsForDrill(bundle: ContentBundle, drill: DrillType, level: number): DrillItem[] {
-  return Object.values(bundle.pool).filter((i) => i.drill === drill && i.level === level);
+  return Object.values(bundle.pool).filter(isDragDrop).filter((i) => i.drill === drill && i.level === level);
 }
 
-/** The egg-hatch tutorial item: first pattern level-1 item in the pool. */
+/** The egg-hatch tutorial item: first pattern level-1 dragdrop item in the pool. */
 export function tutorialItem(bundle: ContentBundle): DrillItem | undefined {
-  return Object.values(bundle.pool).find((i) => i.drill === 'pattern' && i.level === 1);
+  return Object.values(bundle.pool).filter(isDragDrop).find((i) => i.drill === 'pattern' && i.level === 1);
 }
 
 /** Tiles for an item's tray: answer words, then distractors, then trap words. */

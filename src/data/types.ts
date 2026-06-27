@@ -12,17 +12,71 @@ export interface GrammarTrap {
   tip: string;    // gentle Thai-scaffolded nudge shown on a near-miss retry
 }
 
-export interface DrillItem {
-  id: string;
-  drill: DrillType;     // which drill this item belongs to
-  level: number;        // 1..5 (MVP uses 1, 2)
-  thaiHint: string;     // shown to the kid as meaning scaffold
-  slots: PosLabel[];    // POS labels shown above each slot
-  answer: string[];     // correct words, in order (same length as slots)
-  distractors?: string[]; // extra wrong tiles salted into the tray (Word-Choice)
-  traps?: GrammarTrap[];  // near-miss tiles tied to tips (Grammar)
-  hidePos?: boolean;      // drag-drop difficulty: hide POS label/tint in slots (rendered in P2). Boss lessons use CheckpointBoss config, not pool items.
+/** Thai bridge text shown when the L1 toggle is on (display-only, never grades). */
+export interface L1Helper {
+  th: string;
 }
+
+/** Fields shared by every pool item. */
+interface BaseContentItem {
+  id: string;
+  level: number;        // 1..5
+  l1?: L1Helper;        // optional Thai helper (flashcard/matching-pair/fillblank). Dragdrop keeps thaiHint instead.
+}
+
+/** ① Flashcard — front/back recall, optional audio, self-graded practice. */
+export interface FlashcardItem extends BaseContentItem {
+  kind: 'flashcard';
+  front: string;
+  back: string;
+  audio?: string;
+  // speaking?: SpeakingCheck;  // RESERVED — pronunciation check, built later
+}
+
+/** A single match row. left = prompt (L2), right = answer slot. */
+export interface MatchingPair {
+  left: string;
+  right: string;
+  l1?: L1Helper;        // per-pair Thai
+  leftImage?: string;   // RESERVED
+  rightImage?: string;  // RESERVED
+}
+
+/** ② Matching — drag each prompt tile into its target slot. */
+export interface MatchingItem extends BaseContentItem {
+  kind: 'matching';
+  pairs: MatchingPair[]; // >= 2
+}
+
+/** ③ Drag-drop — today's slot-fill engine, unchanged. Keeps thaiHint as its L1. */
+export interface DragDropItem extends BaseContentItem {
+  kind: 'dragdrop';
+  drill: DrillType;
+  thaiHint: string;        // existing meaning scaffold (dragdrop's L1 surface)
+  slots: PosLabel[];
+  answer: string[];        // same length as slots
+  distractors?: string[];
+  traps?: GrammarTrap[];
+  hidePos?: boolean;       // difficulty: hide POS label/tint in slots
+}
+
+/** ④ Fill-blank — typed, strict trimmed match. */
+export interface FillBlankItem extends BaseContentItem {
+  kind: 'fillblank';
+  template: string;        // exactly one "___" marks the blank
+  answer: string;          // strict exact match (trimmed)
+  alternates?: string[];   // optional extra accepted answers
+}
+
+export type ContentItem = FlashcardItem | MatchingItem | DragDropItem | FillBlankItem;
+
+/** Back-compat: all existing dragdrop code refers to DrillItem. */
+export type DrillItem = DragDropItem;
+
+export const isDragDrop = (i: ContentItem): i is DragDropItem => i.kind === 'dragdrop';
+export const isFlashcard = (i: ContentItem): i is FlashcardItem => i.kind === 'flashcard';
+export const isMatching = (i: ContentItem): i is MatchingItem => i.kind === 'matching';
+export const isFillBlank = (i: ContentItem): i is FillBlankItem => i.kind === 'fillblank';
 
 export type Screen = 'egg' | 'petRoom' | 'pickCourse' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'bossPrep' | 'battle';
 

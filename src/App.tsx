@@ -18,6 +18,7 @@ import { BattleScreen } from './components/battle/BattleScreen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { useUiStore } from './state/uiStore';
 import type { DrillItem, DrillType, ContentKind } from './data/types';
+import { isDragDrop } from './data/types';
 import { useContentStore } from './content/store';
 import { findLesson, itemsForLesson, itemsForDrill } from './content/model';
 import { CourseSelect } from './components/CourseSelect';
@@ -94,7 +95,10 @@ function CurrentScreen() {
     [bundle, lesson, drill, level],
   );
   const kind: ContentKind = lesson?.kind ?? 'dragdrop';
-  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items, kind);
+  // The drill screen seam is dragdrop-only today; non-dragdrop kinds route to ComingSoon
+  // via `kind` (per-kind screens land in later tasks). Narrow the widened pool here.
+  const dragItems = useMemo(() => items.filter(isDragDrop), [items]);
+  const { key, node } = screenKeyAndNode(screen, hatched, drill, level, dragItems, kind);
 
   const { setZone } = useAudio();
   const zone = zoneForScreen(key, !!lesson?.isCheckpoint);

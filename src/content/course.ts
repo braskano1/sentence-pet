@@ -1,4 +1,4 @@
-import type { DrillItem } from '../data/types';
+import type { ContentItem } from '../data/types';
 import type { CheckpointBoss, ContentBundle, Unit } from './model';
 
 /** A boss node. `checkpoint` is per-unit (today). `gated` reviews 2–3 prior
@@ -24,7 +24,7 @@ export interface Course {
   title: string;
   emoji?: string;
   l1Ready?: boolean;
-  pool: Record<string, DrillItem>;
+  pool: Record<string, ContentItem>;
   units: Unit[];
   gates: BossNode[];
   finalBoss?: BossNode;

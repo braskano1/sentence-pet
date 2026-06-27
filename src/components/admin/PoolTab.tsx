@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ContentBundle } from '../../content/model';
 import type { DrillItem } from '../../data/types';
+import { isDragDrop } from '../../data/types';
 import { ItemEditor } from './ItemEditor';
 
 export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange: (b: ContentBundle) => void }) {
@@ -15,7 +16,7 @@ export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange:
 
   function addItem() {
     const id = freshId();
-    const fresh: DrillItem = { id, drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun', 'Verb'], answer: ['', ''] };
+    const fresh: DrillItem = { id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun', 'Verb'], answer: ['', ''] };
     onChange({ ...bundle, pool: { ...bundle.pool, [id]: fresh } });
     setSelected(id);
   }
@@ -43,14 +44,14 @@ export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange:
           <button key={id} type="button" onClick={() => setSelected(id)}
             className={`flex justify-between rounded px-2 py-1 text-left text-sm ${id === selected ? 'bg-indigo-100' : ''}`}>
             <span>{id}</span>
-            <span className="text-xs text-slate-400">{bundle.pool[id].drill}·{bundle.pool[id].level}</span>
+            <span className="text-xs text-slate-400">{(() => { const it = bundle.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{bundle.pool[id].level}</span>
           </button>
         ))}
       </div>
       <div className="flex-1">
-        {selected && bundle.pool[selected] && (
+        {selected && bundle.pool[selected] && isDragDrop(bundle.pool[selected]) && (
           <>
-            <ItemEditor item={bundle.pool[selected]} onChange={updateItem} />
+            <ItemEditor item={bundle.pool[selected] as DrillItem} onChange={updateItem} />
             <button type="button" onClick={() => removeItem(selected)} className="mt-2 text-sm text-red-600">Delete item</button>
           </>
         )}

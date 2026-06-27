@@ -1,6 +1,7 @@
 import type { ContentBundle } from './model';
 import type { Course } from './course';
 import type { DrillItem } from '../data/types';
+import { isDragDrop } from '../data/types';
 
 /** Per-kind item checks. In P1 only dragdrop items exist; the other kinds are
  *  validated structurally as they arrive in P2 (fields added then). */
@@ -32,7 +33,9 @@ function validateBundleShape(bundle: ContentBundle, push: (m: string) => void): 
       for (const itemId of lesson.itemIds) {
         const item = bundle.pool[itemId];
         if (!item) { push(`lesson ${lesson.id} references unknown item ${itemId}`); continue; }
-        validateItem(itemId, item, push);
+        // Only dragdrop items carry slots/answer/traps; other kinds validate structurally
+        // as their fields land in later tasks.
+        if (isDragDrop(item)) validateItem(itemId, item, push);
       }
     }
   }
