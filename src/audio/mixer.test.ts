@@ -25,16 +25,9 @@ describe('effectiveGain', () => {
     expect(effectiveGain('music', s)).toBe(1);
   });
 
-  it('master mute zeroes every channel', () => {
-    const s = base();
+  it('master mute zeroes every channel (incl. itself, via sfx/music/voice)', () => {
+    const s = base(); // all channels full and unmuted — worst case
     s.master.muted = true;
-    expect(effectiveGain('sfx', s)).toBe(0);
-    expect(effectiveGain('voice', s)).toBe(0);
-  });
-
-  it('allMuted overrides everything', () => {
-    const s = base(); // all channels full and unmuted — worst case for override
-    s.allMuted = true;
     expect(effectiveGain('sfx', s)).toBe(0);
     expect(effectiveGain('music', s)).toBe(0);
     expect(effectiveGain('voice', s)).toBe(0);
@@ -47,7 +40,6 @@ describe('effectiveGain', () => {
       sfx: { level: 1, muted: false },
       music: { level: 1, muted: false },
       voice: { level: 1, muted: false },
-      allMuted: false,
     });
   });
 });

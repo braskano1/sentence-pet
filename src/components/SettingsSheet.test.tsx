@@ -25,15 +25,27 @@ describe('SettingsSheet', () => {
     expect(useGameStore.getState().audio.sfx.level).toBeCloseTo(0.5);
   });
 
-  it('mute-all toggles the store flag', async () => {
-    render(<SettingsSheet onClose={() => {}} />);
-    await userEvent.click(screen.getByRole('button', { name: /mute all/i }));
-    expect(useGameStore.getState().audio.allMuted).toBe(true);
-  });
-
   it('per-channel mute toggle updates the store', async () => {
     render(<SettingsSheet onClose={() => {}} />);
     await userEvent.click(screen.getByRole('button', { name: /sfx mute/i }));
     expect(useGameStore.getState().audio.sfx.muted).toBe(true);
+  });
+
+  it('muting a channel disables (greys) its own slider', () => {
+    useGameStore.setState((s) => ({ audio: { ...s.audio, sfx: { ...s.audio.sfx, muted: true } } }));
+    render(<SettingsSheet onClose={() => {}} />);
+    expect(screen.getByLabelText(/sfx volume/i)).toBeDisabled();
+    // a sibling channel that is not muted stays enabled
+    expect(screen.getByLabelText(/music volume/i)).not.toBeDisabled();
+  });
+
+  it('muting Master disables the SFX/Music/Voice sliders', () => {
+    useGameStore.setState((s) => ({ audio: { ...s.audio, master: { ...s.audio.master, muted: true } } }));
+    render(<SettingsSheet onClose={() => {}} />);
+    expect(screen.getByLabelText(/sfx volume/i)).toBeDisabled();
+    expect(screen.getByLabelText(/music volume/i)).toBeDisabled();
+    expect(screen.getByLabelText(/voice volume/i)).toBeDisabled();
+    // Master's own slider greys too (via its own mute)
+    expect(screen.getByLabelText(/master volume/i)).toBeDisabled();
   });
 });

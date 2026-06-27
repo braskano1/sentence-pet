@@ -630,12 +630,12 @@ describe('migrate -> v11 (audio mixer)', () => {
       activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
       journey: { lessonStars: {} },
     };
-    const out = getMigrate()(v9, 9) as { audio: { allMuted: boolean; master: { level: number } } };
-    expect(out.audio.allMuted).toBe(false);
+    const out = getMigrate()(v9, 9) as { audio: { master: { muted: boolean; level: number } } };
+    expect(out.audio.master.muted).toBe(false);
     expect(out.audio.master.level).toBe(1);
   });
 
-  it('migrate converts soundEnabled:false (v10) to allMuted:true', () => {
+  it('migrate converts soundEnabled:false (v10) to master.muted:true', () => {
     const v10 = {
       pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
         bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
@@ -645,12 +645,12 @@ describe('migrate -> v11 (audio mixer)', () => {
       journey: { lessonStars: {} },
       soundEnabled: false,
     };
-    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
-    expect(out.audio.allMuted).toBe(true);
+    const out = getMigrate()(v10, 10) as { audio: { master: { muted: boolean } }; soundEnabled?: boolean };
+    expect(out.audio.master.muted).toBe(true);
     expect(out.soundEnabled).toBeUndefined();
   });
 
-  it('migrate converts soundEnabled:true (v10) to allMuted:false', () => {
+  it('migrate converts soundEnabled:true (v10) to master.muted:false', () => {
     const v10 = {
       pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
         bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
@@ -660,9 +660,55 @@ describe('migrate -> v11 (audio mixer)', () => {
       journey: { lessonStars: {} },
       soundEnabled: true,
     };
-    const out = getMigrate()(v10, 10) as { audio: { allMuted: boolean }; soundEnabled?: boolean };
-    expect(out.audio.allMuted).toBe(false);
+    const out = getMigrate()(v10, 10) as { audio: { master: { muted: boolean } }; soundEnabled?: boolean };
+    expect(out.audio.master.muted).toBe(false);
     expect(out.soundEnabled).toBeUndefined();
+  });
+});
+
+describe('migrate -> v13 (drop allMuted, fold into master.muted)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  const v12Save = (audio: Record<string, unknown>) => ({
+    pets: [{ id: 'a', species: 'leaf', hatched: true, xp: 0, happiness: 60,
+      bars: { protein: 50, veggie: 50, vitamin: 50, treat: 50 },
+      stats: { hp: 50, atk: 50, def: 50, spd: 50, luk: 50 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '' }],
+    activePetId: 'a', coins: 0, inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    journey: { lessonStars: {} }, audio,
+  });
+
+  it('a v12 save with allMuted:true folds into master.muted and drops the field', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: full(), sfx: full(), music: full(), voice: full(), allMuted: true }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(true);
+    expect('allMuted' in out.audio).toBe(false);
+  });
+
+  it('a v12 save with allMuted:false leaves master.muted untouched and drops the field', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: full(), sfx: full(), music: full(), voice: full(), allMuted: false }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(false);
+    expect('allMuted' in out.audio).toBe(false);
+  });
+
+  it('preserves an already-set master.muted (allMuted:false does not clear it)', () => {
+    const full = (): { level: number; muted: boolean } => ({ level: 1, muted: false });
+    const out = getMigrate()(
+      v12Save({ master: { level: 1, muted: true }, sfx: full(), music: full(), voice: full(), allMuted: false }),
+      12,
+    ) as { audio: { master: { muted: boolean }; allMuted?: boolean } };
+    expect(out.audio.master.muted).toBe(true);
+    expect('allMuted' in out.audio).toBe(false);
   });
 });
 
@@ -726,13 +772,6 @@ describe('audio mixer actions', () => {
     expect(useGameStore.getState().audio.voice.muted).toBe(true);
     useGameStore.getState().toggleChannelMute('voice');
     expect(useGameStore.getState().audio.voice.muted).toBe(false);
-  });
-
-  it('toggleMuteAll flips the global flag', () => {
-    useGameStore.getState().toggleMuteAll();
-    expect(useGameStore.getState().audio.allMuted).toBe(true);
-    useGameStore.getState().toggleMuteAll();
-    expect(useGameStore.getState().audio.allMuted).toBe(false);
   });
 });
 

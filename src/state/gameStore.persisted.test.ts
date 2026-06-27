@@ -18,12 +18,12 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(12);
+    expect(PERSIST_VERSION).toBe(13);
   });
 
   it('includes audio, defaulting to a full unmuted mixer', () => {
     expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.level', 1);
-    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.allMuted', false);
+    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.muted', false);
   });
 
   it('covers exactly the persisted (non-transient, non-function) store fields — no drift vs partialize', () => {

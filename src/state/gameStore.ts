@@ -82,7 +82,6 @@ interface GameState {
   clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
-  toggleMuteAll: () => void;
   startLesson: (lessonId: string) => void;
   stage: () => PetStage;
   // test helpers
@@ -92,7 +91,7 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 12;
+export const PERSIST_VERSION = 13;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
@@ -313,8 +312,6 @@ export const useGameStore = create<GameState>()(
       toggleChannelMute: (ch) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], muted: !s.audio[ch].muted } } })),
 
-      toggleMuteAll: () => set((s) => ({ audio: { ...s.audio, allMuted: !s.audio.allMuted } })),
-
       renamePet: (id, name) =>
         set((s) => {
           const clean = sanitizePetName(name);
@@ -364,6 +361,8 @@ export const useGameStore = create<GameState>()(
       // v9->v10 backfills soundEnabled (default true).
       // v10->v11 replaces soundEnabled with the audio mixer slice.
       // v11->v12 backfills activeTrack (default null = free overworld loop).
+      // v12->v13 drops audio.allMuted (Master mute IS the global mute): a save with
+      //   allMuted:true lands as master.muted:true; the allMuted field is removed.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -396,15 +395,21 @@ export const useGameStore = create<GameState>()(
           // v11->v12: backfill the equipped overworld track (null = free default loop).
           activeTrack: st.activeTrack ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
-          audio:
-            (st as { audio?: AudioSettings }).audio ??
-            (() => {
-              // v10->v11: derive the mixer from the old boolean. soundEnabled:false -> mute all.
-              const a = defaultAudioSettings();
+          audio: (() => {
+            const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
+            const a = saved ? { ...saved } : defaultAudioSettings();
+            if (!saved) {
+              // v10->v11: derive the mixer from the old boolean. soundEnabled:false -> master mute.
               const legacy = (st as { soundEnabled?: boolean }).soundEnabled;
-              if (legacy === false) a.allMuted = true;
-              return a;
-            })(),
+              if (legacy === false) a.master = { ...a.master, muted: true };
+            } else if ((saved as { allMuted?: boolean }).allMuted) {
+              // v12->v13: a legacy global-mute save folds into Master mute.
+              a.master = { ...a.master, muted: true };
+            }
+            // v12->v13: the allMuted field no longer exists on AudioSettings.
+            delete (a as { allMuted?: boolean }).allMuted;
+            return a;
+          })(),
         };
 
         // v<5 (no pets[]): restructure the legacy single pet into pets[] + wallet.

@@ -31,28 +31,28 @@ describe('EvolutionCinematic', () => {
   });
 
   it('plays the reveal cue when sound is on, not when off', () => {
-    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
+    useGameStore.setState((s) => ({ audio: { ...s.audio, master: { ...s.audio.master, muted: false } } }));
     const { unmount } = render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByTestId('evolution-stage'));
     expect(sound.reveal).toHaveBeenCalled();
     unmount();
 
     Object.values(sound).forEach((f) => f.mockClear());
-    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: true } }));
+    useGameStore.setState((s) => ({ audio: { ...s.audio, master: { ...s.audio.master, muted: true } } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByTestId('evolution-stage'));
     expect(sound.reveal).not.toHaveBeenCalled();
   });
 
-  it('renders a sound toggle that flips allMuted', () => {
-    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
+  it('renders a sound toggle that flips master.muted', () => {
+    useGameStore.setState((s) => ({ audio: { ...s.audio, master: { ...s.audio.master, muted: false } } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
-    expect(useGameStore.getState().audio.allMuted).toBe(true);
+    expect(useGameStore.getState().audio.master.muted).toBe(true);
   });
 
   it('stops in-flight audio when muted mid-sequence', () => {
-    useGameStore.setState((s) => ({ audio: { ...s.audio, allMuted: false } }));
+    useGameStore.setState((s) => ({ audio: { ...s.audio, master: { ...s.audio.master, muted: false } } }));
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /mute sound/i }));
     expect(sound.stop).toHaveBeenCalled();
