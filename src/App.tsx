@@ -13,6 +13,8 @@ import { JourneyMap } from './components/JourneyMap';
 import { Shop } from './components/Shop';
 import { Gacha } from './components/Gacha';
 import { Collection } from './components/Collection';
+import { BossPrepScreen } from './components/battle/BossPrepScreen';
+import { BattleScreen } from './components/battle/BattleScreen';
 import { AccountButton } from './components/account/AccountButton';
 import type { DrillItem, DrillType } from './data/types';
 import { useContentStore } from './content/store';
@@ -31,6 +33,8 @@ export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillT
     case 'shop': return { key: 'shop', node: <Shop /> };
     case 'gacha': return { key: 'gacha', node: <Gacha /> };
     case 'collection': return { key: 'collection', node: <Collection /> };
+    case 'bossPrep': return { key: 'bossPrep', node: <BossPrepScreen /> };
+    case 'battle': return { key: 'battle', node: <BattleScreen /> };
     case 'petRoom':
     default: return { key: 'petRoom', node: <PetRoom /> };
   }
@@ -49,6 +53,9 @@ export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
       return 'title';
     case 'drill':
       return isCheckpoint ? 'boss' : 'drill';
+    case 'bossPrep':
+    case 'battle':
+      return 'boss';
     case 'evolution':
       return null; // stop music during the cinematic; overworld resumes after
     case 'reward':

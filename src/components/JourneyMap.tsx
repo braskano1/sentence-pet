@@ -35,6 +35,7 @@ function dotContent(lesson: Lesson, stars: LessonStars): string {
 export function JourneyMap() {
   const setScreen = useGameStore((s) => s.setScreen);
   const startLesson = useGameStore((s) => s.startLesson);
+  const startBoss = useGameStore((s) => s.startBoss);
   const stars = useGameStore((s) => s.journey.lessonStars);
   const bundle = useContentStore((s) => s.bundle);
   const units = orderedUnits(bundle);
@@ -84,7 +85,7 @@ export function JourneyMap() {
                       key={lesson.id}
                       disabled={!open}
                       aria-label={lessonLabel(unit, lesson, stars, open)}
-                      onClick={() => startLesson(lesson.id)}
+                      onClick={() => (lesson.isCheckpoint && lesson.boss ? startBoss(lesson.id) : startLesson(lesson.id))}
                       className={`flex h-12 w-12 items-center justify-center text-lg font-bold shadow ${base} ${tone}`}
                     >
                       {dotContent(lesson, stars)}
