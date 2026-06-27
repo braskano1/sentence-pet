@@ -72,5 +72,12 @@ export const GAME_CONFIG = {
       swipeWindowMs: 1200,   // active swipe-to-dodge window on a charged attack
       wrongLurchFrac: 0.3,   // a wrong answer pushes the ring forward by this fraction
     },
+    phaseRamp: {                 // P3 multi-phase ramp
+      atkMult: 1.25,             // boss atk × this ^ phaseIndex per phase
+      chargeMult: 0.8,           // chargeMs × this ^ phaseIndex (faster per phase)
+      spellBreakMult: 1.5,       // bonus multiplier on a spell-break counter hit
+      spriteScaleMin: 0.7,       // smallest phase's sprite scale within the reserved box
+    },
+    spellWindowMs: 4000,         // spot-the-error tap window before auto-miss
   },
 } as const;
