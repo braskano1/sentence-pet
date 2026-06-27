@@ -632,7 +632,7 @@ describe('migrate -> v11 (audio mixer)', () => {
     };
     const out = getMigrate()(v9, 9) as { audio: { master: { muted: boolean; level: number } } };
     expect(out.audio.master.muted).toBe(false);
-    expect(out.audio.master.level).toBe(1);
+    expect(out.audio.master.level).toBe(0.7);
   });
 
   it('migrate converts soundEnabled:false (v10) to master.muted:true', () => {

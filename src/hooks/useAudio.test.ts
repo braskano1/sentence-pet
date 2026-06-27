@@ -89,7 +89,9 @@ describe('useAudio — music zone & gesture deferral', () => {
 
   it('flushes the armed zone on a window pointerdown gesture', () => {
     const m = spyMusic();
-    useGameStore.setState({ audio: defaultAudioSettings() });
+    const a = defaultAudioSettings();
+    a.master.level = 1; a.music.level = 1;
+    useGameStore.setState({ audio: a });
 
     const { result } = renderHook(() => useAudio());
     result.current.setZone('drill');
@@ -161,7 +163,9 @@ describe('useAudio — stinger', () => {
 describe('useAudio — overworld track push', () => {
   it('setZone(overworld) pushes setTrack(default url) BEFORE setZone once unlocked', () => {
     const m = spyMusic();
-    useGameStore.setState({ audio: defaultAudioSettings() });
+    const a = defaultAudioSettings();
+    a.master.level = 1; a.music.level = 1;
+    useGameStore.setState({ audio: a });
     useGameStore.getState().equipTrack(null); // default
 
     const { result } = renderHook(() => useAudio());
@@ -249,7 +253,9 @@ describe('useAudio — preview', () => {
 describe('useAudio — live music-gain push', () => {
   it('pushes new effective gain to the playing loop on a slider change', () => {
     const m = spyMusic();
-    useGameStore.setState({ audio: defaultAudioSettings() });
+    const a = defaultAudioSettings();
+    a.master.level = 1; // so music slider value == effective gain
+    useGameStore.setState({ audio: a });
 
     const { result } = renderHook(() => useAudio());
     // Make the spy the shared instance by getting something playing.

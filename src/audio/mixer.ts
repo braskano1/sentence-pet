@@ -12,10 +12,10 @@ export type AudioSettings = {
   voice: Channel;
 };
 
-/** Fresh mixer: every channel full and unmuted. */
+/** Fresh mixer: every channel at 70% and unmuted. */
 export function defaultAudioSettings(): AudioSettings {
-  const full = (): Channel => ({ level: 1, muted: false });
-  return { master: full(), sfx: full(), music: full(), voice: full() };
+  const start = (): Channel => ({ level: 0.7, muted: false });
+  return { master: start(), sfx: start(), music: start(), voice: start() };
 }
 
 /**

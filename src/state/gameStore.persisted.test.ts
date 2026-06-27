@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { useGameStore, selectPersisted, PERSIST_VERSION } from './gameStore';
+import { defaultAudioSettings } from '../audio/mixer';
 
 describe('selectPersisted', () => {
   it('keeps the persisted data fields and drops transient + action fields', () => {
@@ -21,8 +22,9 @@ describe('selectPersisted', () => {
     expect(PERSIST_VERSION).toBe(13);
   });
 
-  it('includes audio, defaulting to a full unmuted mixer', () => {
-    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.level', 1);
+  it('includes audio, defaulting to a 70% unmuted mixer', () => {
+    useGameStore.setState({ audio: defaultAudioSettings() }); // deterministic default
+    expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.level', 0.7);
     expect(selectPersisted(useGameStore.getState())).toHaveProperty('audio.master.muted', false);
   });
 

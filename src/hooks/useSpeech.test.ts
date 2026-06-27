@@ -26,7 +26,8 @@ describe('useSpeech voice gating', () => {
   });
 
   it('routes each helper to the correct language', () => {
-    const a = defaultAudioSettings(); // full volume, unmuted
+    const a = defaultAudioSettings();
+    a.master.level = 1; a.voice.level = 1; // full volume, unmuted
     useGameStore.setState({ audio: a });
     const { result } = renderHook(() => useSpeech());
     result.current.speakWord('cat');
