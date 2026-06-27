@@ -6,7 +6,7 @@ import { useGameStore } from './state/gameStore'
 import { useBattleStore } from './state/battleStore'
 import { useContentStore } from './content/store'
 import { isAdminEntry } from './auth/adminEntry'
-import { hydrateContent } from './content/load'
+import { hydrateCourse } from './content/load'
 import { AuthProvider } from './auth/AuthProvider'
 
 const AdminApp = lazy(() => import('./admin-entry'))
@@ -19,7 +19,7 @@ if (import.meta.env.DEV) {
 
 const isAdmin = isAdminEntry(window.location.hash)
 if (!isAdmin) {
-  void hydrateContent() // live fetch → swap + cache; failures keep the bundled fallback
+  void hydrateCourse('default') // live fetch the default course → swap + cache; failures keep fallback
 }
 
 const root = isAdmin
