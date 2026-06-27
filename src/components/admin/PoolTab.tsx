@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ContentBundle } from '../../content/model';
-import type { DrillItem } from '../../data/types';
+import type { ContentItem, DrillItem } from '../../data/types';
 import { isDragDrop } from '../../data/types';
 import { ItemEditor } from './ItemEditor';
 
@@ -21,7 +21,7 @@ export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange:
     setSelected(id);
   }
 
-  function updateItem(next: DrillItem) {
+  function updateItem(next: ContentItem) {
     const pool = { ...bundle.pool };
     delete pool[selected!];
     pool[next.id] = next;
@@ -49,9 +49,9 @@ export function PoolTab({ bundle, onChange }: { bundle: ContentBundle; onChange:
         ))}
       </div>
       <div className="flex-1">
-        {selected && bundle.pool[selected] && isDragDrop(bundle.pool[selected]) && (
+        {selected && bundle.pool[selected] && (
           <>
-            <ItemEditor item={bundle.pool[selected] as DrillItem} onChange={updateItem} />
+            <ItemEditor item={bundle.pool[selected]} onChange={updateItem} />
             <button type="button" onClick={() => removeItem(selected)} className="mt-2 text-sm text-red-600">Delete item</button>
           </>
         )}
