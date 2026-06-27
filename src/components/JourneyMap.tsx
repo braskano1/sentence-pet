@@ -1,97 +1,72 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { orderedUnits } from '../content/model';
-import type { Unit, Lesson } from '../content/model';
 import { useContentStore } from '../content/store';
-import type { DrillType } from '../data/types';
-import { isUnitUnlocked, isLessonUnlocked, unitProgress, lessonCleared } from '../domain/journeyProgress';
-import type { LessonStars } from '../domain/journeyProgress';
-import { DRILL_FOOD, FOOD_META } from '../data/food';
+import { UnitSection } from './journey/UnitSection';
 import { PressButton } from './PressButton';
-
-const DOT_COLOR: Record<DrillType, string> = {
-  pattern: 'bg-emerald-200 text-emerald-800',
-  wordChoice: 'bg-blue-200 text-blue-800',
-  grammar: 'bg-amber-200 text-amber-900',
-  mixed: 'bg-pink-200 text-pink-800',
-};
-
-function lessonLabel(unit: Unit, lesson: Lesson, stars: LessonStars, open: boolean): string {
-  const what = lesson.isCheckpoint ? 'checkpoint' : `${lesson.drill} lesson`;
-  const status = lessonCleared(stars, lesson.id)
-    ? `cleared, ${stars[lesson.id]} stars`
-    : open
-      ? 'not started'
-      : 'locked';
-  return `${unit.title}: ${what}, ${status}`;
-}
-
-function dotContent(lesson: Lesson, stars: LessonStars): string {
-  if (lessonCleared(stars, lesson.id)) return '✓';
-  if (lesson.isCheckpoint) return '★';
-  return FOOD_META[DRILL_FOOD[lesson.drill]].emoji;
-}
+import { currentLessonId, unitDone } from './journey/journeyView';
 
 export function JourneyMap() {
   const setScreen = useGameStore((s) => s.setScreen);
   const startLesson = useGameStore((s) => s.startLesson);
   const stars = useGameStore((s) => s.journey.lessonStars);
   const bundle = useContentStore((s) => s.bundle);
-  const units = orderedUnits(bundle);
+  const units = useMemo(() => orderedUnits(bundle), [bundle]);
+
+  const currentId = currentLessonId(units, stars);
+  const totalStars = Object.values(stars).reduce((a, b) => a + b, 0);
+
+  // Units the player has explicitly expanded despite being fully cleared.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggle = (unitId: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(unitId)) {
+        next.delete(unitId);
+      } else {
+        next.add(unitId);
+      }
+      return next;
+    });
 
   return (
-    <div className="flex h-full flex-col bg-indigo-50 p-6">
-      <div className="flex items-center justify-between pb-4">
+    <div className="grid h-full grid-rows-[auto_1fr] bg-gradient-to-b from-indigo-100 to-indigo-50">
+      <header className="flex items-center gap-2 px-4 pb-3 pt-4">
         <PressButton
           onClick={() => setScreen('petRoom')}
-          className="min-h-12 rounded-xl px-4 py-2 font-semibold text-indigo-700"
+          className="grid h-10 w-10 place-items-center rounded-xl bg-white text-indigo-700 shadow"
+          aria-label="Back to pet room"
         >
-          ← Back
+          ←
         </PressButton>
-        <h1 className="text-xl font-bold text-indigo-800">Journey</h1>
-        <span className="w-16" />
-      </div>
+        <h1 className="text-lg font-extrabold text-indigo-900">Journey</h1>
+        <div className="ml-auto flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-amber-500 shadow">
+          <span aria-hidden="true">★</span>
+          <span className="text-slate-700">{totalStars}</span>
+          <span className="sr-only">stars earned</span>
+        </div>
+      </header>
 
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+      <div className="space-y-4 overflow-y-auto px-4 pb-10">
         {units.map((unit, index) => {
-          const unlocked = isUnitUnlocked(units, unit, stars);
-          const prog = unitProgress(unit, stars);
+          const folded = unitDone(unit, stars) && !expanded.has(unit.id);
           return (
             <motion.div
               key={unit.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-              className={`rounded-2xl bg-white p-5 shadow ${unlocked ? '' : 'opacity-50'}`}
+              transition={{ delay: index * 0.06 }}
             >
-              <div className="flex items-center gap-2 pb-3">
-                <span className="text-2xl">{unit.emoji}</span>
-                <span className="flex-1 text-lg font-semibold text-slate-800">{unit.title}</span>
-                <span className="text-sm font-semibold text-slate-500">
-                  {unlocked ? `${prog.cleared}/${prog.total}` : '🔒 locked'}
-                </span>
-              </div>
-              <div className="flex gap-3">
-                {unit.lessons.map((lesson) => {
-                  const open = isLessonUnlocked(units, unit, lesson, stars);
-                  const cleared = lessonCleared(stars, lesson.id);
-                  const base = lesson.isCheckpoint
-                    ? 'bg-amber-300 text-amber-900 rounded-xl'
-                    : `${DOT_COLOR[lesson.drill]} rounded-full`;
-                  const tone = cleared ? 'bg-emerald-300 text-emerald-900' : !open ? 'bg-slate-200 text-slate-400' : '';
-                  return (
-                    <PressButton
-                      key={lesson.id}
-                      disabled={!open}
-                      aria-label={lessonLabel(unit, lesson, stars, open)}
-                      onClick={() => startLesson(lesson.id)}
-                      className={`flex h-12 w-12 items-center justify-center text-lg font-bold shadow ${base} ${tone}`}
-                    >
-                      {dotContent(lesson, stars)}
-                    </PressButton>
-                  );
-                })}
-              </div>
+              <UnitSection
+                units={units}
+                unit={unit}
+                stars={stars}
+                currentId={currentId}
+                folded={folded}
+                onToggle={toggle}
+                onStart={startLesson}
+              />
             </motion.div>
           );
         })}
