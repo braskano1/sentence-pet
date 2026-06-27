@@ -234,7 +234,7 @@ export function BattleScreen() {
       </DragOverlay>
 
       {battlePhase === 'charged' && (
-        <DodgeSwipe onResolve={(success) => resolveSwipe(success)} />
+        <DodgeSwipe onResolve={resolveSwipe} />
       )}
     </DndContext>
   );
