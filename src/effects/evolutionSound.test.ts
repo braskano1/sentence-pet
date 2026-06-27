@@ -1,16 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
-  soundAllowed, getEvolutionSound, setEvolutionSoundProvider, type EvolutionSound,
+  getEvolutionSound, setEvolutionSoundProvider, type EvolutionSound,
 } from './evolutionSound';
-
-describe('soundAllowed', () => {
-  it('is true only when enabled and not reduced', () => {
-    expect(soundAllowed(true, false)).toBe(true);
-    expect(soundAllowed(false, false)).toBe(false);
-    expect(soundAllowed(true, true)).toBe(false);
-    expect(soundAllowed(false, true)).toBe(false);
-  });
-});
 
 describe('getEvolutionSound', () => {
   afterEach(() => setEvolutionSoundProvider(null));

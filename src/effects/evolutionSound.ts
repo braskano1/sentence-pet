@@ -10,11 +10,6 @@ export interface EvolutionSound {
   stop(): void;   // cancel any active nodes/loops
 }
 
-/** Sound plays only when the user has it enabled and reduced motion is off. */
-export function soundAllowed(soundEnabled: boolean, reduced: boolean): boolean {
-  return soundEnabled && !reduced;
-}
-
 /** Module-level gain multiplier driven by the mixer (0 = muted, 1 = full). */
 let gainMul = 1;
 
