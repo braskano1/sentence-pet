@@ -157,6 +157,12 @@ test.describe('boss battle', () => {
     ).catch(() => false);
     test.skip(!hasBattleStore, 'battleStore not exposed on window in this build');
 
+    // Wait for contentStore to be ready before reading the bundle.
+    await page.waitForFunction(
+      () => typeof (window as unknown as { contentStore?: { getState: () => unknown } }).contentStore?.getState === 'function',
+      null, { timeout: 10_000 },
+    );
+
     // Establish a real battle: read the active pet from the game store and the boss
     // from the content store (both exposed in DEV), then call battleStore.begin().
     await page.evaluate((id) => {
@@ -173,8 +179,10 @@ test.describe('boss battle', () => {
       }
       if (!boss) throw new Error(`No boss found for lesson ${id}`);
 
-      const bs = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore.getState();
+      const bsStore = (window as unknown as { battleStore: { getState: () => StoreState } }).battleStore;
+      const bs = bsStore.getState();
       bs.begin(pet, boss);
+      if (!bsStore.getState().snapshot) throw new Error('battleStore.begin() did not initialise a snapshot — check the seeded boss tierId is valid');
     }, BOSS_LESSON);
 
     // Drive the battle store directly: fill the ring, assert the charged phase opens.
