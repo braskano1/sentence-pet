@@ -50,4 +50,22 @@ export const GAME_CONFIG = {
       { rarity: 'legendary', weight: 2,  band: [85, 90] },
     ] satisfies RarityTier[],
   },
+  battle: {
+    hpMultiplier: 8,        // maxHP = hp stat × this (K) — decouples survivability from atk scale
+    defConstant: 100,       // C in ratio defense atk×C/(C+def)
+    combatScalar: 1.4,      // keeps per-hit numbers juicy vs the HP pool
+    critMult: 2,            // crit = ×2 damage
+    critPerLuk: 0.004,      // critChance = clamp(luk × this, 0, critCap)
+    critCap: 0.6,
+    dodgeBase: 0.05,        // base dodge before the spd delta
+    dodgePerSpd: 0.005,     // dodge += (playerSpd − bossSpd) × this
+    dodgeCap: 0.55,         // hard cap so high spd never trivializes the fight
+    element: { advantage: 1.5, disadvantage: 0.75, neutral: 1 },
+    bossCounterEveryNItems: 2, // turn-based (P1): boss also counter-attacks every Nth item
+    reward: {
+      firstClearCoins: 50,  // bonus coins on first clear (on top of the base flow)
+      firstClearXp: 80,     // bonus XP applied to the fighting pet on first clear
+      replayCoins: 8,       // small coin trickle on a repeat clear
+    },
+  },
 } as const;
