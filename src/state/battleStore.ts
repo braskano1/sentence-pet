@@ -133,7 +133,7 @@ export const useBattleStore = create<BattleState>((set) => ({
   onWrong: () =>
     set((s) => {
       if (!s.snapshot || !s.pet || !s.boss) return s;
-      if (s.battlePhase === 'charged') return s; // charged attack must resolve via resolveSwipe first
+      if (s.battlePhase !== 'answering') return s; // charged/spell must resolve first
       const charge = lurchedFraction(s.charge, TIMER.wrongLurchFrac);
       const items = s.itemsAnswered + 1;
       if (items % COUNTER_EVERY !== 0) {

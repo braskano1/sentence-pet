@@ -295,6 +295,16 @@ describe('spot-the-error spell', () => {
     expect(s.battlePhase).toBe('answering');
     expect(s.spell).toBeNull();
   });
+
+  it('onWrong is a no-op while a spell is open (store stays defensive)', () => {
+    driveToCross();
+    expect(useBattleStore.getState().battlePhase).toBe('spell');
+    const before = useBattleStore.getState().snapshot!;
+    useBattleStore.getState().onWrong();
+    const s = useBattleStore.getState();
+    expect(s.battlePhase).toBe('spell'); // unchanged
+    expect(s.snapshot).toBe(before);     // no mutation
+  });
 });
 
 describe('boss atk ramp damage', () => {
