@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
-const { play } = vi.hoisted(() => ({ play: vi.fn() }));
-vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
+const { play, playStinger } = vi.hoisted(() => ({ play: vi.fn(), playStinger: vi.fn() }));
+vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play, playStinger }) }));
 
 import { RewardScreen } from './RewardScreen';
 import { useGameStore } from '../state/gameStore';
@@ -68,5 +68,27 @@ describe('RewardScreen', () => {
     render(<RewardScreen />);
     expect(play).toHaveBeenCalledWith('coin');
     expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires the queued boss stinger on mount and clears it', () => {
+    playStinger.mockClear();
+    useGameStore.setState({
+      lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
+      pendingStinger: 'win',
+    });
+    render(<RewardScreen />);
+    expect(playStinger).toHaveBeenCalledWith('win');
+    expect(playStinger).toHaveBeenCalledTimes(1);
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('does not fire a stinger when none is queued', () => {
+    playStinger.mockClear();
+    useGameStore.setState({
+      lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
+      pendingStinger: null,
+    });
+    render(<RewardScreen />);
+    expect(playStinger).not.toHaveBeenCalled();
   });
 });

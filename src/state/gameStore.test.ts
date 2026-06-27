@@ -497,6 +497,51 @@ describe('startLesson + journey star recording', () => {
   });
 });
 
+describe('boss (checkpoint) stinger queueing', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('finishRound after a checkpoint lesson with stars>=1 queues a win stinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 1, correctCount: 3 });
+    expect(useGameStore.getState().pendingStinger).toBe('win');
+  });
+
+  it('finishRound after a checkpoint lesson with 0 stars queues a lose stinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 0, correctCount: 0 });
+    expect(useGameStore.getState().pendingStinger).toBe('lose');
+  });
+
+  it('finishRound after a non-checkpoint lesson leaves pendingStinger null', () => {
+    useGameStore.getState().startLesson('u1-pattern');
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 0, correctCount: 0 });
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('finishRound with no active lesson leaves pendingStinger null', () => {
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('clearPendingStinger resets it to null', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 3, correctCount: 5 });
+    expect(useGameStore.getState().pendingStinger).toBe('win');
+    useGameStore.getState().clearPendingStinger();
+    expect(useGameStore.getState().pendingStinger).toBeNull();
+  });
+
+  it('persisted slice excludes pendingStinger', () => {
+    useGameStore.getState().startLesson('u1-checkpoint');
+    useGameStore.getState().finishRound({ drill: 'mixed', level: 1, stars: 3, correctCount: 5 });
+    const getPartialize = (useGameStore as unknown as {
+      persist: { getOptions: () => { partialize?: (s: unknown) => unknown } };
+    }).persist.getOptions().partialize;
+    const persisted = getPartialize!(useGameStore.getState()) as Record<string, unknown>;
+    expect('pendingStinger' in persisted).toBe(false);
+  });
+});
+
 describe('persist v9 (journey)', () => {
   const getMigrate = () =>
     (useGameStore as unknown as {

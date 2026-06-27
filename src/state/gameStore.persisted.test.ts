@@ -13,6 +13,7 @@ describe('selectPersisted', () => {
     );
     expect(snap).not.toHaveProperty('lastLevelUp');
     expect(snap).not.toHaveProperty('currentLessonId');
+    expect(snap).not.toHaveProperty('pendingStinger');
     for (const v of Object.values(snap)) expect(typeof v).not.toBe('function');
   });
 
@@ -31,7 +32,7 @@ describe('selectPersisted', () => {
     // drops the action functions. So the persisted DATA keys are:
     const persistedDataKeys = Object.keys(full)
       .filter((k) => typeof full[k] !== 'function')
-      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'currentLessonId')
+      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'currentLessonId' && k !== 'pendingStinger')
       .sort();
     const selectedKeys = Object.keys(selectPersisted(useGameStore.getState())).sort();
     expect(selectedKeys).toEqual(persistedDataKeys);

@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useGameStore, selectActivePet } from './state/gameStore';
+import { useAudio } from './hooks/useAudio';
+import type { Zone } from './effects/music';
 import { AppShell } from './components/AppShell';
 import { EggHatch } from './components/EggHatch';
 import { PetRoom } from './components/PetRoom';
@@ -34,6 +36,30 @@ export function screenKeyAndNode(screen: string, hatched: boolean, drill: DrillT
   }
 }
 
+/**
+ * Pure mapping from a resolved screen key (+ checkpoint flag) to a music Zone.
+ * The overworld screens share one seamless loop (same-zone setZone is a no-op),
+ * while drill/boss/title crossfade. Unknown keys fall back to overworld.
+ */
+export function zoneForScreen(key: string, isCheckpoint: boolean): Zone {
+  switch (key) {
+    case 'egg':
+      return 'title';
+    case 'drill':
+      return isCheckpoint ? 'boss' : 'drill';
+    case 'pickDrill':
+    case 'petRoom':
+    case 'shop':
+    case 'gacha':
+    case 'collection':
+    case 'reward':
+    case 'evolution':
+      return 'overworld';
+    default:
+      return 'overworld';
+  }
+}
+
 function CurrentScreen() {
   const screen = useGameStore((s) => s.screen);
   const hatched = useGameStore((s) => selectActivePet(s).hatched);
@@ -47,6 +73,12 @@ function CurrentScreen() {
     [bundle, lesson, drill, level],
   );
   const { key, node } = screenKeyAndNode(screen, hatched, drill, level, items);
+
+  const { setZone } = useAudio();
+  const zone = zoneForScreen(key, !!lesson?.isCheckpoint);
+  useEffect(() => {
+    setZone(zone);
+  }, [zone, setZone]);
 
   return (
     <AnimatePresence mode="wait">

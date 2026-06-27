@@ -14,6 +14,7 @@ import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domai
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { findLesson } from '../content/model';
 import { useContentStore } from '../content/store';
+import type { StingerKind } from '../effects/music';
 
 export const STARTER_ID = 'starter-leaf';
 
@@ -57,6 +58,9 @@ interface GameState {
   audio: AudioSettings;
   journey: { lessonStars: Record<string, number> };
   currentLessonId: string | null;
+  // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
+  // mount effect in RewardScreen. NOT persisted (excluded from PersistedState).
+  pendingStinger: StingerKind | null;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
@@ -71,6 +75,7 @@ interface GameState {
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
+  clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
   toggleMuteAll: () => void;
@@ -166,6 +171,7 @@ function freshState() {
     audio: defaultAudioSettings(),
     journey: { lessonStars: {} as Record<string, number> },
     currentLessonId: null as string | null,
+    pendingStinger: null as StingerKind | null,
   };
 }
 
@@ -197,6 +203,13 @@ export const useGameStore = create<GameState>()(
         set((s) => {
           const group = DRILL_FOOD[drill];
           const lessonId = s.currentLessonId;
+          // Resolve whether the finished lesson was a boss (checkpoint) BEFORE we
+          // clear currentLessonId; if so, queue a win/lose stinger for RewardScreen.
+          const wasBoss = lessonId
+            ? !!findLesson(useContentStore.getState().bundle, lessonId)?.lesson?.isCheckpoint
+            : false;
+          // TODO refine win/lose threshold
+          const pendingStinger: StingerKind | null = wasBoss ? (stars >= 1 ? 'win' : 'lose') : null;
           const journey = lessonId
             ? { lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, stars) } }
             : s.journey;
@@ -227,6 +240,7 @@ export const useGameStore = create<GameState>()(
             lastStageChange: stageChange,
             journey,
             currentLessonId: null,
+            pendingStinger,
             screen: 'reward',
           };
         }),
@@ -270,6 +284,8 @@ export const useGameStore = create<GameState>()(
 
       clearStageChange: () => set({ lastStageChange: null }),
 
+      clearPendingStinger: () => set({ pendingStinger: null }),
+
       setChannelLevel: (ch, v) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], level: clampLevel(v) } } })),
 
@@ -312,11 +328,12 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, ...rest } = s;
+        const { lastLevelUp, lastStageChange, currentLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
         void currentLessonId; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId'>;
+        void pendingStinger; // transient — not persisted
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
