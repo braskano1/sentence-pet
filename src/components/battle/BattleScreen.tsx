@@ -44,6 +44,7 @@ export function BattleScreen() {
   const resolveSpell = useBattleStore((s) => s.resolveSpell);
 
   const [intro, setIntro] = useState(true);
+  const [confirmExit, setConfirmExit] = useState(false);
   const [index, setIndex] = useState(0);
   const [placed, setPlaced] = useState<(string | null)[]>(() => (items[0]?.slots.map(() => null) ?? []));
   const [tiles, setTiles] = useState<string[]>(() => (items[0] ? shuffle(trayWords(items[0])) : []));
@@ -142,6 +143,23 @@ export function BattleScreen() {
     commit(tapPlace({ placed, used }, tiles, ti));
   }
 
+  // Pull a placed tile back out (mirrors DrillScreen.handleClear). Only while
+  // answering — overlays cover the slots during charged/spell phases anyway.
+  function handleClear(slotIndex: number) {
+    if (useBattleStore.getState().battlePhase !== 'answering') return;
+    const word = placed[slotIndex];
+    if (word === null) return;
+    const next = [...placed];
+    next[slotIndex] = null;
+    setPlaced(next);
+    const ui = used.findIndex((u, i) => u && tiles[i] === word);
+    if (ui !== -1) {
+      const nextUsed = [...used];
+      nextUsed[ui] = false;
+      setUsed(nextUsed);
+    }
+  }
+
   function onDragStart(e: DragStartEvent) {
     const id = parseDndId(String(e.active.id));
     if (id?.kind === 'tile') setActiveWord(tiles[id.index]);
@@ -178,7 +196,7 @@ export function BattleScreen() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex h-full flex-col bg-gradient-to-b from-slate-900 to-slate-800">
-        <BossZone boss={boss} hp={snapshot.bossHp} hpMax={snapshot.bossHpMax} />
+        <BossZone boss={boss} hp={snapshot.bossHp} hpMax={snapshot.bossHpMax} onExit={() => setConfirmExit(true)} />
 
         {/* Floating damage / event layer */}
         <div className="relative h-0">
@@ -215,10 +233,9 @@ export function BattleScreen() {
             {item.thaiHint}
           </div>
 
-          {/* Sentence slots — real props: slots (PosLabel[]), placed, onClearSlot */}
-          {/* P1 simplification: clearing a placed tile is a no-op (tile-clear wiring deferred) */}
+          {/* Sentence slots — tap a placed tile to pull it back out (handleClear) */}
           <div className="flex flex-1 items-center justify-center">
-            <SentenceSlots slots={item.slots} placed={placed} onClearSlot={() => {}} />
+            <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
           </div>
 
           {/* Attack button — shown only when all slots filled */}
@@ -234,6 +251,35 @@ export function BattleScreen() {
           {/* Word tray — real props: tiles, used, onTapPlace */}
           <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>
+
+        {/* Leave-battle confirm (mirrors the drill's exit dialog) */}
+        {confirmExit && (
+          <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-6">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Leave battle?"
+              className="w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-xl"
+            >
+              <p className="text-base font-extrabold text-slate-800">Leave battle?</p>
+              <p className="mt-1 text-sm text-slate-500">Your progress won't be saved.</p>
+              <div className="mt-4 flex gap-2">
+                <PressButton
+                  onClick={() => setConfirmExit(false)}
+                  className="min-h-11 flex-1 rounded-xl bg-slate-100 px-3 py-2 text-sm font-extrabold text-slate-700"
+                >
+                  Stay
+                </PressButton>
+                <PressButton
+                  onClick={() => { useBattleStore.getState().reset(); setScreen('pickDrill'); }}
+                  className="min-h-11 flex-1 rounded-xl bg-rose-500 px-3 py-2 text-sm font-extrabold text-white"
+                >
+                  Leave
+                </PressButton>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Loss overlay */}
         {lost && (

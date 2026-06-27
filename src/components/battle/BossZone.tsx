@@ -8,7 +8,7 @@ import { phaseScale } from '../../domain/bossTiers';
 
 const BOX_H = 128; // reserved bounding box (px) = the largest phase's footprint
 
-export function BossZone({ boss, hp, hpMax }: { boss: CheckpointBoss; hp: number; hpMax: number }) {
+export function BossZone({ boss, hp, hpMax, onExit }: { boss: CheckpointBoss; hp: number; hpMax: number; onExit?: () => void }) {
   const charge = useBattleStore((s) => s.charge);
   const phaseIndex = useBattleStore((s) => s.phaseIndex);
   const bossPhases = useBattleStore((s) => s.bossPhases);
@@ -19,9 +19,21 @@ export function BossZone({ boss, hp, hpMax }: { boss: CheckpointBoss; hp: number
   return (
     <div className="relative rounded-b-3xl bg-gradient-to-b from-fuchsia-950 to-indigo-950 px-4 pb-3 pt-4">
       <div className="flex items-center justify-between text-xs text-fuchsia-100">
-        <span className="rounded-md bg-emerald-600 px-2 py-0.5 font-bold">
-          {bossElementEmoji(boss)} {boss.element}
-        </span>
+        <div className="flex items-center gap-2">
+          {onExit && (
+            <button
+              type="button"
+              onClick={onExit}
+              aria-label="Leave battle"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-lg font-bold text-slate-500 shadow ring-1 ring-inset ring-slate-200"
+            >
+              ✕
+            </button>
+          )}
+          <span className="rounded-md bg-emerald-600 px-2 py-0.5 font-bold">
+            {bossElementEmoji(boss)} {boss.element}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {bossPhases > 1 && (
             <span className="flex gap-1" aria-label={`phase ${phaseIndex + 1} of ${bossPhases}`}>

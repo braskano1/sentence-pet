@@ -5,6 +5,7 @@
 // no production store API is added for dev tooling.
 import { useState } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
+import { useBattleStore } from '../state/battleStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
 import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
@@ -84,6 +85,25 @@ export function DevPanel() {
   const { signIn, signOut } = useAuth();
   const bundle = useContentStore((s) => s.bundle);
   const startBoss = useGameStore((s) => s.startBoss);
+
+  // Live battle state (for testing the P3 multi-phase + spell flow).
+  const battlePhase = useBattleStore((s) => s.battlePhase);
+  const phaseIndex = useBattleStore((s) => s.phaseIndex);
+  const bossPhases = useBattleStore((s) => s.bossPhases);
+  const spellItemCount = useBattleStore((s) => s.spellItems.length);
+  const bSnapshot = useBattleStore((s) => s.snapshot);
+
+  // Drop boss HP just above the next phase threshold, then land a correct hit
+  // so the real onCorrect cross path fires (enrage + spell). No console needed.
+  function forceCross() {
+    const bs = useBattleStore.getState();
+    if (!bs.snapshot) return;
+    const thresholds = bossPhases > 1 ? Array.from({ length: bossPhases - 1 }, (_, i) => (bossPhases - 1 - i) / bossPhases) : [];
+    const next = thresholds.find((t) => bs.snapshot!.bossHp / bs.snapshot!.bossHpMax > t);
+    if (next === undefined) return;
+    useBattleStore.setState({ snapshot: { ...bs.snapshot, bossHp: Math.floor(bs.snapshot.bossHpMax * next) + 1 } });
+    useBattleStore.getState().onCorrect();
+  }
 
   // First few real (non-checkpoint) lesson ids, marked cleared in the loadout.
   const clearedLessonIds = orderedUnits(bundle)
@@ -197,6 +217,19 @@ export function DevPanel() {
                 ⚔️ {unit.title}: {lesson.boss?.name ?? lesson.id}
               </button>
             ))}
+          </div>
+        </>
+      )}
+
+      {bSnapshot && (
+        <>
+          <div className="mb-1 text-fuchsia-300">BATTLE</div>
+          <div className="mb-1 leading-5">
+            <div>phase <b>{phaseIndex + 1}/{bossPhases}</b> · mode <b>{battlePhase}</b></div>
+            <div>bossHP <b>{bSnapshot.bossHp}</b>/{bSnapshot.bossHpMax} · spellItems <b>{spellItemCount}</b></div>
+          </div>
+          <div className="mb-2 grid grid-cols-1 gap-1">
+            <button type="button" className={btn} onClick={forceCross}>⚡ force next phase cross</button>
           </div>
         </>
       )}
