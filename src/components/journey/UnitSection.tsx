@@ -31,7 +31,7 @@ export function UnitSection({ units, unit, stars, currentId, folded, onToggle, o
 
   return (
     <section className="relative">
-      <div className="sticky top-0 z-30 -mx-1 mb-2 flex items-center gap-2 bg-indigo-50/90 px-3 py-2 backdrop-blur">
+      <div className="-mx-1 mb-2 flex items-center gap-2 px-3 py-2">
         <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-xl shadow ring-1 ring-indigo-100" aria-hidden="true">
           {unit.emoji}
         </span>
@@ -60,6 +60,7 @@ export function UnitSection({ units, unit, stars, currentId, folded, onToggle, o
         {unit.lessons.map((lesson, i) => (
           <div
             key={lesson.id}
+            data-current={lesson.id === currentId ? 'true' : undefined}
             className={`relative z-10 my-3 flex justify-center ${i === 0 && lesson.id === currentId ? 'mt-12' : ''}`}
           >
             <TrailNode

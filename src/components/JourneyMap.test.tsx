@@ -66,4 +66,12 @@ describe('JourneyMap', () => {
     const node = screen.getByRole('button', { name: /Basics: pattern lesson, cleared/i });
     expect(node.textContent).toContain('🥩');
   });
+
+  it('renders a recenter control for the pan camera', () => {
+    render(<JourneyMap />);
+    // The recenter button starts aria-hidden (offscreen check is false in jsdom),
+    // so query by its unique label text rather than accessible role/name. Distinct
+    // from the current-node beacon's uppercase "YOU ARE HERE".
+    expect(screen.getByText('↑ You are here')).toBeInTheDocument();
+  });
 });

@@ -4,6 +4,7 @@ import { useGameStore } from '../state/gameStore';
 import { orderedUnits } from '../content/model';
 import { useContentStore } from '../content/store';
 import { UnitSection } from './journey/UnitSection';
+import { PanViewport } from './journey/PanViewport';
 import { PressButton } from './PressButton';
 import { currentLessonId, unitDone } from './journey/journeyView';
 
@@ -48,29 +49,31 @@ export function JourneyMap() {
         </div>
       </header>
 
-      <div className="space-y-4 overflow-y-auto px-4 pb-10">
-        {units.map((unit, index) => {
-          const folded = unitDone(unit, stars) && !expanded.has(unit.id);
-          return (
-            <motion.div
-              key={unit.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.06 }}
-            >
-              <UnitSection
-                units={units}
-                unit={unit}
-                stars={stars}
-                currentId={currentId}
-                folded={folded}
-                onToggle={toggle}
-                onStart={startLesson}
-              />
-            </motion.div>
-          );
-        })}
-      </div>
+      <PanViewport currentId={currentId}>
+        <div className="space-y-4">
+          {units.map((unit, index) => {
+            const folded = unitDone(unit, stars) && !expanded.has(unit.id);
+            return (
+              <motion.div
+                key={unit.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06 }}
+              >
+                <UnitSection
+                  units={units}
+                  unit={unit}
+                  stars={stars}
+                  currentId={currentId}
+                  folded={folded}
+                  onToggle={toggle}
+                  onStart={startLesson}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      </PanViewport>
     </div>
   );
 }
