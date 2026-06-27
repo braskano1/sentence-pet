@@ -21,7 +21,8 @@ describe('content store (course-aware)', () => {
     const s = useContentStore.getState();
     expect(s.activeCourseId).toBe('other');
     expect(s.status).toBe('live');
-    expect(s.bundle.units).toBe(next.units);
+    // resolveCourseBundle always builds a new array, so use deep equality (not reference)
+    expect(s.bundle.units).toStrictEqual(next.units);
   });
 
   it('setBundle wraps a bundle into the default course and syncs', () => {
@@ -29,6 +30,7 @@ describe('content store (course-aware)', () => {
     const s = useContentStore.getState();
     expect(s.activeCourseId).toBe('default');
     expect(s.status).toBe('live');
-    expect(s.bundle.units).toBe(s.course!.units);
+    // resolveCourseBundle always builds a new array, so use deep equality (not reference)
+    expect(s.bundle.units).toStrictEqual(s.course!.units);
   });
 });
