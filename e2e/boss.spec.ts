@@ -25,8 +25,8 @@ type StoreState = {
   finishBoss: (won: boolean) => void;
   // battle store fields
   charge: number;
-  battlePhase: 'answering' | 'charged';
-  begin: (pet: unknown, boss: unknown, rng?: () => number) => void;
+  battlePhase: 'answering' | 'charged' | 'spell';
+  begin: (pet: unknown, boss: unknown, rng?: () => number, items?: unknown[]) => void;
   tickCharge: (dtMs: number) => void;
   resolveSwipe: (success: boolean) => void;
   snapshot: { petHp: number; petHpMax: number; bossHp: number } | null;

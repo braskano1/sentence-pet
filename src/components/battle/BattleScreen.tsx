@@ -86,14 +86,16 @@ export function BattleScreen() {
     return () => cancelAnimationFrame(raf);
   }, [intro, snapshot?.outcome]);
 
-  const prevPhase = useRef(0);
+  const prevPhase = useRef(phaseIndex);
   const [enrageKey, setEnrageKey] = useState(0);
   useEffect(() => {
     if (phaseIndex > prevPhase.current) {
-      prevPhase.current = phaseIndex;
       setEnrageKey((k) => k + 1);
       getSfx().play('enrage', 0.5);
     }
+    // Always sync — also captures begin()'s reset to 0 on a soft retry, so the
+    // next cross on the retried run fires enrage again (BattleScreen doesn't unmount).
+    prevPhase.current = phaseIndex;
   }, [phaseIndex]);
 
   useEffect(() => {
