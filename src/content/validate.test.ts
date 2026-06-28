@@ -3,7 +3,7 @@ import type { ContentBundle } from './model';
 import { validateContent, validateCourse } from './validate';
 import type { DrillItem, ContentItem } from '../data/types';
 import { isDragDrop } from '../data/types';
-import type { Course } from './course';
+import type { Course, BossNode } from './course';
 import type { CheckpointBoss } from './model';
 
 const item = (id: string): DrillItem =>
@@ -123,6 +123,7 @@ const base: Course = {
     lessons: [{ id: 'l', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: ['a'], isCheckpoint: true }],
   }],
   gates: [],
+  finalBoss: { id: 'fb', title: 'F', scope: 'final', reviewsUnitIds: ['u'], reviewCount: 3, boss: sampleBoss, onClear: 'completeCourse' },
 };
 
 describe('validateCourse', () => {
@@ -156,9 +157,19 @@ describe('validateCourse', () => {
     expect(res.errors.join()).toMatch(/pins unknown item/);
   });
 
-  // Task 8: Non-breaking structural validation for gates/final
-  it('still accepts a course with no final boss (P3a does not enforce presence)', () => {
-    expect(validateCourse(base).ok).toBe(true);
+  // P3b: enforce finalBoss presence + reject duplicate gate afterUnitId
+  it('rejects a course with no final boss', () => {
+    const bad: Course = { ...base, finalBoss: undefined };
+    const res = validateCourse(bad);
+    expect(res.ok).toBe(false);
+    expect(res.errors.join()).toMatch(/final boss/i);
+  });
+
+  it('rejects two gates sharing the same afterUnitId', () => {
+    const g = (id: string): BossNode =>
+      ({ id, title: id, scope: 'gated', afterUnitId: 'u', reviewsUnitIds: ['u'], boss: sampleBoss });
+    const bad: Course = { ...base, gates: [g('g1'), g('g2')] };
+    expect(validateCourse(bad).errors.join()).toMatch(/duplicate afterUnitId/i);
   });
   it('rejects a gated boss with no afterUnitId', () => {
     const bad: Course = {
