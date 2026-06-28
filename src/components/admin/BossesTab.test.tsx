@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BossesTab } from './BossesTab';
 import type { Course } from '../../content/course';
+import { BUILTIN_PET_DEFS, setActivePetDefs } from '../../domain/petDef';
 
 function course(): Course {
   return {
@@ -43,5 +44,42 @@ describe('BossesTab', () => {
     render(<BossesTab course={course()} onChange={onChange} />);
     fireEvent.change(screen.getByLabelText(/final boss name/i), { target: { value: 'Champion' } });
     expect(onChange.mock.calls.at(-1)![0].finalBoss.boss.name).toBe('Champion');
+  });
+
+  describe('reward pet dropdown', () => {
+    beforeEach(() => { setActivePetDefs([...BUILTIN_PET_DEFS]); });
+    afterEach(() => { setActivePetDefs([...BUILTIN_PET_DEFS]); });
+
+    it('sets rewardPetDefId on the final boss via the dropdown', () => {
+      const onChange = vi.fn();
+      render(<BossesTab course={course()} onChange={onChange} />);
+      fireEvent.change(screen.getByLabelText(/final boss reward/i),
+        { target: { value: BUILTIN_PET_DEFS[0].id } });
+      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+        finalBoss: expect.objectContaining({ rewardPetDefId: BUILTIN_PET_DEFS[0].id }),
+      }));
+    });
+
+    it('clears rewardPetDefId when the none option is chosen', () => {
+      const onChange = vi.fn();
+      const c = course();
+      c.finalBoss!.rewardPetDefId = BUILTIN_PET_DEFS[0].id;
+      render(<BossesTab course={c} onChange={onChange} />);
+      fireEvent.change(screen.getByLabelText(/final boss reward/i), { target: { value: '' } });
+      const next: Course = onChange.mock.calls.at(-1)![0];
+      expect(next.finalBoss!.rewardPetDefId).toBeUndefined();
+    });
+
+    it('sets rewardPetDefId on a gated boss via the dropdown', () => {
+      const onChange = vi.fn();
+      const c = course();
+      c.gates = [{ id: 'g1', title: 'G', scope: 'gated', afterUnitId: 'u1', reviewsUnitIds: ['u1'],
+        boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } }];
+      render(<BossesTab course={c} onChange={onChange} />);
+      fireEvent.change(screen.getByLabelText(/gate g1 reward/i),
+        { target: { value: BUILTIN_PET_DEFS[1].id } });
+      const next: Course = onChange.mock.calls.at(-1)![0];
+      expect(next.gates[0].rewardPetDefId).toBe(BUILTIN_PET_DEFS[1].id);
+    });
   });
 });

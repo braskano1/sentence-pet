@@ -1,5 +1,6 @@
 import type { Course, BossNode } from '../../content/course';
 import type { Species, PetStage } from '../../data/types';
+import { usePetDefs } from '../../state/usePetDefs';
 
 const SPECIES: Species[] = ['leaf', 'fire', 'air', 'water'];
 const STAGES: Exclude<PetStage, 'egg'>[] = ['baby', 'young', 'adult'];
@@ -16,6 +17,7 @@ function BossFields({ node, units, poolIds, onPatch }: {
   onPatch: (patch: Partial<BossNode>) => void;
 }) {
   const labelPrefix = node.scope === 'final' ? 'final boss' : `gate ${node.id}`;
+  const petDefs = usePetDefs();
   const reviews = node.reviewsUnitIds ?? [];
   const pinned = node.pinnedItemIds ?? [];
   return (
@@ -44,6 +46,13 @@ function BossFields({ node, units, poolIds, onPatch }: {
         <select className="border px-1" value={node.boss.rivalSprite.stage}
           onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, stage: e.target.value as Exclude<PetStage, 'egg'> } } })}>
           {STAGES.map((s) => <option key={s}>{s}</option>)}
+        </select>
+      </label>
+      <label>{`${labelPrefix} reward`}
+        <select className="border px-1" value={node.rewardPetDefId ?? ''}
+          onChange={(e) => onPatch({ rewardPetDefId: e.target.value || undefined })}>
+          <option value="">— none (random) —</option>
+          {petDefs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </label>
       <label>{`${labelPrefix} reviewCount`}
