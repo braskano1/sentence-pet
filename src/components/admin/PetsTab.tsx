@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BattleStats, PetDef, PetMood, PetStage, Rarity, Species, StatRange } from '../../data/types';
 import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
+import { hydratePetDefs } from '../../content/load';
 import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
@@ -86,6 +87,7 @@ export function PetsTab() {
   const [status, setStatus] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | number>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   function patch(id: string, p: Partial<PetDef>) {
     setDraft(draft.map((d) => (d.id === id ? { ...d, ...p } : d)));
@@ -105,6 +107,20 @@ export function PetsTab() {
 
   const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
   const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
+
+  // Live-fetch the catalog on mount, re-seed the draft, then unblock. Blocking until the
+  // fetch resolves means a stale draft can never be saved over the live Firestore catalog.
+  useEffect(() => {
+    let cancelled = false;
+    hydratePetDefs()
+      .catch(() => {}) // offline: fall through and unblock from the current registry
+      .finally(() => {
+        if (cancelled) return;
+        setDraft([...getActivePetDefs()]);
+        setLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   async function save() {
     if (!validation.ok) return;
@@ -147,6 +163,8 @@ export function PetsTab() {
     if (d.enabled && draft.filter((x) => x.enabled).length <= 1) return false;
     return true;
   }
+
+  if (!loaded) return <p className="p-4 text-sm">loading pets…</p>;
 
   return (
     <div className="flex flex-col gap-3 text-sm">

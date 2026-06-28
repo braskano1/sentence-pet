@@ -10,6 +10,8 @@ const writePetDefsCache = vi.fn();
 vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => writePetDefsCache(d) }));
 const uploadSprite = vi.fn().mockResolvedValue('https://download/leaf.webp');
 vi.mock('../../firebase/storage', () => ({ uploadSprite: (...a: unknown[]) => uploadSprite(...a) }));
+const hydratePetDefs = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../content/load', () => ({ hydratePetDefs: () => hydratePetDefs() }));
 
 import { PetsTab, reconcileEvolution, stripDefault, setVariant, clearVariant } from './PetsTab';
 import type { PetDef } from '../../data/types';
@@ -20,12 +22,15 @@ beforeEach(() => {
   writePetDefsCache.mockClear();
   uploadSprite.mockClear();
   uploadSprite.mockResolvedValue('https://download/leaf.webp');
+  hydratePetDefs.mockClear();
+  hydratePetDefs.mockResolvedValue(undefined);
   setActivePetDefs([...BUILTIN_PET_DEFS]); // reset module-level registry between tests
 });
 
 describe('PetsTab — list + save', () => {
-  it('lists every active def by name (seeded from getActivePetDefs)', () => {
+  it('lists every active def by name (seeded from getActivePetDefs)', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     for (const d of active()) {
       expect(screen.getAllByText(new RegExp(d.name)).length).toBeGreaterThan(0);
     }
@@ -33,6 +38,7 @@ describe('PetsTab — list + save', () => {
 
   it('Save is enabled for the builtins and calls savePetDefs + swaps the live registry', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     const save = screen.getByRole('button', { name: /^save$/i });
     expect(save).not.toBeDisabled();
     fireEvent.click(save);
@@ -46,6 +52,7 @@ describe('PetsTab — list + save', () => {
     savePetDefs.mockRejectedValueOnce(new Error('boom'));
     const before = active();
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await screen.findByText(/save failed/i);
     // registry reference is untouched — no optimistic swap
@@ -54,8 +61,9 @@ describe('PetsTab — list + save', () => {
 });
 
 describe('PetsTab — add / delete / filter', () => {
-  it('Add creates a new def with a unique id and the next free dexNo', () => {
+  it('Add creates a new def with a unique id and the next free dexNo', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     const before = screen.getAllByRole('listitem').length;
     fireEvent.click(screen.getByRole('button', { name: /add pet/i }));
     expect(screen.getAllByRole('listitem').length).toBe(before + 1);
@@ -63,19 +71,21 @@ describe('PetsTab — add / delete / filter', () => {
     expect(screen.getByText(/#5/)).toBeInTheDocument();
   });
 
-  it('Delete removes a def', () => {
+  it('Delete removes a def', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     // delete the last builtin (Dewdrop / water) — not the starter, not the last enabled
     fireEvent.click(screen.getByRole('button', { name: /delete .*dewdrop/i }));
     expect(screen.queryByText(/Dewdrop/)).not.toBeInTheDocument();
   });
 
-  it('Delete is disabled for the sole starter', () => {
+  it('Delete is disabled for the sole starter', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     expect(screen.getByRole('button', { name: /delete .*leaflet/i })).toBeDisabled();
   });
 
-  it('Delete is disabled for the last enabled def', () => {
+  it('Delete is disabled for the last enabled def', async () => {
     setActivePetDefs([
       { ...BUILTIN_PET_DEFS[0], enabled: false },                  // Leaflet — starter, disabled
       { ...BUILTIN_PET_DEFS[1], starter: false },                 // Embers — the ONLY enabled def
@@ -83,11 +93,13 @@ describe('PetsTab — add / delete / filter', () => {
       { ...BUILTIN_PET_DEFS[3], starter: false, enabled: false }, // Dewdrop — disabled
     ]);
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     expect(screen.getByRole('button', { name: /delete .*embers/i })).toBeDisabled();
   });
 
-  it('gen filter narrows the list (no defs shown for an empty gen)', () => {
+  it('gen filter narrows the list (no defs shown for an empty gen)', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // adds gen-1 def #5
     fireEvent.change(screen.getByLabelText(/filter by gen/i), { target: { value: '1' } });
     expect(screen.getAllByRole('listitem').length).toBe(5);
@@ -95,33 +107,36 @@ describe('PetsTab — add / delete / filter', () => {
 });
 
 describe('PetsTab — edit form', () => {
-  function openFirstEditor() {
+  async function openFirstEditor() {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i }); // wait past the loading gate
     fireEvent.click(screen.getAllByRole('button', { name: /^edit /i })[0]); // edit Leaflet (starter)
   }
 
-  it('edits the name', () => {
-    openFirstEditor();
+  it('edits the name', async () => {
+    await openFirstEditor();
     fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Sprout' } });
     expect(screen.getByText(/Sprout/)).toBeInTheDocument();
   });
 
-  it('toggles types via the multi-select (>=1 enforced by validate)', () => {
-    openFirstEditor();
+  it('toggles types via the multi-select (>=1 enforced by validate)', async () => {
+    await openFirstEditor();
     const sel = screen.getByLabelText(/^types$/i) as HTMLSelectElement;
     Array.from(sel.options).forEach((o) => { o.selected = o.value === 'leaf' || o.value === 'fire'; });
     fireEvent.change(sel);
     expect(screen.getByText(/leaf, fire/)).toBeInTheDocument();
   });
 
-  it('starter checkbox is disabled unless the def is gen 1 / dexNo 1', () => {
+  it('starter checkbox is disabled unless the def is gen 1 / dexNo 1', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i })); // gen1 dexNo4
     expect(screen.getByLabelText(/^starter$/i)).toBeDisabled();
   });
 
-  it('editing the id keeps the form open and renames the def', () => {
+  it('editing the id keeps the form open and renames the def', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i }));
     const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
     fireEvent.change(idInput, { target: { value: 'def-renamed' } });
@@ -131,6 +146,7 @@ describe('PetsTab — edit form', () => {
 
   it('keeps exactly one starter after saving the gen1/dex1 def', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
     const cb = screen.getByLabelText(/^starter$/i) as HTMLInputElement;
     expect(cb.checked).toBe(true);
@@ -142,6 +158,7 @@ describe('PetsTab — edit form', () => {
 
   it('editing a rarity band applies [min,max] to all 5 stats of that rarity on save', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
     fireEvent.change(screen.getByLabelText(/common min/i), { target: { value: '3' } });
     fireEvent.change(screen.getByLabelText(/common max/i), { target: { value: '9' } });
@@ -160,6 +177,7 @@ describe('PetsTab — edit form', () => {
 describe('PetsTab — evolution UI + validate gate', () => {
   it('setting evolvesToId in the form persists reciprocal links on save', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i })); // def-leaf, gen1 dex1
     fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -169,8 +187,9 @@ describe('PetsTab — evolution UI + validate gate', () => {
     });
   });
 
-  it('Save is disabled + error shown when a duplicate (gen,dexNo) exists', () => {
+  it('Save is disabled + error shown when a duplicate (gen,dexNo) exists', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // gen1 dex5
     fireEvent.click(screen.getByRole('button', { name: /edit .*new pet/i }));
     fireEvent.change(screen.getByLabelText(/^dexNo$/i), { target: { value: '1' } }); // collide with starter
@@ -178,8 +197,9 @@ describe('PetsTab — evolution UI + validate gate', () => {
     expect(screen.getByText(/duplicate \(gen 1, dexNo 1\)/i)).toBeInTheDocument();
   });
 
-  it('Save is disabled + cycle error shown when evolves-from and evolves-to point to the same def', () => {
+  it('Save is disabled + cycle error shown when evolves-from and evolves-to point to the same def', async () => {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
     fireEvent.change(screen.getByLabelText(/evolves from/i), { target: { value: 'def-fire' } });
     fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
@@ -189,14 +209,15 @@ describe('PetsTab — evolution UI + validate gate', () => {
 });
 
 describe('PetsTab — sprite upload', () => {
-  function openLeaflet() {
+  async function openLeaflet() {
     render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
   }
   const webp = () => new File(['x'], 'leaf.webp', { type: 'image/webp' });
 
   it('uploading a default sprite calls uploadSprite(defId, "default", file) and shows a preview', async () => {
-    openLeaflet();
+    await openLeaflet();
     const input = screen.getByLabelText(/^default sprite$/i);
     fireEvent.change(input, { target: { files: [webp()] } });
     await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'default', expect.any(File)));
@@ -204,7 +225,7 @@ describe('PetsTab — sprite upload', () => {
   });
 
   it('an uploaded default sprite persists through Save', async () => {
-    openLeaflet();
+    await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
     await screen.findByAltText(/default sprite preview/i);
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -214,7 +235,7 @@ describe('PetsTab — sprite upload', () => {
   });
 
   it('uploading a variant writes sprite.variants[stage][mood]', async () => {
-    openLeaflet();
+    await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^baby happy sprite$/i), { target: { files: [webp()] } });
     await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'baby-happy', expect.any(File)));
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -225,14 +246,14 @@ describe('PetsTab — sprite upload', () => {
 
   it('a failed upload surfaces an error and leaves the sprite unset', async () => {
     uploadSprite.mockRejectedValueOnce(new Error('network down'));
-    openLeaflet();
+    await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
     expect(await screen.findByText(/network down/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument();
   });
 
   it('Clear removes an uploaded default sprite', async () => {
-    openLeaflet();
+    await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
     await screen.findByAltText(/default sprite preview/i);
     fireEvent.click(screen.getByRole('button', { name: /clear default sprite/i }));
@@ -240,7 +261,7 @@ describe('PetsTab — sprite upload', () => {
   });
 
   it('clearing a variant removes it from sprite.variants', async () => {
-    openLeaflet();
+    await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^baby happy sprite$/i), { target: { files: [webp()] } });
     expect(await screen.findByAltText(/baby happy sprite preview/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /clear baby happy sprite/i }));
@@ -249,7 +270,7 @@ describe('PetsTab — sprite upload', () => {
 
   it('a failed upload can be retried with the same file and then succeeds', async () => {
     uploadSprite.mockRejectedValueOnce(new Error('network down'));
-    openLeaflet();
+    await openLeaflet();
     const input = screen.getByLabelText(/^default sprite$/i);
     fireEvent.change(input, { target: { files: [webp()] } });
     expect(await screen.findByText(/network down/i)).toBeInTheDocument();
@@ -261,7 +282,7 @@ describe('PetsTab — sprite upload', () => {
 
   it('a successful upload clears a prior error message', async () => {
     uploadSprite.mockRejectedValueOnce(new Error('boom'));
-    openLeaflet();
+    await openLeaflet();
     const input = screen.getByLabelText(/^baby sad sprite$/i);
     fireEvent.change(input, { target: { files: [webp()] } });
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();
@@ -348,5 +369,36 @@ describe('setVariant / clearVariant', () => {
   it('clearVariant is a no-op when the stage/mood does not exist', () => {
     const sprite = { variants: { adult: { sad: 'https://cdn.test/as.webp' } } };
     expect(clearVariant(sprite, 'baby', 'happy')).toEqual(sprite);
+  });
+});
+
+describe('PetsTab — block until live load', () => {
+  it('shows a loading state and no editor until hydratePetDefs resolves', async () => {
+    let resolve!: () => void;
+    hydratePetDefs.mockReturnValueOnce(new Promise<void>((r) => { resolve = () => r(); }));
+    render(<PetsTab />);
+    expect(screen.getByText(/loading pets/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add pet/i })).not.toBeInTheDocument();
+    resolve();
+    expect(await screen.findByRole('button', { name: /add pet/i })).toBeInTheDocument();
+  });
+
+  it('calls hydratePetDefs on mount and re-seeds the draft from the live registry', async () => {
+    const live = [
+      ...BUILTIN_PET_DEFS,
+      { ...BUILTIN_PET_DEFS[1], id: 'def-custom', name: 'Custom Mon', dexNo: 5,
+        sprite: { default: 'https://cdn.test/custom.webp' } },
+    ];
+    hydratePetDefs.mockImplementationOnce(async () => { setActivePetDefs(live); });
+    render(<PetsTab />);
+    expect(hydratePetDefs).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/Custom Mon/)).toBeInTheDocument();
+  });
+
+  it('still unblocks when hydratePetDefs rejects (offline) — editor renders from the current registry', async () => {
+    hydratePetDefs.mockRejectedValueOnce(new Error('offline'));
+    render(<PetsTab />);
+    expect(await screen.findByRole('button', { name: /add pet/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
   });
 });
