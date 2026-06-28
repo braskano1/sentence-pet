@@ -61,15 +61,14 @@ describe('PetsTab — add / delete / filter', () => {
     expect(screen.getByRole('button', { name: /delete .*leaflet/i })).toBeDisabled();
   });
 
-  it('Delete is disabled for the last enabled non-starter', () => {
+  it('Delete is disabled for the last enabled def', () => {
     setActivePetDefs([
-      { ...BUILTIN_PET_DEFS[0] },                                   // Leaflet — starter, enabled
-      { ...BUILTIN_PET_DEFS[1], starter: false },                  // Embers — enabled non-starter (sole)
-      { ...BUILTIN_PET_DEFS[2], starter: false, enabled: false },  // Zephyr — disabled
-      { ...BUILTIN_PET_DEFS[3], starter: false, enabled: false },  // Dewdrop — disabled
+      { ...BUILTIN_PET_DEFS[0], enabled: false },                  // Leaflet — starter, disabled
+      { ...BUILTIN_PET_DEFS[1], starter: false },                 // Embers — the ONLY enabled def
+      { ...BUILTIN_PET_DEFS[2], starter: false, enabled: false }, // Zephyr — disabled
+      { ...BUILTIN_PET_DEFS[3], starter: false, enabled: false }, // Dewdrop — disabled
     ]);
     render(<PetsTab />);
-    // Leaflet (starter) is also blocked, but Embers is the last ENABLED non-starter:
     expect(screen.getByRole('button', { name: /delete .*embers/i })).toBeDisabled();
   });
 

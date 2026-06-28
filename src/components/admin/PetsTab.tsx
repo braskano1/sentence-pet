@@ -83,7 +83,7 @@ export function PetsTab() {
 
   function canDelete(d: PetDef): boolean {
     if (d.starter) return false;
-    if (d.enabled && draft.filter((x) => x.enabled && !x.starter).length <= 1) return false;
+    if (d.enabled && draft.filter((x) => x.enabled).length <= 1) return false;
     return true;
   }
 
