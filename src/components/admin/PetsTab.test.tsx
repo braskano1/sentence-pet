@@ -115,21 +115,27 @@ describe('PetsTab — edit form', () => {
     expect((screen.getByLabelText(/^id$/i) as HTMLInputElement).value).toBe('def-renamed');
   });
 
-  it('keeps exactly one starter after saving the gen1/dex1 def', () => {
+  it('keeps exactly one starter after saving the gen1/dex1 def', async () => {
     render(<PetsTab />);
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
     const cb = screen.getByLabelText(/^starter$/i) as HTMLInputElement;
     expect(cb.checked).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    expect(active().filter((d) => d.starter)).toHaveLength(1);
+    await waitFor(() => {
+      expect(active().filter((d) => d.starter)).toHaveLength(1);
+    });
   });
 
-  it('editing a rarity band applies [min,max] to all 5 stats of that rarity on save', () => {
+  it('editing a rarity band applies [min,max] to all 5 stats of that rarity on save', async () => {
     render(<PetsTab />);
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
     fireEvent.change(screen.getByLabelText(/common min/i), { target: { value: '3' } });
     fireEvent.change(screen.getByLabelText(/common max/i), { target: { value: '9' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => {
+      const leaf = active().find((d) => d.id === 'def-leaf')!;
+      expect(leaf.statBands.common.hp).toEqual([3, 9]);
+    });
     const leaf = active().find((d) => d.id === 'def-leaf')!;
     for (const stat of ['hp', 'atk', 'def', 'spd', 'luk'] as const) {
       expect(leaf.statBands.common[stat]).toEqual([3, 9]);

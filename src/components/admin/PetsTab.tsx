@@ -74,9 +74,9 @@ export function PetsTab() {
   async function save() {
     if (!validation.ok) return;
     setStatus('saving…');
-    setActivePetDefs(reconciled); // optimistic: update in-memory registry immediately
     try {
       await savePetDefs(reconciled);
+      setActivePetDefs(reconciled);
       writePetDefsCache(reconciled);
       setDraft(reconciled);
       setStatus('saved ✓');
