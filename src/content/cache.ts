@@ -1,6 +1,7 @@
 import type { ContentBundle } from './model';
 import type { Course } from './course';
-import { validateContent, validateCourse } from './validate';
+import type { PetDef } from '../data/types';
+import { validateContent, validateCourse, validatePetDefs } from './validate';
 import { DEFAULT_COURSE_ID } from './migrate';
 
 export const CACHE_KEY = 'sentence-pet-content';
@@ -43,5 +44,25 @@ export function cachedCourse(id: string = DEFAULT_COURSE_ID): Course | null {
 export function writeCourseCache(course: Course): void {
   try {
     localStorage.setItem(COURSE_CACHE_PREFIX + course.id, JSON.stringify(course));
+  } catch { /* quota / disabled — non-fatal */ }
+}
+
+export const PET_DEFS_CACHE_KEY = 'sentence-pet-petdefs';
+
+/** Last-good cached pet-def catalog, or null if absent/corrupt/invalid. */
+export function cachedPetDefs(): PetDef[] | null {
+  try {
+    const raw = localStorage.getItem(PET_DEFS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PetDef[];
+    return validatePetDefs(parsed).ok ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writePetDefsCache(defs: PetDef[]): void {
+  try {
+    localStorage.setItem(PET_DEFS_CACHE_KEY, JSON.stringify(defs));
   } catch { /* quota / disabled — non-fatal */ }
 }

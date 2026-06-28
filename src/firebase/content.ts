@@ -3,13 +3,14 @@ import { db } from './db';
 import type { ContentBundle, Unit } from '../content/model';
 import type { Course, CourseIndexEntry } from '../content/course';
 import { bundleToDefaultCourse, DEFAULT_COURSE_ID } from '../content/migrate';
-import type { DrillItem } from '../data/types';
+import type { DrillItem, PetDef } from '../data/types';
 
 const COURSES_INDEX = doc(db, 'content', 'coursesIndex');
 const courseDoc = (id: string) => doc(db, 'content', 'courses', id, 'doc');
 // Legacy docs (read-only fallback for one-time migration):
 const LEGACY_POOL = doc(db, 'content', 'pool');
 const LEGACY_JOURNEY = doc(db, 'content', 'journey');
+const PET_DEFS = doc(db, 'content', 'petDefs');
 
 /** Index for the course-select screen. Falls back to a synthetic default entry
  *  (so a not-yet-migrated install still lists the legacy content as a course). */
@@ -65,4 +66,18 @@ export async function fetchContent(): Promise<ContentBundle> {
   const pool = (poolSnap.data()?.items ?? {}) as Record<string, DrillItem>;
   const units = (journeySnap.data()?.units ?? []) as Unit[];
   return { pool, units };
+}
+
+/** Read the pet-def catalog (single doc). Returns null if the doc is absent (caller falls back to built-ins). */
+export async function fetchPetDefs(): Promise<PetDef[] | null> {
+  const snap = await getDoc(PET_DEFS);
+  if (!snap.exists()) return null;
+  return (snap.data()?.defs ?? []) as PetDef[];
+}
+
+/** Overwrite the whole pet-def catalog doc. (P2 admin save uses this.) */
+export async function savePetDefs(defs: PetDef[]): Promise<void> {
+  const batch = writeBatch(db);
+  batch.set(PET_DEFS, { defs });
+  await batch.commit();
 }
