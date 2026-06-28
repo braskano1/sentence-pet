@@ -67,7 +67,12 @@ export const SPRITES: Record<Species, Record<SpriteStage, Record<PetMood, string
  *  overridable. With a `def`, a sprite override resolves variant → default → element art. */
 export function spriteSrc(species: Species, stage: PetStage, mood: PetMood, def?: PetDef): string {
   if (stage === 'egg') return EGG_SPRITE;
-  return def?.sprite?.variants?.[stage]?.[mood] ?? def?.sprite?.default ?? SPRITES[species][stage][mood];
+  // Element guard: a def resolved for a different element (e.g. an orphaned defId falling
+  // back to the starter) must NOT leak its custom art onto a pet of another species.
+  const override = def && def.element === species
+    ? def.sprite?.variants?.[stage]?.[mood] ?? def.sprite?.default
+    : undefined;
+  return override ?? SPRITES[species][stage][mood];
 }
 
 /** Reserved for Phase B (species shop icons). Unused by Phase 0 components. */

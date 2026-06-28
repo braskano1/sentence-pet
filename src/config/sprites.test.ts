@@ -68,3 +68,16 @@ describe('spriteSrc — override resolution', () => {
     expect(spriteSrc('leaf', 'egg', 'happy', def)).toBe(EGG_SPRITE);
   });
 });
+
+describe('spriteSrc — element guard (orphaned-defId leak)', () => {
+  it('ignores the override when the def element does not match the pet species', () => {
+    const leafWithSprite = { ...leafDef, sprite: { default: 'https://cdn.test/leaf-override.webp' } };
+    // a fire pet wrongly resolved to a leaf def must still render fire element art
+    expect(spriteSrc('fire', 'adult', 'happy', leafWithSprite)).toBe(SPRITES.fire.adult.happy);
+  });
+
+  it('still applies the override when the def element matches the species', () => {
+    const leafWithSprite = { ...leafDef, sprite: { default: 'https://cdn.test/leaf-override.webp' } };
+    expect(spriteSrc('leaf', 'adult', 'happy', leafWithSprite)).toBe('https://cdn.test/leaf-override.webp');
+  });
+});
