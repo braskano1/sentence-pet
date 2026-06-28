@@ -23,7 +23,7 @@ describe('RewardHatchScreen', () => {
   });
 
   it('plays the hatch then routes to petRoom and clears lastHatch', () => {
-    useGameStore.setState({ lastHatch: pet(), lastStageChange: null });
+    useGameStore.setState({ lastHatch: pet(), lastStageChange: null, screen: 'rewardHatch' });
     render(<RewardHatchScreen />);
     fireEvent.click(screen.getByText('done'));
     expect(useGameStore.getState().lastHatch).toBeNull();
@@ -31,7 +31,7 @@ describe('RewardHatchScreen', () => {
   });
 
   it('routes to evolution when an active-pet stage change is pending', () => {
-    useGameStore.setState({ lastHatch: pet(), lastStageChange: { from: 'baby', to: 'young' } });
+    useGameStore.setState({ lastHatch: pet(), lastStageChange: { from: 'baby', to: 'young' }, screen: 'rewardHatch' });
     render(<RewardHatchScreen />);
     fireEvent.click(screen.getByText('done'));
     expect(useGameStore.getState().lastHatch).toBeNull();

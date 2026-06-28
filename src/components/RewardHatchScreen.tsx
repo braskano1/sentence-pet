@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { resolvePetDef } from '../domain/petDef';
 import { usePetDefs } from '../state/usePetDefs';
@@ -9,17 +9,19 @@ import { EvolutionCinematic } from './EvolutionCinematic';
 export function RewardHatchScreen() {
   const pet = useGameStore((s) => s.lastHatch);
   const lastStageChange = useGameStore((s) => s.lastStageChange);
+  const screen = useGameStore((s) => s.screen);
   const clearHatch = useGameStore((s) => s.clearHatch);
   const setScreen = useGameStore((s) => s.setScreen);
   const defs = usePetDefs();
 
-  // Once onDone fires it clears lastHatch and routes itself; the reload guard
-  // below must not then clobber that route back to petRoom.
-  const handedOff = useRef(false);
-
+  // Leave only on a genuine reload that lands here with nothing to hatch (lastHatch
+  // is transient/not persisted). We gate on `screen === 'rewardHatch'` so this does NOT
+  // fire after onDone routes away: clearHatch() nulls lastHatch and re-renders this
+  // still-mounted node (AnimatePresence mode="wait"), but `screen` is already 'evolution'
+  // /'petRoom' by then, so the guard self-suppresses without a ref.
   useEffect(() => {
-    if (!pet && !handedOff.current) setScreen('petRoom'); // reload guard — nothing to hatch
-  }, [pet, setScreen]);
+    if (!pet && screen === 'rewardHatch') setScreen('petRoom');
+  }, [pet, screen, setScreen]);
 
   if (!pet) return null;
 
@@ -30,7 +32,6 @@ export function RewardHatchScreen() {
       species={pet.species}
       def={resolvePetDef(pet.defId, defs)}
       onDone={() => {
-        handedOff.current = true;
         clearHatch();
         setScreen(lastStageChange ? 'evolution' : 'petRoom');
       }}
