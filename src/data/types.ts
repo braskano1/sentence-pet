@@ -103,6 +103,23 @@ export type Species = 'leaf' | 'fire' | 'air' | 'water';
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
+/** Inclusive integer stat range [min, max]. */
+export type StatRange = [min: number, max: number];
+
+/**
+ * Admin-authored creature definition (global content). The fixed 4 `Species`
+ * remain the element/matchup taxonomy; a PetDef *references* one element.
+ * Stable `id` is course-referenceable later (P4 rewardPetDefId).
+ */
+export interface PetDef {
+  id: string;
+  name: string;
+  element: Species;
+  statBands: Record<Rarity, Record<keyof BattleStats, StatRange>>;
+  starter?: boolean; // marks the first-egg creature (exactly one def true)
+  enabled: boolean;  // gacha-pool gate; P1 stores only, P4 reads it
+}
+
 export type PetMood = 'happy' | 'sad';
 
 export interface BattleStats {
