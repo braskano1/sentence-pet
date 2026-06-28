@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { rollStats, makePet, rollRarity, rollStatsForRarity, rarityForStats, allocateStatPoints } from './pets';
+import { rollStats, makePet, rollRarity, rollStatsForRarity, rarityForStats, allocateStatPoints, rollStatsFromBands } from './pets';
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { Rarity } from '../data/types';
+import type { Rarity, BattleStats, StatRange } from '../data/types';
 
 /** Deterministic rng that yields a fixed sequence (cycles). */
 function seq(values: number[]): () => number {
@@ -119,5 +119,24 @@ describe('allocateStatPoints', () => {
     const g = allocateStatPoints(zero, 3, () => 0); // always hp
     expect(g).toEqual({ hp: 3, atk: 0, def: 0, spd: 0, luk: 0 });
     expect(zero.hp).toBe(0);
+  });
+});
+
+describe('rollStatsFromBands', () => {
+  const bands = (r: StatRange): Record<keyof BattleStats, StatRange> => ({ hp: r, atk: r, def: r, spd: r, luk: r });
+
+  it('rolls each stat inside its band (inclusive)', () => {
+    const s = rollStatsFromBands(bands([50, 60]), () => 0.5);
+    for (const v of Object.values(s)) { expect(v).toBeGreaterThanOrEqual(50); expect(v).toBeLessThanOrEqual(60); }
+  });
+
+  it('hits band floor at rng 0 and ceiling at rng ~1', () => {
+    expect(rollStatsFromBands(bands([72, 88]), () => 0).hp).toBe(72);
+    expect(rollStatsFromBands(bands([72, 88]), () => 0.999).hp).toBe(88);
+  });
+
+  it('respects per-stat band differences', () => {
+    const mixed = { hp: [10, 10], atk: [90, 90], def: [40, 40], spd: [50, 50], luk: [60, 60] } as Record<keyof BattleStats, StatRange>;
+    expect(rollStatsFromBands(mixed, () => 0.5)).toEqual({ hp: 10, atk: 90, def: 40, spd: 50, luk: 60 });
   });
 });
