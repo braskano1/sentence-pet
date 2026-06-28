@@ -12,7 +12,8 @@ import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rollStatsFromBands, rarityForStats } from '../domain/pets';
-import { defaultDefForElement, starterDef, obtainablePool, resolvePetDef } from '../domain/petDef';
+import { defaultDefForElement, starterDef, obtainablePool, resolvePetDef, getActivePetDefs } from '../domain/petDef';
+import { evolvePetDef } from '../domain/evolution';
 import { addCaught } from '../domain/dex';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
@@ -47,7 +48,7 @@ interface RoundResult {
   correctCount: number;
 }
 
-interface GameState {
+export interface GameState {
   screen: Screen;
   pets: PetInstance[];
   activePetId: string;
@@ -289,7 +290,13 @@ export const useGameStore = create<GameState>()(
               const withXp = applyXp(p, r.firstClearXp, rng);
               lastLevelUp = withXp.levelUp;
               lastStageChange = withXp.stageChange;
-              return withXp.pet;
+              let next = withXp.pet;
+              if (withXp.stageChange && withXp.stageChange.from !== 'egg') {
+                const before = next.defId;
+                next = evolvePetDef(next, getActivePetDefs(), withXp.stageChange.to, rng);
+                if (next.defId !== before) caughtDefIds = addCaught(caughtDefIds, next.defId);
+              }
+              return next;
             });
             const rewardId = cleared?.rewardPetDefId;
             let def: PetDef;
@@ -352,6 +359,7 @@ export const useGameStore = create<GameState>()(
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           let levelUp: GameState['lastLevelUp'] = null;
           let stageChange: StageChange | null = null;
+          let evolvedDefId: string | null = null;
           const pets = updateActive(s, (p) => {
             const happiness =
               decayHappiness(p.happiness) +
@@ -360,8 +368,14 @@ export const useGameStore = create<GameState>()(
             const withXp = applyXp(p, xpGain, rng);
             levelUp = withXp.levelUp;
             stageChange = withXp.stageChange;
+            let next = withXp.pet;
+            if (withXp.stageChange && withXp.stageChange.from !== 'egg') {
+              const before = next.defId;
+              next = evolvePetDef(next, getActivePetDefs(), withXp.stageChange.to, rng);
+              if (next.defId !== before) evolvedDefId = next.defId;
+            }
             return {
-              ...withXp.pet,
+              ...next,
               happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
               bars: decayBars(p.bars),
             };
@@ -373,6 +387,7 @@ export const useGameStore = create<GameState>()(
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             lastLevelUp: levelUp,
             lastStageChange: stageChange,
+            caughtDefIds: evolvedDefId ? addCaught(s.caughtDefIds, evolvedDefId) : s.caughtDefIds,
             journey,
             currentLessonId: null,
             pendingStinger,

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION } from './gameStore';
+import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
+import type { PetDef } from '../data/types';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
@@ -1103,5 +1104,67 @@ describe('finishBoss data-driven reward grant (P4c)', () => {
     expect(useGameStore.getState().lastHatch).not.toBeNull();
     useGameStore.getState().clearHatch();
     expect(useGameStore.getState().lastHatch).toBeNull();
+  });
+});
+
+describe('P4d def-chain evolution in the store', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS.slice()));
+
+  it('advances defId to evolvesToId on the baby->young stage-change and records the dex', () => {
+    const base: PetDef = {
+      id: 'p4d-base', name: 'Base', gen: 9, dexNo: 90, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, evolvesToId: 'p4d-mid',
+    };
+    const mid: PetDef = {
+      id: 'p4d-mid', name: 'Mid', gen: 9, dexNo: 91, types: ['fire'], element: 'fire',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, evolvesFromId: 'p4d-base',
+    };
+    setActivePetDefs([base, mid]);
+
+    // Park a hatched baby just below L16 so one finishRound round tips it into young.
+    const gain = xpPerCorrect(1);
+    useGameStore.setState({
+      pets: [{
+        id: 'a', defId: 'p4d-base', species: 'leaf', hatched: true, xp: totalXpForLevel(16) - gain, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'a',
+      caughtDefIds: ['p4d-base'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+
+    const p = selectActivePet(useGameStore.getState());
+    expect(p.defId).toBe('p4d-mid');
+    expect(p.species).toBe('fire');
+    expect(useGameStore.getState().caughtDefIds).toContain('p4d-mid');
+  });
+
+  it('does NOT hop on egg->baby (hatch)', () => {
+    const base: PetDef = {
+      id: 'p4d-h', name: 'H', gen: 9, dexNo: 92, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, evolvesToId: 'p4d-h2',
+    };
+    const h2: PetDef = {
+      id: 'p4d-h2', name: 'H2', gen: 9, dexNo: 93, types: ['fire'], element: 'fire',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, evolvesFromId: 'p4d-h',
+    };
+    setActivePetDefs([base, h2]);
+    useGameStore.setState({
+      pets: [{
+        id: 'b', defId: 'p4d-h', species: 'leaf', hatched: false, xp: 0, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'b', caughtDefIds: ['p4d-h'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().hatch();
+    const p = selectActivePet(useGameStore.getState());
+    expect(p.defId).toBe('p4d-h');
   });
 });
