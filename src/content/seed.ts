@@ -1,4 +1,6 @@
 import type { ContentBundle } from './model';
+import type { Course } from './course';
+import { bundleToDefaultCourse } from './migrate';
 
 /** The migrated static content (snapshot). Bundled fallback for first paint AND the
  *  seed-script source. Generated from the legacy data/ modules; now standalone.
@@ -368,3 +370,35 @@ export const SEED: ContentBundle = {
     }
   ]
 };
+
+/** Seed course: the migrated default course plus the example gated + final bosses.
+ *  This is the offline/first-paint fallback and the source for `npm run seed:export`.
+ *  Do NOT hand-edit content — author in the admin UI (#admin) then regenerate. */
+export const SEED_COURSE: Course = (() => {
+  const base = bundleToDefaultCourse(SEED);
+  return {
+    ...base,
+    gates: [
+      {
+        id: 'gate-midcourse',
+        title: 'Midway Review',
+        scope: 'gated',
+        afterUnitId: 'u2-next-steps',
+        reviewsUnitIds: ['u1-basics', 'u2-next-steps'],
+        reviewCount: 5,
+        pinnedItemIds: ['mx-l1-1'],
+        boss: { tierId: 'tier-2', element: 'water', name: 'Riptide Reviewer', rivalSprite: { species: 'water', stage: 'adult' } },
+      },
+    ],
+    finalBoss: {
+      id: 'final-course',
+      title: 'Grand Finale',
+      scope: 'final',
+      onClear: 'completeCourse',
+      reviewsUnitIds: ['u1-basics', 'u2-next-steps', 'u3-challenge'],
+      reviewCount: 6,
+      pinnedItemIds: ['gr-l1-1'],
+      boss: { tierId: 'tier-3', element: 'leaf', name: 'Course Champion', rivalSprite: { species: 'leaf', stage: 'adult' } },
+    },
+  };
+})();

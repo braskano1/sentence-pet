@@ -6,7 +6,7 @@ import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
 import { SEED } from '../content/seed';
 import { useContentStore } from '../content/store';
-import { SEED_COURSE } from '../content/seedCourse';
+import { SEED_COURSE } from '../content/seed';
 
 function reset() {
   useGameStore.getState().resetForTest();

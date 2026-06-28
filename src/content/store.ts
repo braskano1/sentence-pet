@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { ContentBundle } from './model';
 import type { Course } from './course';
 import { resolveCourseBundle } from './journey';
-import { SEED_COURSE } from './seedCourse';
+import { SEED_COURSE } from './seed';
 import { bundleToDefaultCourse } from './migrate';
 import { cachedCourse } from './cache';
 

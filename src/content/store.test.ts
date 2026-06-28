@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useContentStore } from './store';
-import { SEED_COURSE } from './seedCourse';
+import { SEED_COURSE } from './seed';
 
 describe('useContentStore bundle resolution', () => {
   beforeEach(() => {
