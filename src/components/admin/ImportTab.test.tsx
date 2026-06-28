@@ -37,4 +37,12 @@ describe('ImportTab', () => {
     await screen.findByText(/missing required sheet/i);
     expect(screen.getByRole('button', { name: /commit/i })).toBeDisabled();
   });
+
+  it('shows a friendly error when the reader throws', async () => {
+    const onCommit = vi.fn();
+    render(<ImportTab onCommit={onCommit} readWorkbook={async () => { throw new Error('not an xlsx'); }} />);
+    fireEvent.change(screen.getByLabelText(/excel file/i), { target: { files: [new File(['garbage'], 'bad.xlsx')] } });
+    await screen.findByText(/could not read file/i);
+    expect(screen.getByRole('button', { name: /commit/i })).toBeDisabled();
+  });
 });

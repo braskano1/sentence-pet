@@ -18,11 +18,16 @@ export function ImportTab({ onCommit, readWorkbook = defaultReadWorkbook }: {
   const [errors, setErrors] = useState<string[]>([]);
 
   async function onFile(file: File) {
-    const wb = await readWorkbook(file);
-    const { course: parsed, errors: parseErrors } = parseWorkbookToCourse(wb);
-    const validation = parsed ? validateCourse(parsed) : { ok: false, errors: [] };
-    setCourse(parsed);
-    setErrors([...parseErrors, ...validation.errors]);
+    try {
+      const wb = await readWorkbook(file);
+      const { course: parsed, errors: parseErrors } = parseWorkbookToCourse(wb);
+      const validation = parsed ? validateCourse(parsed) : { ok: false, errors: [] };
+      setCourse(parsed);
+      setErrors([...parseErrors, ...validation.errors]);
+    } catch (err) {
+      setCourse(null);
+      setErrors([`Could not read file: ${err instanceof Error ? err.message : String(err)}`]);
+    }
   }
 
   const canCommit = course !== null && errors.length === 0;
@@ -30,13 +35,13 @@ export function ImportTab({ onCommit, readWorkbook = defaultReadWorkbook }: {
   return (
     <div className="flex flex-col gap-3 text-sm">
       <label>Excel file (.xlsx)
-        <input type="file" accept=".xlsx" aria-label="excel file"
+        <input type="file" accept=".xlsx"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); }} />
       </label>
 
       {errors.length > 0 && (
         <ul aria-live="polite" className="rounded bg-red-50 p-2 text-red-700">
-          {errors.map((e) => <li key={e}>• {e}</li>)}
+          {errors.map((e, i) => <li key={`${i}:${e}`}>• {e}</li>)}
         </ul>
       )}
 
