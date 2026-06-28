@@ -1013,6 +1013,19 @@ describe('caught dex set', () => {
     expect(after.caughtDefIds.length).toBeGreaterThanOrEqual(before);
   });
 
+  it('a boss first-clear reward egg unions the egg defId into caughtDefIds', () => {
+    // Mirror the setup from the 'boss flow' suite: startBoss then finishBoss(true).
+    // The content store is already seeded with SEED_COURSE (which contains u1-checkpoint)
+    // so no extra setup is required.
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    // finishBoss on a first-clear appends exactly one egg and records it in lastPull.
+    const egg = s.lastPull;
+    expect(egg).not.toBeNull();
+    expect(s.caughtDefIds).toContain(egg!.defId);
+  });
+
   it('PERSIST_VERSION is 17', () => {
     expect(PERSIST_VERSION).toBe(17);
   });
