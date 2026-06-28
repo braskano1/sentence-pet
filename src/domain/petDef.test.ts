@@ -11,7 +11,7 @@ import {
 } from './petDef';
 import { rollStatsForRarity } from './pets';
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { Rarity, Species } from '../data/types';
+import type { PetDef, Rarity, Species } from '../data/types';
 
 const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 const ELEMENTS: Species[] = ['leaf', 'fire', 'air', 'water'];
@@ -132,5 +132,39 @@ describe('obtainablePool', () => {
   it('falls back to a never-empty pool when nothing is obtainable', () => {
     const none = [{ ...BUILTIN_PET_DEFS[0], id: 'x', enabled: false }];
     expect(obtainablePool(none).length).toBe(1); // starterDef fallback — never blank
+  });
+});
+
+describe('obtainablePool — stage-1 roots only (P4d)', () => {
+  const mk = (over: Partial<PetDef>): PetDef => ({
+    id: over.id ?? 'x', name: 'X', gen: 1, dexNo: 1, types: ['leaf'], element: 'leaf',
+    statBands: {} as PetDef['statBands'], enabled: true, starter: false, ...over,
+  });
+
+  it('excludes mid/final evolutions (defs with evolvesFromId)', () => {
+    const defs = [
+      mk({ id: 'root', starter: true }),
+      mk({ id: 'mid', evolvesFromId: 'root', evolvesToId: 'final', dexNo: 2 }),
+      mk({ id: 'final', evolvesFromId: 'mid', dexNo: 3 }),
+    ];
+    const pool = obtainablePool(defs).map((d) => d.id);
+    expect(pool).toContain('root');
+    expect(pool).not.toContain('mid');
+    expect(pool).not.toContain('final');
+  });
+
+  it('still excludes disabled and gachaObtainable:false roots', () => {
+    const defs = [
+      mk({ id: 'root', starter: true }),
+      mk({ id: 'off', enabled: false, dexNo: 2 }),
+      mk({ id: 'noGacha', gachaObtainable: false, dexNo: 3 }),
+    ];
+    const pool = obtainablePool(defs).map((d) => d.id);
+    expect(pool).toEqual(['root']);
+  });
+
+  it('falls back to the starter when no root is obtainable', () => {
+    const defs = [mk({ id: 'root', starter: true, evolvesFromId: 'ghost' })];
+    expect(obtainablePool(defs).length).toBe(1);
   });
 });
