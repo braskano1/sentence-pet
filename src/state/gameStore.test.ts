@@ -8,11 +8,6 @@ import { SEED, SEED_COURSE } from '../content/seed';
 import { useContentStore } from '../content/store';
 import { defaultDefForElement } from '../domain/petDef';
 
-const runMigrate = (state: unknown): unknown =>
-  (useGameStore as unknown as {
-    persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
-  }).persist.getOptions().migrate(state, 15);
-
 function reset() {
   useGameStore.getState().resetForTest();
 }
@@ -925,6 +920,11 @@ describe('finishBoss course completion', () => {
 });
 
 describe('persist migrate v15->16 (defId backfill)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
   it('PERSIST_VERSION is 16', () => {
     expect(PERSIST_VERSION).toBe(16);
   });
@@ -937,7 +937,19 @@ describe('persist migrate v15->16 (defId backfill)', () => {
       growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
       rarity: 'common', name: '',
     };
-    const migrated = runMigrate({ pets: [legacyPet], activePetId: 'p1' }) as { pets: { defId: string }[] };
+    const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
     expect(migrated.pets[0].defId).toBe(defaultDefForElement('fire').id);
+  });
+
+  it('already-set defId is not overwritten (idempotent)', () => {
+    const legacyPet = {
+      id: 'p1', species: 'water', hatched: true, xp: 0, happiness: 50,
+      bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+      rarity: 'common', name: '', defId: 'def-water',
+    };
+    const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
+    expect(migrated.pets[0].defId).toBe('def-water');
   });
 });
