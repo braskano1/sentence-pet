@@ -67,6 +67,12 @@ export function starterDef(defs: readonly PetDef[] = active): PetDef {
   return defs.find((d) => d.starter) ?? defs[0] ?? BUILTIN_PET_DEFS[0];
 }
 
+/** The never-empty gacha/reward pool: enabled + obtainable defs, or [starterDef()] as a floor. */
+export function obtainablePool(defs: readonly PetDef[] = active): readonly PetDef[] {
+  const pool = defs.filter((d) => d.enabled && d.gachaObtainable !== false);
+  return pool.length ? pool : [starterDef(defs)];
+}
+
 /** Resolve a pet's defId to a def. Never null: unknown ids fall back to the starter. */
 export function resolvePetDef(defId: string, defs: readonly PetDef[] = active): PetDef {
   return defs.find((d) => d.id === defId) ?? starterDef(defs);

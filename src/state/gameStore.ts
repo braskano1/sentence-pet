@@ -12,7 +12,7 @@ import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
-import { defaultDefForElement, starterDef, getActivePetDefs } from '../domain/petDef';
+import { defaultDefForElement, starterDef, obtainablePool } from '../domain/petDef';
 import { addCaught } from '../domain/dex';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
@@ -395,8 +395,7 @@ export const useGameStore = create<GameState>()(
 
       pullEgg: () =>
         set((s) => {
-          const pool = getActivePetDefs().filter((d) => d.enabled && d.gachaObtainable !== false);
-          const defs = pool.length ? pool : [starterDef()]; // never-empty: a pull must never blank/throw
+          const defs = obtainablePool();
           const res = pullEggDomain(
             { coins: s.coins },
             { price: GAME_CONFIG.gacha.eggPrice, id: crypto.randomUUID(), rng, table: GAME_CONFIG.gacha.rarities, defs },

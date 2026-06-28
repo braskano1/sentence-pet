@@ -7,6 +7,7 @@ import {
   resolvePetDef,
   defaultDefForElement,
   starterDef,
+  obtainablePool,
 } from './petDef';
 import { rollStatsForRarity } from './pets';
 import { GAME_CONFIG } from '../config/gameConfig';
@@ -118,5 +119,18 @@ describe('active registry', () => {
     setActivePetDefs(BUILTIN_PET_DEFS); // same ref as current active
     expect(calls).toBe(0);
     unsub();
+  });
+});
+
+describe('obtainablePool', () => {
+  it('keeps enabled defs and drops gachaObtainable===false', () => {
+    const a = { ...BUILTIN_PET_DEFS[0], id: 'a', enabled: true, gachaObtainable: true };
+    const b = { ...BUILTIN_PET_DEFS[0], id: 'b', enabled: true, gachaObtainable: false };
+    const c = { ...BUILTIN_PET_DEFS[0], id: 'c', enabled: false };
+    expect(obtainablePool([a, b, c]).map((d) => d.id)).toEqual(['a']);
+  });
+  it('falls back to a never-empty pool when nothing is obtainable', () => {
+    const none = [{ ...BUILTIN_PET_DEFS[0], id: 'x', enabled: false }];
+    expect(obtainablePool(none).length).toBe(1); // starterDef fallback — never blank
   });
 });
