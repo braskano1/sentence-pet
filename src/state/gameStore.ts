@@ -13,6 +13,7 @@ import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
 import { defaultDefForElement, starterDef } from '../domain/petDef';
+import { addCaught } from '../domain/dex';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
 import { findLesson } from '../content/model';
@@ -51,6 +52,8 @@ interface GameState {
   pets: PetInstance[];
   activePetId: string;
   coins: number; // account-level wallet
+  /** Def-chain dex: defIds the player has ever obtained. Accumulates; never shrinks. */
+  caughtDefIds: string[];
   inventory: Record<FoodGroup, number>;
   selectedDrill: DrillType;
   selectedLevel: number;
@@ -106,13 +109,14 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 16;
+export const PERSIST_VERSION = 17;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
   | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
+  | 'caughtDefIds'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -134,12 +138,17 @@ export function selectPersisted(s: GameState): PersistedState {
     journey: s.journey,
     audio: s.audio,
     l1Mode: s.l1Mode,
+    caughtDefIds: s.caughtDefIds,
   };
 }
 
 /** Active pet. Invariant: activePetId always resolves; fall back to pets[0] defensively. */
 export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string }): PetInstance =>
   s.pets.find((p) => p.id === s.activePetId) ?? s.pets[0];
+
+/** The caught-dex as a Set for O(1) membership in the UI. */
+export const selectCaughtSet = (s: { caughtDefIds: string[] }): Set<string> =>
+  new Set(s.caughtDefIds);
 
 /** Immutably replace the active pet via a transform. */
 function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetInstance[] {
@@ -186,6 +195,7 @@ function freshState() {
     lastReward: null,
     lastPull: null as PetInstance | null,
     owned: [] as string[],
+    caughtDefIds: [starterDef().id],
     activeBackground: null as string | null,
     activeTrack: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
@@ -263,6 +273,7 @@ export const useGameStore = create<GameState>()(
           let lastPull = s.lastPull;
           let lastLevelUp: GameState['lastLevelUp'] = null;
           let lastStageChange: StageChange | null = null;
+          let caughtDefIds = s.caughtDefIds;
           if (firstClear) {
             pets = updateActive(s, (p) => {
               const withXp = applyXp(p, r.firstClearXp, rng);
@@ -278,6 +289,7 @@ export const useGameStore = create<GameState>()(
             });
             pets = [...pets, egg];
             lastPull = egg;
+            caughtDefIds = addCaught(caughtDefIds, egg.defId);
           }
           return {
             pets,
@@ -285,6 +297,7 @@ export const useGameStore = create<GameState>()(
             lastPull,
             lastLevelUp,
             lastStageChange,
+            caughtDefIds,
             lastReward: { level: lvl, stars: 3, food: 0, coins: coinsGain, group: 'protein' as FoodGroup },
             journey: { ...s.journey, lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, 3) } },
             courseComplete,
@@ -381,7 +394,12 @@ export const useGameStore = create<GameState>()(
             { price: GAME_CONFIG.gacha.eggPrice, id: crypto.randomUUID(), rng, table: GAME_CONFIG.gacha.rarities },
           );
           if (!res.ok) return s; // no-op; UI disables Pull when too poor
-          return { pets: [...s.pets, res.pet], coins: res.coins, lastPull: res.pet };
+          return {
+            pets: [...s.pets, res.pet],
+            coins: res.coins,
+            lastPull: res.pet,
+            caughtDefIds: addCaught(s.caughtDefIds, res.pet.defId),
+          };
         }),
 
       equipBackground: (id) => set({ activeBackground: id }),
@@ -460,6 +478,7 @@ export const useGameStore = create<GameState>()(
       // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
       // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
       // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>'.
+      // v16->v17: seed caughtDefIds (the def-chain dex) from owned pets' defIds.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -570,6 +589,14 @@ export const useGameStore = create<GameState>()(
               ? p
               : { ...(p as PetInstance), defId: defaultDefForElement((p as PetInstance).species).id },
           );
+        }
+
+        // v16->v17: seed the caught-dex from owned pets (key off each pet's defId).
+        if (!(base as { caughtDefIds?: string[] }).caughtDefIds) {
+          const ids = Array.isArray(base.pets)
+            ? (base.pets as PetInstance[]).map((p) => p.defId)
+            : [];
+          (base as { caughtDefIds?: string[] }).caughtDefIds = Array.from(new Set(ids));
         }
 
         // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).

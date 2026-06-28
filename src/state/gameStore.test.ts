@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, selectActivePet, STARTER_ID, PERSIST_VERSION } from './gameStore';
+import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION } from './gameStore';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
@@ -925,8 +925,8 @@ describe('persist migrate v15->16 (defId backfill)', () => {
       persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
     }).persist.getOptions().migrate;
 
-  it('PERSIST_VERSION is 16', () => {
-    expect(PERSIST_VERSION).toBe(16);
+  it('PERSIST_VERSION is 17', () => {
+    expect(PERSIST_VERSION).toBe(17);
   });
 
   it('backfills defId on a legacy pet from its species', () => {
@@ -951,5 +951,28 @@ describe('persist migrate v15->16 (defId backfill)', () => {
     };
     const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
     expect(migrated.pets[0].defId).toBe('def-water');
+  });
+});
+
+describe('caught dex set', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('freshState seeds the starter as caught', () => {
+    const s = useGameStore.getState();
+    // starter pet defId is def-leaf
+    expect(selectCaughtSet(s).has('def-leaf')).toBe(true);
+  });
+
+  it('a gacha pull unions the pulled defId into caughtDefIds', () => {
+    useGameStore.getState().addCoinsForTest(1000);
+    const before = useGameStore.getState().caughtDefIds.length;
+    useGameStore.getState().pullEgg();
+    const after = useGameStore.getState();
+    expect(after.caughtDefIds).toContain(after.lastPull!.defId);
+    expect(after.caughtDefIds.length).toBeGreaterThanOrEqual(before);
+  });
+
+  it('PERSIST_VERSION is 17', () => {
+    expect(PERSIST_VERSION).toBe(17);
   });
 });

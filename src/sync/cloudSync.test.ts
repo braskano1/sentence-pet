@@ -20,7 +20,7 @@ function state(coins: number, pets: PetInstance[]): PersistedState {
     inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
     owned: [], activeBackground: null, activeTrack: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
-    l1Mode: 'TH',
+    l1Mode: 'TH', caughtDefIds: ['def-leaf'],
   };
 }
 
