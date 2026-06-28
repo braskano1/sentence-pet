@@ -163,6 +163,15 @@ describe('PetsTab — evolution UI + validate gate', () => {
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
     expect(screen.getByText(/duplicate \(gen 1, dexNo 1\)/i)).toBeInTheDocument();
   });
+
+  it('Save is disabled + cycle error shown when evolves-from and evolves-to point to the same def', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.change(screen.getByLabelText(/evolves from/i), { target: { value: 'def-fire' } });
+    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    expect(screen.getByText(/evolution cycle/i)).toBeInTheDocument();
+  });
 });
 
 describe('reconcileEvolution', () => {

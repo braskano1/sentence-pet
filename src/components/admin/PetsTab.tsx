@@ -231,7 +231,7 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
           );
         })}
       </fieldset>
-      <fieldset className="border p-2"><legend>evolution</legend>
+      <fieldset className="border p-2 flex flex-col gap-1"><legend>evolution</legend>
         <label>evolves from
           <select className="border px-1 ml-1" value={def.evolvesFromId ?? ''}
             onChange={(e) => onPatch({ evolvesFromId: e.target.value || undefined })}>
