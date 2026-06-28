@@ -103,6 +103,16 @@ Mirror `PetsTab.test.tsx` mock conventions (`savePetDefs`/`useAuth` mocked):
 - The **6-slot `variants` authoring UI** → P3b (the data shape already holds it; no migration needed).
 - Gacha pool over the dex; dex tracking (seen/caught); obtainability; course/boss `rewardPetDefId`; evolution execution. (Epic P4+.)
 
+## P3b follow-ups (from the final whole-feature review of P3a)
+
+P3a shipped READY-TO-MERGE (no critical/important issues). The final review surfaced these for P3b:
+
+1. **Firebase Storage file-picker** replacing the URL-paste input — the real infra slice (`getStorage`, `src/firebase/storage.ts`, `firebase.json` Storage block, `storage.rules`, emulator CORS).
+2. **6-slot `variants` authoring UI** — pure UI work; data shape, validation, and resolver already support it, no migration.
+3. **Orphaned-`defId` → starter-sprite leakage** (real, but a NEW visible symptom of a PRE-EXISTING latent issue). `resolvePetDef` falls back to the starter on an unknown id; admin can delete an in-use def (`deletePet`/`canDelete` only checks enabled-count, not live `PetInstance` references). If the starter carries a `sprite.default`, an orphaned pet of another element renders the starter's custom art. Fix in P3b: either element-guard the fallback sprite (ignore `sprite` when resolved `def.element !== pet.species`), or block deletion of defs referenced by live `PetInstance`s. Pre-P3a this already produced wrong stats/name; P3a only makes it visible as wrong art.
+4. **Thread `defId` into `EvolutionCinematic` + `Gacha`** so custom art shows during evolution and gacha reveal (currently species-only element art — spec-acceptable for P3a).
+5. **One-frame element-art flicker** on `PetSprite` src re-arm (cosmetic, `useEffect`-after-render) — left as-is.
+
 ## Landmines / heads-ups
 
 - **`firebase.json` is dirty-by-design** (intentional unstaged `host: 0.0.0.0` diff). P3a does **not** touch it (no Storage). **Stage explicit files only — never `git add -A`** (concurrent sessions).
