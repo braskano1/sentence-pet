@@ -37,6 +37,16 @@ describe('PetsTab — list + save', () => {
     expect(active().map((d) => d.id)).toEqual(BUILTIN_PET_DEFS.map((d) => d.id));
     expect(savePetDefs.mock.calls[0][0]).toHaveLength(BUILTIN_PET_DEFS.length);
   });
+
+  it('leaves the live registry unchanged when savePetDefs rejects', async () => {
+    savePetDefs.mockRejectedValueOnce(new Error('boom'));
+    const before = active();
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await screen.findByText(/save failed/i);
+    // registry reference is untouched — no optimistic swap
+    expect(active()).toBe(before);
+  });
 });
 
 describe('PetsTab — add / delete / filter', () => {
