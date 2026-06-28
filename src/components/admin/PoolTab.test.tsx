@@ -24,6 +24,9 @@ describe('PoolTab', () => {
     expect(onChange).toHaveBeenCalled();
     const next = onChange.mock.calls.at(-1)![0] as Course;
     expect(Object.keys(next.pool).length).toBe(2);
+    // course-only fields must survive the pool edit
+    expect(next.id).toBe('c');
+    expect(next.gates).toEqual([]);
   });
 
   it('new-item id does not collide when item-1 and item-3 exist (post-delete gap)', () => {

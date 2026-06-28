@@ -15,18 +15,20 @@ export function AdminShell() {
   const { user, signOut } = useAuth();
   const liveCourse = useContentStore((s) => s.course);
   const setCourse = useContentStore((s) => s.setCourse);
-  const [draft, setDraft] = useState<Course>(liveCourse!);
+  const [draft, setDraft] = useState<Course | null>(liveCourse);
   const [tab, setTab] = useState<Tab>('pool');
   const [status, setStatus] = useState('');
 
-  const validation = validateCourse(draft);
+  if (!draft) return <p className="p-4 text-sm text-red-600">No course loaded.</p>;
+  const currentDraft: Course = draft;
+  const validation = validateCourse(currentDraft);
 
   async function save() {
     if (!validation.ok) return;
     setStatus('saving…');
     try {
-      await saveCourse(draft);
-      setCourse(draft, 'live');
+      await saveCourse(currentDraft);
+      setCourse(currentDraft, 'live');
       setStatus('saved ✓');
     } catch (e) {
       setStatus(`save failed: ${(e as Error).message}`);

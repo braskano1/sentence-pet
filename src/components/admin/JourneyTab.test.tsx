@@ -45,6 +45,9 @@ describe('JourneyTab', () => {
     expect(onChange).toHaveBeenCalled();
     const next = onChange.mock.calls.at(-1)![0] as Course;
     expect(next.units[0].lessons[0].itemIds).toContain('b');
+    // course-only fields must survive the units edit
+    expect(next.id).toBe('c');
+    expect(next.gates).toEqual([]);
   });
 
   it('changing the lesson kind writes lesson.kind', () => {
