@@ -322,3 +322,43 @@ describe('validatePetDefs', () => {
     expect(validatePetDefs(defs).ok).toBe(false);
   });
 });
+
+describe('validatePetDefs — sprite override', () => {
+  it('accepts an absent sprite field', () => {
+    expect(validatePetDefs(clone()).ok).toBe(true);
+  });
+
+  it('accepts a valid https default sprite url', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { default: 'https://cdn.test/leaf.webp' } };
+    expect(validatePetDefs(defs).ok).toBe(true);
+  });
+
+  it('rejects a malformed sprite url', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { default: 'not-a-url' } };
+    const res = validatePetDefs(defs);
+    expect(res.ok).toBe(false);
+    expect(res.errors.some((e) => /valid http/i.test(e))).toBe(true);
+  });
+
+  it('rejects an empty-string sprite url', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { default: '' } };
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('rejects variants.egg (egg is never overridable)', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { variants: { egg: { happy: 'https://cdn.test/e.webp' } } } as PetDef['sprite'] };
+    const res = validatePetDefs(defs);
+    expect(res.ok).toBe(false);
+    expect(res.errors.some((e) => /egg/i.test(e))).toBe(true);
+  });
+
+  it('accepts a valid variants entry for a non-egg stage', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { variants: { adult: { happy: 'https://cdn.test/a.webp' } } } };
+    expect(validatePetDefs(defs).ok).toBe(true);
+  });
+});

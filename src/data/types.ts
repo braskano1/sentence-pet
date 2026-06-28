@@ -128,6 +128,15 @@ export interface PetDef {
   evolutionStage?: number;  // 1-based stage in its chain
   starter?: boolean;        // exactly one def true; must be the gen 1, dexNo 1 def
   enabled: boolean;         // gacha-pool gate; P4 reads it
+  /**
+   * Optional custom-art override (P3a). `default` covers ALL stage×mood; `variants`
+   * (P3b) overrides per stage×mood, each falling back to `default` then element art.
+   * The egg is never overridable. Absent → element art.
+   */
+  sprite?: {
+    default?: string;
+    variants?: Partial<Record<PetStage, Partial<Record<PetMood, string>>>>;
+  };
 }
 
 export type PetMood = 'happy' | 'sad';

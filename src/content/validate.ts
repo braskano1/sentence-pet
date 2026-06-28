@@ -125,6 +125,17 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
 const RARITY_KEYS: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 const PETDEF_STAT_KEYS: ReadonlyArray<keyof BattleStats> = ['hp', 'atk', 'def', 'spd', 'luk'];
 
+/** True only for a non-empty, parseable http(s) URL string. */
+function isHttpUrl(s: unknown): boolean {
+  if (typeof s !== 'string' || s.trim() === '') return false;
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 /** Structural validation for the pet-def catalog. Mirrors validateCourse's gate-before-save discipline. */
 export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -166,6 +177,19 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
     if (d.evolvesFromId !== undefined && !idSet.has(d.evolvesFromId)) push(`pet-def ${d.id} evolvesFromId ${d.evolvesFromId} is unknown`);
     if (d.evolvesToId !== undefined && !idSet.has(d.evolvesToId)) push(`pet-def ${d.id} evolvesToId ${d.evolvesToId} is unknown`);
     if (d.evolutionStage !== undefined && (typeof d.evolutionStage !== 'number' || d.evolutionStage < 1)) push(`pet-def ${d.id} evolutionStage must be >= 1`);
+
+    if (d.sprite) {
+      const urls: string[] = [];
+      if (d.sprite.default !== undefined) urls.push(d.sprite.default);
+      if (d.sprite.variants) {
+        if ('egg' in d.sprite.variants) push(`pet-def ${d.id} sprite.variants.egg is not allowed (egg is never overridable)`);
+        for (const [stage, byMood] of Object.entries(d.sprite.variants)) {
+          if (stage === 'egg') continue; // already reported above
+          for (const url of Object.values(byMood ?? {})) if (url !== undefined) urls.push(url as string);
+        }
+      }
+      for (const u of urls) if (!isHttpUrl(u)) push(`pet-def ${d.id} sprite url is not a valid http(s) URL: ${String(u)}`);
+    }
   }
 
   // Walk evolvesToId chains: detect cycles and non-increasing stages.
