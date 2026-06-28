@@ -292,6 +292,22 @@ describe('PetsTab — sprite upload', () => {
   });
 });
 
+describe('PetsTab — gacha obtainable toggle', () => {
+  it('toggling the obtainable checkbox patches gachaObtainable', async () => {
+    render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    const cb = screen.getByRole('checkbox', { name: /gacha obtainable/i }) as HTMLInputElement;
+    // builtins default to obtainable (gachaObtainable !== false), so the box starts checked
+    expect(cb.checked).toBe(true);
+    fireEvent.click(cb);
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
+    const saved = savePetDefs.mock.calls[0][0] as PetDef[];
+    expect(saved.find((d) => d.name === 'Leaflet')?.gachaObtainable).toBe(false);
+  });
+});
+
 describe('reconcileEvolution', () => {
   const base = (id: string, dexNo: number): PetDef => ({
     id, name: id, gen: 1, dexNo, types: ['leaf'], element: 'leaf',

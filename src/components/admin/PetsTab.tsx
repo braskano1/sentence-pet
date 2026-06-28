@@ -300,6 +300,11 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
         <input type="checkbox" className="ml-1" checked={def.enabled}
           onChange={(e) => onPatch({ enabled: e.target.checked })} />
       </label>
+      <label>gacha obtainable
+        <input type="checkbox" className="ml-1" aria-label="gacha obtainable"
+          checked={def.gachaObtainable !== false}
+          onChange={(e) => onPatch({ gachaObtainable: e.target.checked })} />
+      </label>
       <label>starter
         <input type="checkbox" className="ml-1" checked={!!def.starter} disabled={!starterEligible}
           onChange={(e) => { if (e.target.checked) onSetStarter(); else onPatch({ starter: false }); }} />
