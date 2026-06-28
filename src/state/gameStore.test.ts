@@ -1,11 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
+import { useGameStore, selectActivePet, STARTER_ID, PERSIST_VERSION } from './gameStore';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
 import { SEED, SEED_COURSE } from '../content/seed';
 import { useContentStore } from '../content/store';
+import { defaultDefForElement } from '../domain/petDef';
+
+const runMigrate = (state: unknown): unknown =>
+  (useGameStore as unknown as {
+    persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+  }).persist.getOptions().migrate(state, 15);
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -915,5 +921,23 @@ describe('finishBoss course completion', () => {
     useGameStore.setState({ currentCourseId: 'default', currentBossLessonId: 'final-course' });
     useGameStore.getState().finishBoss(false);
     expect(useGameStore.getState().courseComplete['default']).toBeUndefined();
+  });
+});
+
+describe('persist migrate v15->16 (defId backfill)', () => {
+  it('PERSIST_VERSION is 16', () => {
+    expect(PERSIST_VERSION).toBe(16);
+  });
+
+  it('backfills defId on a legacy pet from its species', () => {
+    const legacyPet = {
+      id: 'p1', species: 'fire', hatched: true, xp: 0, happiness: 50,
+      bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+      rarity: 'common', name: '',
+    };
+    const migrated = runMigrate({ pets: [legacyPet], activePetId: 'p1' }) as { pets: { defId: string }[] };
+    expect(migrated.pets[0].defId).toBe(defaultDefForElement('fire').id);
   });
 });

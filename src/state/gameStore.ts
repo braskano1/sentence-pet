@@ -12,6 +12,7 @@ import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
 import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
+import { defaultDefForElement, starterDef } from '../domain/petDef';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
 import { findLesson } from '../content/model';
@@ -105,7 +106,7 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 15;
+export const PERSIST_VERSION = 16;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
@@ -166,7 +167,7 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
 }
 
 function freshPet(): PetInstance {
-  return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
+  return makePet({ id: STARTER_ID, defId: starterDef().id, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {
@@ -458,6 +459,7 @@ export const useGameStore = create<GameState>()(
       //   allMuted:true lands as master.muted:true; the allMuted field is removed.
       // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
       // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
+      // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>'.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -558,6 +560,15 @@ export const useGameStore = create<GameState>()(
             (p as PetInstance).growth
               ? p
               : { ...(p as PetInstance), growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 } },
+          );
+        }
+
+        // v15->v16: backfill defId on any pet that predates the field (key off species/element).
+        if (Array.isArray(base.pets)) {
+          base.pets = base.pets.map((p) =>
+            (p as PetInstance).defId
+              ? p
+              : { ...(p as PetInstance), defId: defaultDefForElement((p as PetInstance).species).id },
           );
         }
 
