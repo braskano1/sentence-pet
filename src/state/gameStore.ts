@@ -11,8 +11,8 @@ import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
-import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
-import { defaultDefForElement, starterDef, obtainablePool } from '../domain/petDef';
+import { allocateStatPoints, makePet, rollStats, rollStatsFromBands, rarityForStats } from '../domain/pets';
+import { defaultDefForElement, starterDef, obtainablePool, resolvePetDef } from '../domain/petDef';
 import { addCaught } from '../domain/dex';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
 import { hydrateCourse } from '../content/load';
@@ -62,6 +62,7 @@ interface GameState {
   // state, so this is intentionally NOT cleared on navigation; persisting it is harmless
   // (the pet is already in pets[]). Only freshState/resetForTest reset it.
   lastPull: PetInstance | null;
+  lastHatch: PetInstance | null;   // P4c: transient — the freshly-granted reward pet awaiting its hatch cinematic
   owned: string[];
   activeBackground: string | null;
   activeTrack: string | null; // equipped overworld music track id; null = free default
@@ -92,6 +93,7 @@ interface GameState {
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
+  clearHatch: () => void;
   clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
@@ -200,6 +202,7 @@ function freshState() {
     selectedLevel: 1,
     lastReward: null,
     lastPull: null as PetInstance | null,
+    lastHatch: null as PetInstance | null,
     owned: [] as string[],
     caughtDefIds: [starterDef().id],
     activeBackground: null as string | null,
@@ -277,6 +280,7 @@ export const useGameStore = create<GameState>()(
           const coinsGain = firstClear ? r.firstClearCoins : r.replayCoins;
           let pets = s.pets;
           let lastPull = s.lastPull;
+          let lastHatch: PetInstance | null = s.lastHatch;
           let lastLevelUp: GameState['lastLevelUp'] = null;
           let lastStageChange: StageChange | null = null;
           let caughtDefIds = s.caughtDefIds;
@@ -287,20 +291,27 @@ export const useGameStore = create<GameState>()(
               lastStageChange = withXp.stageChange;
               return withXp.pet;
             });
+            const rewardId = cleared?.rewardPetDefId;
+            const def = rewardId
+              ? resolvePetDef(rewardId)                                  // starter-fallback if dangling — never blank
+              : (() => { const pool = obtainablePool(); return pool[Math.floor(rng() * pool.length)]; })();
             const egg = makePet({
               id: crypto.randomUUID(),
-              species: (['leaf', 'fire', 'air', 'water'] as const)[Math.floor(rng() * 4)],
-              stats: rollStats(rng),
+              species: def.element,
+              defId: def.id,
+              stats: rollStatsFromBands(def.statBands.common, rng),
               rarity: 'common',
             });
             pets = [...pets, egg];
             lastPull = egg;
+            lastHatch = egg;
             caughtDefIds = addCaught(caughtDefIds, egg.defId);
           }
           return {
             pets,
             coins: s.coins + coinsGain,
             lastPull,
+            lastHatch,
             lastLevelUp,
             lastStageChange,
             caughtDefIds,
@@ -419,6 +430,8 @@ export const useGameStore = create<GameState>()(
 
       clearStageChange: () => set({ lastStageChange: null }),
 
+      clearHatch: () => set({ lastHatch: null }),
+
       clearPendingStinger: () => set({ pendingStinger: null }),
 
       setChannelLevel: (ch, v) =>
@@ -463,14 +476,15 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, currentCourseId, currentBossLessonId, pendingStinger, ...rest } = s;
+        const { lastLevelUp, lastStageChange, lastHatch, currentLessonId, currentCourseId, currentBossLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
+        void lastHatch; // transient — not persisted
         void currentLessonId; // transient — not persisted
         void currentCourseId; // transient — not persisted
         void currentBossLessonId; // transient — not persisted
         void pendingStinger; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'currentCourseId' | 'currentBossLessonId' | 'pendingStinger'>;
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'lastHatch' | 'currentLessonId' | 'currentCourseId' | 'currentBossLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.

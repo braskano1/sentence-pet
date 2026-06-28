@@ -83,7 +83,7 @@ export const isFlashcard = (i: ContentItem): i is FlashcardItem => i.kind === 'f
 export const isMatching = (i: ContentItem): i is MatchingItem => i.kind === 'matching';
 export const isFillBlank = (i: ContentItem): i is FillBlankItem => i.kind === 'fillblank';
 
-export type Screen = 'egg' | 'petRoom' | 'pickCourse' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'bossPrep' | 'battle';
+export type Screen = 'egg' | 'petRoom' | 'pickCourse' | 'pickDrill' | 'drill' | 'reward' | 'shop' | 'gacha' | 'collection' | 'evolution' | 'rewardHatch' | 'bossPrep' | 'battle';
 
 export type PetStage = 'egg' | 'baby' | 'young' | 'adult';
 

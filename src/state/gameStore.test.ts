@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION } from './gameStore';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
@@ -6,7 +6,8 @@ import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
 import { SEED, SEED_COURSE } from '../content/seed';
 import { useContentStore } from '../content/store';
-import { defaultDefForElement } from '../domain/petDef';
+import { defaultDefForElement, obtainablePool, starterDef, setActivePetDefs, BUILTIN_PET_DEFS } from '../domain/petDef';
+import type { ContentBundle } from '../content/model';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -1028,5 +1029,79 @@ describe('caught dex set', () => {
 
   it('PERSIST_VERSION is 17', () => {
     expect(PERSIST_VERSION).toBe(17);
+  });
+});
+
+describe('finishBoss data-driven reward grant (P4c)', () => {
+  // Seed a single-unit bundle with one checkpoint boss lesson. `rewardPetDefId`
+  // is optional; setBundle round-trips arbitrary lesson fields through
+  // bundleToDefaultCourse -> resolveCourseBundle so findLesson(bundle, id) finds it.
+  function seedBossLesson(rewardPetDefId?: string) {
+    const bundle: ContentBundle = {
+      pool: { ...SEED.pool },
+      units: [
+        {
+          id: 'reward-unit',
+          title: 'Reward Unit',
+          emoji: '⚔️',
+          order: 1,
+          lessons: [
+            {
+              id: 'reward-boss',
+              kind: 'dragdrop',
+              drill: 'mixed',
+              level: 1,
+              isCheckpoint: true,
+              itemIds: ['mx-l1-1', 'mx-l1-2'],
+              boss: { tierId: 'tier-1', element: 'fire', name: 'Test Rival', rivalSprite: { species: 'fire', stage: 'young' } },
+              ...(rewardPetDefId ? { rewardPetDefId } : {}),
+            },
+          ],
+        },
+      ],
+    };
+    useContentStore.getState().setBundle(bundle, 'fallback');
+    useGameStore.setState({ currentBossLessonId: 'reward-boss' });
+  }
+
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS)); // restore registry after any mutation
+
+  it('grants the exact reward def on first boss clear', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-1', element: 'fire', enabled: true }, ...BUILTIN_PET_DEFS]);
+    seedBossLesson('reward-1');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(granted.defId).toBe('reward-1');
+    expect(granted.species).toBe('fire'); // = def.element
+    expect(s.lastHatch?.id).toBe(granted.id);
+    expect(s.caughtDefIds).toContain('reward-1');
+  });
+
+  it('pool-picks an obtainable def when the boss has no rewardPetDefId', () => {
+    seedBossLesson(); // no rewardPetDefId
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(obtainablePool().some((d) => d.id === granted.defId)).toBe(true);
+    expect(s.lastHatch?.id).toBe(granted.id);
+  });
+
+  it('falls back to the starter def for a dangling rewardPetDefId', () => {
+    seedBossLesson('does-not-exist');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(granted.defId).toBe(starterDef().id);
+    expect(s.lastHatch).not.toBeNull();
+  });
+
+  it('clearHatch resets lastHatch to null', () => {
+    seedBossLesson();
+    useGameStore.getState().finishBoss(true);
+    expect(useGameStore.getState().lastHatch).not.toBeNull();
+    useGameStore.getState().clearHatch();
+    expect(useGameStore.getState().lastHatch).toBeNull();
   });
 });
