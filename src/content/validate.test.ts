@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { ContentBundle } from './model';
-import { validateContent, validateCourse } from './validate';
-import type { DrillItem, ContentItem } from '../data/types';
+import { validateContent, validateCourse, validatePetDefs } from './validate';
+import type { DrillItem, ContentItem, PetDef } from '../data/types';
 import { isDragDrop } from '../data/types';
 import type { Course, BossNode } from './course';
 import type { CheckpointBoss } from './model';
+import { BUILTIN_PET_DEFS } from '../domain/petDef';
 
 const item = (id: string): DrillItem =>
   ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
@@ -209,5 +210,55 @@ describe('validateCourse', () => {
       finalBoss: { id: 'fb', title: 'F', scope: 'final', reviewsUnitIds: ['u'], boss: sampleBoss },
     };
     expect(validateCourse(bad).errors.join()).toMatch(/onClear/);
+  });
+});
+
+const clone = (): PetDef[] => JSON.parse(JSON.stringify(BUILTIN_PET_DEFS));
+
+describe('validatePetDefs', () => {
+  it('accepts the built-in defs', () => {
+    expect(validatePetDefs(clone())).toEqual({ ok: true, errors: [] });
+  });
+  it('rejects duplicate ids', () => {
+    const defs = clone();
+    defs[1].id = defs[0].id;
+    const r = validatePetDefs(defs);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toMatch(/duplicate/i);
+  });
+  it('rejects an empty name', () => {
+    const defs = clone();
+    defs[0].name = '   ';
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects an element outside the fixed four', () => {
+    const defs = clone();
+    (defs[0] as { element: string }).element = 'rock';
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects an inverted stat band (min > max)', () => {
+    const defs = clone();
+    (defs[0].statBands.common as unknown as { hp: [number, number] }).hp = [60, 40];
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects a missing rarity band', () => {
+    const defs = clone();
+    delete (defs[0].statBands as Record<string, unknown>).epic;
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects zero starters', () => {
+    const defs = clone();
+    defs.forEach((d) => { delete d.starter; });
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects multiple starters', () => {
+    const defs = clone();
+    defs.forEach((d) => { d.starter = true; });
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+  it('rejects when no def is enabled', () => {
+    const defs = clone();
+    defs.forEach((d) => { d.enabled = false; });
+    expect(validatePetDefs(defs).ok).toBe(false);
   });
 });

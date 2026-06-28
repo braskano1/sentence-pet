@@ -1,6 +1,7 @@
 import type { ContentBundle } from './model';
 import type { Course } from './course';
-import type { ContentItem } from '../data/types';
+import type { ContentItem, PetDef, Rarity } from '../data/types';
+import { SPECIES } from '../domain/species';
 
 /** Per-kind item checks. Self-dispatches on item.kind so every pool kind is
  *  validated structurally; shared checks (level, l1) run for all kinds. */
@@ -116,6 +117,42 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
   // P3b: two gates after the same unit both resolve to order N+0.5 (a tie the resolver can't place).
   const afterIds = course.gates.map((g) => g.afterUnitId).filter((x): x is string => !!x);
   if (new Set(afterIds).size !== afterIds.length) push('duplicate gate afterUnitId');
+
+  return { ok: errors.length === 0, errors };
+}
+
+const RARITY_KEYS: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
+const PETDEF_STAT_KEYS = ['hp', 'atk', 'def', 'spd', 'luk'] as const;
+
+/** Structural validation for the pet-def catalog. Mirrors validateCourse's gate-before-save discipline. */
+export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const push = (m: string) => errors.push(m);
+
+  const ids = defs.map((d) => d.id);
+  if (new Set(ids).size !== ids.length) push('duplicate pet-def ids');
+
+  for (const d of defs) {
+    if (!d.id || d.id.trim() === '') push('pet-def has empty id');
+    if (!d.name || d.name.trim() === '') push(`pet-def ${d.id} name is empty`);
+    if (!SPECIES.includes(d.element)) push(`pet-def ${d.id} element ${String(d.element)} is not one of the fixed four`);
+    for (const r of RARITY_KEYS) {
+      const band = d.statBands?.[r];
+      if (!band) { push(`pet-def ${d.id} missing stat bands for rarity ${r}`); continue; }
+      for (const stat of PETDEF_STAT_KEYS) {
+        const range = band[stat];
+        if (!range) { push(`pet-def ${d.id} ${r}.${stat} band missing`); continue; }
+        const [min, max] = range;
+        if (typeof min !== 'number' || typeof max !== 'number') push(`pet-def ${d.id} ${r}.${stat} band not numeric`);
+        else if (min > max) push(`pet-def ${d.id} ${r}.${stat} band min > max`);
+        else if (min < 0) push(`pet-def ${d.id} ${r}.${stat} band min < 0`);
+      }
+    }
+  }
+
+  const starters = defs.filter((d) => d.starter).length;
+  if (starters !== 1) push(`expected exactly one starter pet-def, found ${starters}`);
+  if (!defs.some((d) => d.enabled)) push('no pet-def is enabled');
 
   return { ok: errors.length === 0, errors };
 }
