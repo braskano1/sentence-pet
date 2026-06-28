@@ -131,4 +131,21 @@ describe('parseWorkbookToCourse', () => {
     const { errors } = parseWorkbookToCourse(book);
     expect(errors.some((e) => /spans units/.test(e))).toBe(true);
   });
+
+  it('parses rewardPetDefId from a Bosses row (blank omits it)', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer'],
+              ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Verb', 'run']],
+      Bosses: [
+        ['id', 'scope', 'afterUnit', 'reviewsUnits', 'reviewCount', 'rewardPetDefId'],
+        ['gate-1', 'gated', 'u1', 'u1', 3, ''],
+        ['final-1', 'final', '', 'u1', 6, 'leaf-1'],
+      ],
+    });
+    const { course } = parseWorkbookToCourse(book);
+    expect(course!.finalBoss!.rewardPetDefId).toBe('leaf-1');
+    expect(course!.gates[0].rewardPetDefId).toBeUndefined();
+  });
 });

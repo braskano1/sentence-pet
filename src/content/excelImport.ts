@@ -204,6 +204,7 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
       // falsy 0/NaN both omit reviewCount; a literal 0 in the sheet is treated as absent (validateCourse rejects <1)
       ...(reviewCountVal ? { reviewCount: reviewCountVal } : {}),
       ...(pinnedItemIds.length ? { pinnedItemIds } : {}),
+      ...(str(r.rewardPetDefId) ? { rewardPetDefId: str(r.rewardPetDefId) } : {}),
       boss: bossCfg(),
     };
 
