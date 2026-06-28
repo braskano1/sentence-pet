@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useGameStore, selectActivePet } from '../state/gameStore';
+import { resolvePetDef } from '../domain/petDef';
+import { usePetDefs } from '../state/usePetDefs';
 import { EvolutionCinematic } from './EvolutionCinematic';
 
 /** Routed evolution screen (hatch / L16 / L36). Binds the transient
@@ -9,6 +11,7 @@ export function EvolutionScreen() {
   const pet = useGameStore(selectActivePet);
   const clearStageChange = useGameStore((s) => s.clearStageChange);
   const setScreen = useGameStore((s) => s.setScreen);
+  const defs = usePetDefs();
 
   // No stage change to show (e.g. reload while on this screen) -> leave.
   useEffect(() => {
@@ -22,6 +25,7 @@ export function EvolutionScreen() {
       from={change.from}
       to={change.to}
       species={pet.species}
+      def={resolvePetDef(pet.defId, defs)}
       onDone={() => {
         clearStageChange();
         setScreen('petRoom');
