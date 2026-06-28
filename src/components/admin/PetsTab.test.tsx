@@ -395,8 +395,8 @@ describe('PetsTab — block until live load', () => {
     expect(await screen.findByText(/Custom Mon/)).toBeInTheDocument();
   });
 
-  it('still unblocks when hydratePetDefs rejects (offline) — editor renders from the current registry', async () => {
-    hydratePetDefs.mockRejectedValueOnce(new Error('offline'));
+  it('still unblocks when hydratePetDefs resolves without live data (offline) — editor renders from the current registry', async () => {
+    hydratePetDefs.mockResolvedValueOnce(undefined); // offline: no registry change
     render(<PetsTab />);
     expect(await screen.findByRole('button', { name: /add pet/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();

@@ -112,13 +112,13 @@ export function PetsTab() {
   // fetch resolves means a stale draft can never be saved over the live Firestore catalog.
   useEffect(() => {
     let cancelled = false;
-    hydratePetDefs()
-      .catch(() => {}) // offline: fall through and unblock from the current registry
-      .finally(() => {
-        if (cancelled) return;
-        setDraft([...getActivePetDefs()]);
-        setLoaded(true);
-      });
+    // hydratePetDefs never rejects (offline resolves without changing the registry);
+    // block until the fetch settles, then re-seed from whatever the registry now holds.
+    hydratePetDefs().finally(() => {
+      if (cancelled) return;
+      setDraft([...getActivePetDefs()]);
+      setLoaded(true);
+    });
     return () => { cancelled = true; };
   }, []);
 
@@ -164,7 +164,7 @@ export function PetsTab() {
     return true;
   }
 
-  if (!loaded) return <p className="p-4 text-sm">loading pets…</p>;
+  if (!loaded) return <p role="status" className="p-4 text-sm">loading pets…</p>;
 
   return (
     <div className="flex flex-col gap-3 text-sm">
