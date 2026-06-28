@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { spriteSrc } from '../config/sprites';
 import { STAGE_NAME } from '../domain/xp';
-import type { PetStage, Species } from '../data/types';
+import type { PetDef, PetStage, Species } from '../data/types';
 import { useEvolutionSequence } from '../hooks/useEvolutionSequence';
 import { getEvolutionSound, setEvolutionGain } from '../effects/evolutionSound';
 import { effectiveGain } from '../audio/mixer';
@@ -14,8 +14,8 @@ import { PressButton } from './PressButton';
  * skip, sound toggle, and confetti. Presentational + store-sound-setting only;
  * the caller decides what `onDone` does. */
 export function EvolutionCinematic({
-  from, to, species, onDone,
-}: { from: PetStage; to: PetStage; species: Species; onDone: () => void }) {
+  from, to, species, def, onDone,
+}: { from: PetStage; to: PetStage; species: Species; def?: PetDef; onDone: () => void }) {
   const audio = useGameStore((s) => s.audio);
   const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
   const reduced = !!useReducedMotion();
@@ -57,7 +57,7 @@ export function EvolutionCinematic({
   const revealed = phase === 'reveal' || phase === 'done';
   const showNew = revealed || (phase === 'strobe' && swap);
   const isSil = phase === 'silhouette' || phase === 'strobe';
-  const src = spriteSrc(species, showNew ? to : from, 'happy');
+  const src = spriteSrc(species, showNew ? to : from, 'happy', def);
 
   const finish = () => { sound.current.stop(); onDone(); };
 
