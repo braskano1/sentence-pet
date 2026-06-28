@@ -8,9 +8,9 @@ export type PetReaction = 'idle' | 'correct' | 'wrong';
 
 /** Centre-stage active pet: idle bob, a bounce on correct, a shake on wrong, plus a nudge line. */
 export function DrillPet({
-  species, stage, happiness, reaction, line,
+  species, stage, happiness, reaction, line, defId,
 }: {
-  species: Species; stage: PetStage; happiness: number; reaction: PetReaction; line: string;
+  species: Species; stage: PetStage; happiness: number; reaction: PetReaction; line: string; defId?: string;
 }) {
   const [bounce, setBounce] = useState(0);
   const [shake, setShake] = useState(0);
@@ -31,7 +31,7 @@ export function DrillPet({
         transition={{ duration: 0.45 }}
         className="mt-1"
       >
-        <PetSprite species={species} stage={stage} happiness={happiness} feedTrigger={bounce} />
+        <PetSprite species={species} stage={stage} happiness={happiness} feedTrigger={bounce} defId={defId} />
       </motion.div>
     </div>
   );
