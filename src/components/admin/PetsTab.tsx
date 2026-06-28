@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { BattleStats, PetDef, Rarity, Species, StatRange } from '../../data/types';
 import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
+import { validatePetDefs } from '../../content/validate';
+import { savePetDefs } from '../../firebase/content';
+import { writePetDefsCache } from '../../content/cache';
+import { SPECIES } from '../../domain/species';
+import { PET_TYPES } from '../../domain/petType';
 
 const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 const STAT_KEYS: ReadonlyArray<keyof BattleStats> = ['hp', 'atk', 'def', 'spd', 'luk'];
@@ -11,11 +16,6 @@ export function setRarityBand(def: PetDef, rarity: Rarity, range: StatRange): Pe
   for (const stat of STAT_KEYS) band[stat] = range;
   return { ...def, statBands: { ...def.statBands, [rarity]: band } };
 }
-import { validatePetDefs } from '../../content/validate';
-import { savePetDefs } from '../../firebase/content';
-import { writePetDefsCache } from '../../content/cache';
-import { SPECIES } from '../../domain/species';
-import { PET_TYPES } from '../../domain/petType';
 
 /** Forward links (evolvesToId) win; back-pointers (evolvesFromId) are derived/reconciled. */
 export function reconcileEvolution(defs: PetDef[]): PetDef[] {
@@ -221,11 +221,11 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
             <div key={r} className="flex items-center gap-2">
               <span className="w-20">{r}</span>
               <label className="text-xs">{`${r} min`}
-                <input type="number" aria-label={`${r} min`} className="w-16 border px-1 ml-1" value={min}
+                <input type="number" aria-label={`${r} min`} className="w-16 border px-1 ml-1" value={min} step="1" min="0"
                   onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch(setRarityBand(def, r, [n, max])); }} />
               </label>
               <label className="text-xs">{`${r} max`}
-                <input type="number" aria-label={`${r} max`} className="w-16 border px-1 ml-1" value={max}
+                <input type="number" aria-label={`${r} max`} className="w-16 border px-1 ml-1" value={max} step="1" min="0"
                   onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch(setRarityBand(def, r, [min, n])); }} />
               </label>
             </div>
