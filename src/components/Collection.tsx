@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
@@ -10,6 +10,9 @@ import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
 import type { Rarity } from '../data/types';
 import { DexGrid } from './DexGrid';
+
+const COLLECTION_TABS = ['pets', 'dex'] as const;
+type CollectionTab = (typeof COLLECTION_TABS)[number];
 
 /** A single battle-stat number that rolls when it changes (pet switch). */
 function StatNum({ value }: { value: number }) {
@@ -49,26 +52,51 @@ export function Collection() {
   const renamePet = useGameStore((s) => s.renamePet);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
-  const [tab, setTab] = useState<'pets' | 'dex'>('pets');
+  const [tab, setTab] = useState<CollectionTab>('pets');
+
+  const onTabKey = (e: KeyboardEvent, current: CollectionTab) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const i = COLLECTION_TABS.indexOf(current);
+    const next = e.key === 'ArrowRight'
+      ? COLLECTION_TABS[(i + 1) % COLLECTION_TABS.length]
+      : COLLECTION_TABS[(i - 1 + COLLECTION_TABS.length) % COLLECTION_TABS.length];
+    setTab(next);
+    document.getElementById(`collection-tab-${next}`)?.focus();
+  };
 
   return (
     <div className="flex h-full flex-col bg-amber-50">
       <div className="flex items-center justify-between border-b-2 border-amber-900/15 px-5 py-3">
-        <h2 className="text-lg font-extrabold text-amber-950">My Pets ({pets.length})</h2>
+        <h2 className="text-lg font-extrabold text-amber-950">
+          {tab === 'dex' ? 'Pokédex' : `My Pets (${pets.length})`}
+        </h2>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl bg-amber-900/10 p-0.5 text-sm font-bold">
-            <PressButton
+          <div role="tablist" aria-label="Collection view" className="flex rounded-xl bg-amber-900/10 p-0.5 text-sm font-bold">
+            <button
+              id="collection-tab-pets"
+              role="tab"
+              aria-selected={tab === 'pets'}
+              aria-controls="collection-panel"
+              tabIndex={tab === 'pets' ? 0 : -1}
               onClick={() => setTab('pets')}
+              onKeyDown={(e) => onTabKey(e, 'pets')}
               className={`rounded-lg px-2.5 py-1 ${tab === 'pets' ? 'bg-amber-200 text-amber-950' : 'text-amber-900/60'}`}
             >
               My Pets
-            </PressButton>
-            <PressButton
-              onClick={() => setTab('dex')}
+            </button>
+            <button
+              id="collection-tab-dex"
+              role="tab"
+              aria-selected={tab === 'dex'}
+              aria-controls="collection-panel"
+              tabIndex={tab === 'dex' ? 0 : -1}
+              onClick={() => { setEditing(false); setTab('dex'); }}
+              onKeyDown={(e) => onTabKey(e, 'dex')}
               className={`rounded-lg px-2.5 py-1 ${tab === 'dex' ? 'bg-amber-200 text-amber-950' : 'text-amber-900/60'}`}
             >
               Dex
-            </PressButton>
+            </button>
           </div>
           <PressButton
             onClick={() => setScreen('petRoom')}
@@ -81,7 +109,7 @@ export function Collection() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div id="collection-panel" role="tabpanel" aria-labelledby={`collection-tab-${tab}`} className="flex-1 overflow-y-auto p-5">
         {tab === 'dex' ? (
           <DexGrid />
         ) : (

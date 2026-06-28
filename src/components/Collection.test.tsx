@@ -74,7 +74,7 @@ describe('Collection dex tab', () => {
   it('switches to the Dex tab and shows the caught count', () => {
     useGameStore.getState().hatch();
     render(<Collection />);
-    fireEvent.click(screen.getByRole('button', { name: /^dex$/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /^dex$/i }));
     expect(screen.getByText(/caught\s*\d+\s*\/\s*\d+/i)).toBeInTheDocument();
   });
 
