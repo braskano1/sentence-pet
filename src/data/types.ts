@@ -104,7 +104,7 @@ export type Species = 'leaf' | 'fire' | 'air' | 'water';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 /** Inclusive integer stat range [min, max]. */
-export type StatRange = [min: number, max: number];
+export type StatRange = readonly [min: number, max: number];
 
 /**
  * Admin-authored creature definition (global content). The fixed 4 `Species`

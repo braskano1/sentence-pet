@@ -52,7 +52,7 @@ describe('resolve helpers', () => {
   it('resolvePetDef finds by id, falls back to starter for an unknown id', () => {
     const leaf = defaultDefForElement('leaf', BUILTIN_PET_DEFS);
     expect(resolvePetDef(leaf.id, BUILTIN_PET_DEFS)).toBe(leaf);
-    expect(resolvePetDef('does-not-exist', BUILTIN_PET_DEFS).starter).toBe(true);
+    expect(resolvePetDef('does-not-exist', BUILTIN_PET_DEFS)).toBe(starterDef(BUILTIN_PET_DEFS));
   });
 
   it('built-in bands feed rollStatsForRarity within range', () => {

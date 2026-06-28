@@ -6,8 +6,13 @@ import type { BattleStats, PetDef, Rarity, Species, StatRange } from '../data/ty
 function bandsFromGacha(): Record<Rarity, Record<keyof BattleStats, StatRange>> {
   const out = {} as Record<Rarity, Record<keyof BattleStats, StatRange>>;
   for (const tier of GAME_CONFIG.gacha.rarities) {
-    const band: StatRange = [tier.band[0], tier.band[1]];
-    out[tier.rarity] = { hp: band, atk: band, def: band, spd: band, luk: band };
+    out[tier.rarity] = {
+      hp: [tier.band[0], tier.band[1]],
+      atk: [tier.band[0], tier.band[1]],
+      def: [tier.band[0], tier.band[1]],
+      spd: [tier.band[0], tier.band[1]],
+      luk: [tier.band[0], tier.band[1]],
+    };
   }
   return out;
 }
