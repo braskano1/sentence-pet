@@ -48,7 +48,7 @@ function BossFields({ node, units, poolIds, onPatch }: {
       </label>
       <label>reviewCount
         <input type="number" className="w-16 border px-1" aria-label={`${labelPrefix} reviewCount`} value={node.reviewCount ?? 0}
-          onChange={(e) => { const n = Number(e.target.value); onPatch({ reviewCount: Number.isNaN(n) ? node.reviewCount : n }); }} />
+          onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch({ reviewCount: n }); }} />
       </label>
       <fieldset className="border p-1"><legend>reviews units</legend>
         {units.map((u) => (
