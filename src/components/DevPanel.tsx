@@ -8,6 +8,7 @@ import { useGameStore, selectActivePet } from '../state/gameStore';
 import { useBattleStore } from '../state/battleStore';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { pickSpecies } from '../domain/species';
+import { defaultDefForElement } from '../domain/petDef';
 import { makePet, rollStats, rollRarity, rollStatsForRarity } from '../domain/pets';
 import { totalXpForLevel, STAGE_LEVEL } from '../domain/xp';
 import type { BattleStats, PetStage, PetInstance } from '../data/types';
@@ -33,7 +34,7 @@ function bumpHappiness(delta: number) {
 }
 
 function rerollSpecies() {
-  mapActive((p) => ({ ...p, species: pickSpecies() }));
+  mapActive((p) => { const s = pickSpecies(); return { ...p, species: s, defId: defaultDefForElement(s).id }; });
 }
 
 function rollActiveStats() {
