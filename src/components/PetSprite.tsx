@@ -1,10 +1,11 @@
 // src/components/PetSprite.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 import type { PetStage, Species } from '../data/types';
 import { spriteSrc } from '../config/sprites';
 import { moodFor } from '../domain/species';
 import { GAME_CONFIG } from '../config/gameConfig';
+import { resolvePetDef } from '../domain/petDef';
 
 /**
  * Pet artwork with: a gentle infinite idle bob, a one-shot bounce when `feedTrigger`
@@ -16,11 +17,13 @@ export function PetSprite({
   species,
   happiness,
   feedTrigger = 0,
+  defId,
 }: {
   stage: PetStage;
   species: Species;
   happiness: number;
   feedTrigger?: number;
+  defId?: string;
 }) {
   const controls = useAnimationControls();
   const prevStage = useRef(stage);
@@ -44,7 +47,12 @@ export function PetSprite({
 
   const mood = moodFor(happiness, GAME_CONFIG.happiness.max);
   const isEgg = stage === 'egg';
-  const src = spriteSrc(species, stage, mood);
+  const def = defId ? resolvePetDef(defId) : undefined;
+  const primary = spriteSrc(species, stage, mood, def);
+  const elementArt = spriteSrc(species, stage, mood); // override-free fallback
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setErrored(false); }, [primary]); // re-arm when the chosen src changes
+  const src = errored ? elementArt : primary;
   const alt = isEgg ? 'pet-egg' : `pet-${species}-${stage}-${mood}`;
 
   return (
@@ -56,6 +64,7 @@ export function PetSprite({
         className="h-[clamp(6rem,26vh,12rem)] w-auto object-contain"
         animate={{ y: [0, -6, 0], scale: [1, 1.03, 1] }}
         transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+        onError={() => setErrored(true)}
       />
     </motion.div>
   );

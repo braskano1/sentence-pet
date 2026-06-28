@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PetSprite } from './PetSprite';
+import { BUILTIN_PET_DEFS, setActivePetDefs } from '../domain/petDef';
+import { SPRITES } from '../config/sprites';
+import type { PetDef } from '../data/types';
 
 describe('PetSprite', () => {
   it('renders a happy sprite img with species/stage/mood alt', () => {
@@ -18,5 +21,30 @@ describe('PetSprite', () => {
   it('renders the generic egg at the egg stage', () => {
     render(<PetSprite stage="egg" species="leaf" happiness={60} />);
     expect(screen.getByRole('img', { name: 'pet-egg' })).toBeTruthy();
+  });
+});
+
+describe('PetSprite — sprite override', () => {
+  afterEach(() => setActivePetDefs([...BUILTIN_PET_DEFS]));
+
+  it('renders the override sprite when defId resolves to a def with sprite.default', () => {
+    const def: PetDef = { ...BUILTIN_PET_DEFS[0], sprite: { default: 'https://cdn.test/x.webp' } };
+    setActivePetDefs([def, ...BUILTIN_PET_DEFS.slice(1)]);
+    render(<PetSprite stage="adult" species="leaf" happiness={80} defId={def.id} />);
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://cdn.test/x.webp');
+  });
+
+  it('falls back to element art when the override image errors', () => {
+    const def: PetDef = { ...BUILTIN_PET_DEFS[0], sprite: { default: 'https://cdn.test/broken.webp' } };
+    setActivePetDefs([def, ...BUILTIN_PET_DEFS.slice(1)]);
+    render(<PetSprite stage="adult" species="leaf" happiness={80} defId={def.id} />);
+    const img = screen.getByRole('img');
+    fireEvent.error(img);
+    expect(img).toHaveAttribute('src', SPRITES.leaf.adult.happy);
+  });
+
+  it('renders element art when no defId is given (unchanged behavior)', () => {
+    render(<PetSprite stage="adult" species="leaf" happiness={80} />);
+    expect(screen.getByRole('img')).toHaveAttribute('src', SPRITES.leaf.adult.happy);
   });
 });
