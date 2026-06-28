@@ -8,8 +8,9 @@ import { PoolTab } from './PoolTab';
 import { JourneyTab } from './JourneyTab';
 import { BossesTab } from './BossesTab';
 import { ImportTab } from './ImportTab';
+import { PetsTab } from './PetsTab';
 
-type Tab = 'pool' | 'journey' | 'bosses' | 'import';
+type Tab = 'pool' | 'journey' | 'bosses' | 'import' | 'pets';
 
 export function AdminShell() {
   const { user, signOut } = useAuth();
@@ -67,6 +68,7 @@ export function AdminShell() {
         {tabBtn('journey', 'Journey')}
         {tabBtn('bosses', 'Bosses')}
         {tabBtn('import', 'Import')}
+        {tabBtn('pets', 'Pets')}
         <span className="flex-1" />
         <button type="button" onClick={save} disabled={!validation.ok}
           className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-40">Save</button>
@@ -83,6 +85,7 @@ export function AdminShell() {
       {tab === 'journey' && <JourneyTab course={draft} onChange={setDraft} />}
       {tab === 'bosses' && <BossesTab course={draft} onChange={setDraft} />}
       {tab === 'import' && <ImportTab onCommit={commitImport} />}
+      {tab === 'pets' && <PetsTab />}
     </div>
   );
 }
