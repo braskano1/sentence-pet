@@ -1,0 +1,47 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { BossesTab } from './BossesTab';
+import type { Course } from '../../content/course';
+
+function course(): Course {
+  return {
+    id: 'c', title: 'C', gates: [],
+    pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
+    units: [
+      { id: 'u1', title: 'One', emoji: '🐣', order: 1, l1Enabled: false,
+        lessons: [{ id: 'u1-cp', kind: 'dragdrop', drill: 'mixed', level: 1, itemIds: ['a'], isCheckpoint: true }] },
+      { id: 'u2', title: 'Two', emoji: '🌱', order: 2, l1Enabled: false,
+        lessons: [{ id: 'u2-cp', kind: 'dragdrop', drill: 'mixed', level: 1, itemIds: ['a'], isCheckpoint: true }] },
+    ],
+    finalBoss: { id: 'fb', title: 'Final', scope: 'final', reviewsUnitIds: ['u1'], reviewCount: 3,
+      boss: { tierId: 't', element: 'leaf', name: 'F', rivalSprite: { species: 'leaf', stage: 'adult' } }, onClear: 'completeCourse' },
+  };
+}
+
+describe('BossesTab', () => {
+  it('adds a gated boss with scope gated', () => {
+    const onChange = vi.fn();
+    render(<BossesTab course={course()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /add gate/i }));
+    const next: Course = onChange.mock.calls.at(-1)![0];
+    expect(next.gates).toHaveLength(1);
+    expect(next.gates[0].scope).toBe('gated');
+  });
+
+  it('deletes a gated boss', () => {
+    const onChange = vi.fn();
+    const c = course();
+    c.gates = [{ id: 'g1', title: 'G', scope: 'gated', afterUnitId: 'u1', reviewsUnitIds: ['u1'],
+      boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } }];
+    render(<BossesTab course={c} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /delete gate g1/i }));
+    expect(onChange.mock.calls.at(-1)![0].gates).toHaveLength(0);
+  });
+
+  it('edits the final boss name', () => {
+    const onChange = vi.fn();
+    render(<BossesTab course={course()} onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText(/final boss name/i), { target: { value: 'Champion' } });
+    expect(onChange.mock.calls.at(-1)![0].finalBoss.boss.name).toBe('Champion');
+  });
+});
