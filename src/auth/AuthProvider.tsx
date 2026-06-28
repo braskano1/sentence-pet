@@ -52,8 +52,14 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
       if (u) {
         // Force a refresh so a just-granted {admin:true} claim is picked up without
         // a manual sign-out/in (custom claims don't propagate to a cached ID token).
-        const token = await u.getIdTokenResult(true);
-        setIsAdmin(token.claims.admin === true);
+        // A failed refresh (stale/deleted session after an emulator reset, or a
+        // transient error) must NOT hang the loading gate — treat it as non-admin.
+        try {
+          const token = await u.getIdTokenResult(true);
+          setIsAdmin(token.claims.admin === true);
+        } catch {
+          setIsAdmin(false);
+        }
       } else {
         setIsAdmin(false);
       }
