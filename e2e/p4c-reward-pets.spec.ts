@@ -139,6 +139,9 @@ test.describe('P4c reward pets', () => {
     expect(res.lastHatch!.defId, 'reward grants the authored def').toBe(REWARD_DEF_ID);
     expect(res.lastPull, 'lastPull mirrors the granted reward').not.toBeNull();
     expect(res.lastPull!.defId).toBe(REWARD_DEF_ID);
+    // ...and NOT the distractor def (proves the grant resolved the authored reward
+    // rather than the trivial defs[0] catalog fallback).
+    expect(res.lastHatch!.defId).not.toBe('e2e-distractor');
 
     // 2. The reward defId is unioned into the dex caught set (P4a).
     expect(res.caughtDefIds, 'reward def recorded caught in the dex').toContain(REWARD_DEF_ID);
