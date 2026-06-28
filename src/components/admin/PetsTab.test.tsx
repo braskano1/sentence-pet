@@ -184,6 +184,35 @@ describe('PetsTab — evolution UI + validate gate', () => {
   });
 });
 
+describe('PetsTab — sprite override field', () => {
+  it('typing a URL shows a preview, and Clear removes the override', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+    const input = screen.getByLabelText(/image url/i);
+    fireEvent.change(input, { target: { value: 'https://cdn.test/leaf.webp' } });
+    expect(screen.getByAltText(/custom sprite preview/i)).toHaveAttribute('src', 'https://cdn.test/leaf.webp');
+    fireEvent.click(screen.getByRole('button', { name: /^clear$/i }));
+    expect(screen.queryByAltText(/custom sprite preview/i)).not.toBeInTheDocument();
+  });
+
+  it('a malformed sprite URL disables Save', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+    fireEvent.change(screen.getByLabelText(/image url/i), { target: { value: 'not-a-url' } });
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+  });
+
+  it('a valid sprite URL persists through Save', async () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+    fireEvent.change(screen.getByLabelText(/image url/i), { target: { value: 'https://cdn.test/leaf.webp' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
+    const saved = savePetDefs.mock.calls[0][0] as PetDef[];
+    expect(saved.find((d) => d.name === 'Leaflet')?.sprite?.default).toBe('https://cdn.test/leaf.webp');
+  });
+});
+
 describe('reconcileEvolution', () => {
   const base = (id: string, dexNo: number): PetDef => ({
     id, name: id, gen: 1, dexNo, types: ['leaf'], element: 'leaf',

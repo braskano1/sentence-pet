@@ -17,6 +17,13 @@ export function setRarityBand(def: PetDef, rarity: Rarity, range: StatRange): Pe
   return { ...def, statBands: { ...def.statBands, [rarity]: band } };
 }
 
+/** Remove `default` from a sprite override; collapse to undefined when nothing remains. */
+export function stripDefault(sprite: PetDef['sprite']): PetDef['sprite'] {
+  if (!sprite) return undefined;
+  const { default: _omit, ...rest } = sprite;
+  return rest.variants ? rest : undefined;
+}
+
 /** Forward links (evolvesToId) win; back-pointers (evolvesFromId) are derived/reconciled. */
 export function reconcileEvolution(defs: PetDef[]): PetDef[] {
   const byId = new Map(defs.map((d) => [d.id, { ...d }]));
@@ -250,6 +257,25 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
           <input type="number" step="1" min="1" className="w-16 border px-1 ml-1" value={def.evolutionStage ?? ''}
             onChange={(e) => { const n = e.target.valueAsNumber; onPatch({ evolutionStage: Number.isNaN(n) ? undefined : n }); }} />
         </label>
+      </fieldset>
+      <fieldset className="border p-2 flex flex-col gap-1"><legend>sprite (custom art override)</legend>
+        <label>image URL
+          <input className="border px-1 ml-1 w-full" value={def.sprite?.default ?? ''}
+            placeholder="https://… (overrides element art; leave blank to use element art)"
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              onPatch({ sprite: v ? { ...def.sprite, default: v } : stripDefault(def.sprite) });
+            }} />
+        </label>
+        {def.sprite?.default && (
+          <div className="flex items-center gap-2">
+            <img src={def.sprite.default} alt={`${def.name} custom sprite preview`}
+              className="h-12 w-12 object-contain border"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
+            <button type="button" onClick={() => onPatch({ sprite: stripDefault(def.sprite) })}
+              className="text-red-600">Clear</button>
+          </div>
+        )}
       </fieldset>
     </div>
   );
