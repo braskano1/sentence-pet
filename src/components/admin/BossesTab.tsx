@@ -52,6 +52,7 @@ function BossFields({ node, units, poolIds, onPatch }: {
         <select className="border px-1" value={node.rewardPetDefId ?? ''}
           onChange={(e) => onPatch({ rewardPetDefId: e.target.value || undefined })}>
           <option value="">— none (random) —</option>
+          {/* lists ALL defs (not just obtainable): an authored reward may intentionally grant a non-gacha def */}
           {petDefs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </label>
