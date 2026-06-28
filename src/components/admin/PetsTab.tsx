@@ -50,6 +50,11 @@ export function PetsTab() {
     setDraft(draft.map((d) => ({ ...d, starter: d.id === id })));
   }
 
+  function rename(oldId: string, newId: string) {
+    setDraft(draft.map((d) => (d.id === oldId ? { ...d, id: newId } : d)));
+    setEditingId(newId);
+  }
+
   const gens = useMemo(() => [...new Set(draft.map((d) => d.gen))].sort((a, b) => a - b), [draft]);
   const shown = useMemo(() => (genFilter === 'all' ? draft : draft.filter((d) => d.gen === genFilter)), [draft, genFilter]);
 
@@ -143,6 +148,7 @@ export function PetsTab() {
           def={draft.find((d) => d.id === editingId)!}
           allDefs={draft}
           onPatch={(p) => patch(editingId, p)}
+          onRename={(newId) => rename(editingId!, newId)}
           onSetStarter={() => setStarter(editingId)}
         />
       )}
@@ -150,10 +156,11 @@ export function PetsTab() {
   );
 }
 
-function PetForm({ def, allDefs, onPatch, onSetStarter }: {
+function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
   def: PetDef;
   allDefs: PetDef[];
   onPatch: (p: Partial<PetDef>) => void;
+  onRename: (newId: string) => void;
   onSetStarter: () => void;
 }) {
   void allDefs;
@@ -162,7 +169,7 @@ function PetForm({ def, allDefs, onPatch, onSetStarter }: {
     <div className="rounded border-2 border-indigo-300 p-3 flex flex-col gap-2">
       <label>id
         <input className="border px-1 ml-1" value={def.id}
-          onChange={(e) => onPatch({ id: e.target.value })} />
+          onChange={(e) => onRename(e.target.value)} />
       </label>
       <label>name
         <input className="border px-1 ml-1" value={def.name}

@@ -106,6 +106,15 @@ describe('PetsTab — edit form', () => {
     expect(screen.getByLabelText(/^starter$/i)).toBeDisabled();
   });
 
+  it('editing the id keeps the form open and renames the def', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i }));
+    const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
+    fireEvent.change(idInput, { target: { value: 'def-renamed' } });
+    // form is still open (id input still present) and shows the new id
+    expect((screen.getByLabelText(/^id$/i) as HTMLInputElement).value).toBe('def-renamed');
+  });
+
   it('keeps exactly one starter after saving the gen1/dex1 def', () => {
     render(<PetsTab />);
     fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
