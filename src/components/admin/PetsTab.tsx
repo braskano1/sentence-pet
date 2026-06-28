@@ -90,15 +90,15 @@ export function PetsTab() {
   const [loaded, setLoaded] = useState(false);
 
   function patch(id: string, p: Partial<PetDef>) {
-    setDraft(draft.map((d) => (d.id === id ? { ...d, ...p } : d)));
+    setDraft((prev) => prev.map((d) => (d.id === id ? { ...d, ...p } : d)));
   }
 
   function setStarter(id: string) {
-    setDraft(draft.map((d) => ({ ...d, starter: d.id === id })));
+    setDraft((prev) => prev.map((d) => ({ ...d, starter: d.id === id })));
   }
 
   function rename(oldId: string, newId: string) {
-    setDraft(draft.map((d) => (d.id === oldId ? { ...d, id: newId } : d)));
+    setDraft((prev) => prev.map((d) => (d.id === oldId ? { ...d, id: newId } : d)));
     setEditingId(newId);
   }
 
@@ -138,24 +138,26 @@ export function PetsTab() {
 
   function addPet() {
     const gen = genFilter === 'all' ? 1 : genFilter;
-    const base = defaultDefForElement('leaf', draft);
-    const newDef: PetDef = {
-      ...base,
-      id: genId(draft),
-      name: 'New Pet',
-      gen,
-      dexNo: nextDexNo(draft, gen),
-      starter: false,
-      enabled: true,
-      evolvesFromId: undefined,
-      evolvesToId: undefined,
-      evolutionStage: undefined,
-    };
-    setDraft([...draft, newDef]);
+    setDraft((prev) => {
+      const base = defaultDefForElement('leaf', prev);
+      const newDef: PetDef = {
+        ...base,
+        id: genId(prev),
+        name: 'New Pet',
+        gen,
+        dexNo: nextDexNo(prev, gen),
+        starter: false,
+        enabled: true,
+        evolvesFromId: undefined,
+        evolvesToId: undefined,
+        evolutionStage: undefined,
+      };
+      return [...prev, newDef];
+    });
   }
 
   function deletePet(id: string) {
-    setDraft(draft.filter((d) => d.id !== id));
+    setDraft((prev) => prev.filter((d) => d.id !== id));
   }
 
   function canDelete(d: PetDef): boolean {
