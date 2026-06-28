@@ -22,13 +22,21 @@ afterEach(() => vi.restoreAllMocks());
 describe('EvolutionScreen — custom sprite def', () => {
   it('passes the active pet resolved def to the cinematic', () => {
     useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, screen: 'evolution' });
+    // Seed the active pet with a NON-starter built-in def. resolvePetDef falls back to
+    // the starter (def-leaf) on a miss, so asserting against the starter can't tell
+    // "threaded the real def" from "fell back". def-fire makes the assertion catch a regression.
+    const activeId = selectActivePet(useGameStore.getState()).id;
+    useGameStore.setState((s) => ({
+      pets: s.pets.map((p) => (p.id === activeId ? { ...p, defId: 'def-fire' } : p)),
+    }));
     const pet = selectActivePet(useGameStore.getState());
     const expected = resolvePetDef(pet.defId);
+    expect(expected.id).toBe('def-fire'); // guard: confirm we seeded a real non-starter def
 
     render(<EvolutionScreen />);
 
     const got = screen.getByTestId('cinematic-def').textContent;
     expect(got).not.toBe('none');
-    expect(got).toBe(expected.id);
+    expect(got).toBe('def-fire');
   });
 });
