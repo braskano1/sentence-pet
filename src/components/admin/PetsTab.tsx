@@ -225,8 +225,8 @@ function SpriteUpload({ label, slot, defId, value, onUpload, onClear }: {
   return (
     <div className="flex items-center gap-2">
       <label className="text-xs">{label}
-        <input type="file" accept="image/*" className="ml-1 w-40"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
+        <input type="file" accept="image/*" className="ml-1 w-40" aria-invalid={!!err}
+          onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ''; if (f) pick(f); }} />
       </label>
       {value && (
         <>

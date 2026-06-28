@@ -238,6 +238,37 @@ describe('PetsTab — sprite upload', () => {
     fireEvent.click(screen.getByRole('button', { name: /clear default sprite/i }));
     expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument();
   });
+
+  it('clearing a variant removes it from sprite.variants', async () => {
+    openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^baby happy sprite$/i), { target: { files: [webp()] } });
+    expect(await screen.findByAltText(/baby happy sprite preview/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /clear baby happy sprite/i }));
+    expect(screen.queryByAltText(/baby happy sprite preview/i)).not.toBeInTheDocument();
+  });
+
+  it('a failed upload can be retried with the same file and then succeeds', async () => {
+    uploadSprite.mockRejectedValueOnce(new Error('network down'));
+    openLeaflet();
+    const input = screen.getByLabelText(/^default sprite$/i);
+    fireEvent.change(input, { target: { files: [webp()] } });
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument();
+    // retry with the same file (input value was reset, so change fires again)
+    fireEvent.change(input, { target: { files: [webp()] } });
+    expect(await screen.findByAltText(/default sprite preview/i)).toHaveAttribute('src', 'https://download/leaf.webp');
+    expect(screen.queryByText(/network down/i)).not.toBeInTheDocument();
+  });
+
+  it('a successful upload clears a prior error message', async () => {
+    uploadSprite.mockRejectedValueOnce(new Error('boom'));
+    openLeaflet();
+    const input = screen.getByLabelText(/^baby sad sprite$/i);
+    fireEvent.change(input, { target: { files: [webp()] } });
+    expect(await screen.findByText(/boom/i)).toBeInTheDocument();
+    fireEvent.change(input, { target: { files: [webp()] } });
+    await screen.findByAltText(/baby sad sprite preview/i);
+    expect(screen.queryByText(/boom/i)).not.toBeInTheDocument();
+  });
 });
 
 describe('reconcileEvolution', () => {
