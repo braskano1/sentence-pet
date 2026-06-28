@@ -19,11 +19,14 @@ if (import.meta.env.DEV) {
 }
 
 const isAdmin = isAdminEntry(window.location.hash)
+
+// Seed the pet-def registry from last-good cache on BOTH routes (instant, no-clobber baseline).
+// Admin's authoritative live-fetch is owned by PetsTab so it can gate Save; the player live-hydrates here.
+setActivePetDefs(cachedPetDefs() ?? [...BUILTIN_PET_DEFS])
+
 if (!isAdmin) {
   void hydrateCourse('default') // live fetch the default course → swap + cache; failures keep fallback
-  // Seed the pet-def registry from last-good cache (instant), then live-fetch → swap + cache.
-  setActivePetDefs(cachedPetDefs() ?? [...BUILTIN_PET_DEFS])
-  void hydratePetDefs()
+  void hydratePetDefs()         // player live-fetch; swap + cache
 }
 
 const root = isAdmin
