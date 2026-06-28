@@ -4,9 +4,8 @@ import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
-import { SEED } from '../content/seed';
+import { SEED, SEED_COURSE } from '../content/seed';
 import { useContentStore } from '../content/store';
-import { SEED_COURSE } from '../content/seed';
 
 function reset() {
   useGameStore.getState().resetForTest();

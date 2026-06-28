@@ -371,9 +371,10 @@ export const SEED: ContentBundle = {
   ]
 };
 
-/** Seed course: the migrated default course plus the example gated + final bosses.
- *  This is the offline/first-paint fallback and the source for `npm run seed:export`.
- *  Do NOT hand-edit content — author in the admin UI (#admin) then regenerate. */
+/** Seed course: migrated default course with hand-authored example gated + final bosses.
+ *  Offline/first-paint fallback and the source for `npm run seed:export`.
+ *  Gate and finalBoss literals here are intentionally hand-edited until P3b ships
+ *  admin-UI authoring + seed regen. All referenced itemIds live in SEED.pool above. */
 export const SEED_COURSE: Course = (() => {
   const base = bundleToDefaultCourse(SEED);
   return {
