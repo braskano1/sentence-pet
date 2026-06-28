@@ -127,7 +127,7 @@ export interface PetDef {
   evolvesToId?: string;     // ref to another PetDef.id
   evolutionStage?: number;  // 1-based stage in its chain
   starter?: boolean;        // exactly one def true; must be the gen 1, dexNo 1 def
-  enabled: boolean;         // gacha-pool gate; P2 stores only, P4 reads it
+  enabled: boolean;         // gacha-pool gate; P4 reads it
 }
 
 export type PetMood = 'happy' | 'sad';

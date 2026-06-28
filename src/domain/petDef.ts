@@ -28,7 +28,7 @@ export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element, i): Pet
   types: [element],
   element,
   statBands: bandsFromGacha(),
-  ...(i === 0 ? { starter: true } : {}),
+  ...(i === 0 ? { starter: true } : {}), // SPECIES[0] === 'leaf' — the starter is dexNo 1
   enabled: true,
 }));
 
