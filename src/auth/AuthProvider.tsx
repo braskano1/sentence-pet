@@ -50,7 +50,9 @@ export function AuthProvider({ children, player = false }: { children: ReactNode
       setUser(u);
       setIsAnonymous(u?.isAnonymous ?? false);
       if (u) {
-        const token = await u.getIdTokenResult();
+        // Force a refresh so a just-granted {admin:true} claim is picked up without
+        // a manual sign-out/in (custom claims don't propagate to a cached ID token).
+        const token = await u.getIdTokenResult(true);
         setIsAdmin(token.claims.admin === true);
       } else {
         setIsAdmin(false);
