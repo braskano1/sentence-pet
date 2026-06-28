@@ -2,6 +2,7 @@ import type { ContentBundle } from './model';
 import type { Course } from './course';
 import type { PetDef } from '../data/types';
 import { validateContent, validateCourse, validatePetDefs } from './validate';
+import { backfillPetDefs, type RawPetDef } from './petDefMigrate';
 import { DEFAULT_COURSE_ID } from './migrate';
 
 export const CACHE_KEY = 'sentence-pet-content';
@@ -49,12 +50,12 @@ export function writeCourseCache(course: Course): void {
 
 export const PET_DEFS_CACHE_KEY = 'sentence-pet-petdefs';
 
-/** Last-good cached pet-def catalog, or null if absent/corrupt/invalid. */
+/** Last-good cached pet-def catalog (backfilled to v2), or null if absent/corrupt/invalid. */
 export function cachedPetDefs(): PetDef[] | null {
   try {
     const raw = localStorage.getItem(PET_DEFS_CACHE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PetDef[];
+    const parsed = backfillPetDefs(JSON.parse(raw) as RawPetDef[]);
     return validatePetDefs(parsed).ok ? parsed : null;
   } catch {
     return null;

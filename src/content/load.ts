@@ -4,6 +4,7 @@ import { fetchContent, fetchCourse, fetchCoursesIndex, fetchPetDefs } from '../f
 import { useContentStore } from './store';
 import { setActivePetDefs } from '../domain/petDef';
 import * as cache from './cache';
+import { backfillPetDefs } from './petDefMigrate';
 
 // Re-export cache primitives so existing importers (e.g. load.test.ts) still resolve.
 export {
@@ -47,14 +48,17 @@ export async function loadCoursesIndex(): Promise<CourseIndexEntry[]> {
   try { return await fetchCoursesIndex(); } catch { return []; }
 }
 
-/** Fetch the live pet-def catalog; swap into the active registry + cache only if valid.
- *  Errors / invalid / absent → keep the current registry (built-ins or last-good cache). */
+/** Fetch the live pet-def catalog; backfill to v2, then swap into the active registry
+ *  + cache only if valid. Errors / invalid / absent → keep the current registry. */
 export async function hydratePetDefs(): Promise<void> {
   try {
     const live = await fetchPetDefs();
-    if (live && validatePetDefs(live).ok) {
-      setActivePetDefs(live);
-      cache.writePetDefsCache(live);
+    if (live) {
+      const migrated = backfillPetDefs(live);
+      if (validatePetDefs(migrated).ok) {
+        setActivePetDefs(migrated);
+        cache.writePetDefsCache(migrated);
+      }
     }
   } catch { /* offline / permission / absent — keep current fallback */ }
 }
