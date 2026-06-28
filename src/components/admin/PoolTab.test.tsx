@@ -8,7 +8,11 @@ const item = (id: string): DrillItem =>
   ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
 
 function course(): Course {
-  return { id: 'c', title: 'C', pool: { a: item('a') }, units: [], gates: [] };
+  return {
+    id: 'c', title: 'C', pool: { a: item('a') }, units: [], gates: [],
+    finalBoss: { id: 'fb', title: 'F', scope: 'final', reviewsUnitIds: ['u1'], reviewCount: 3,
+      boss: { tierId: 't', element: 'leaf', name: 'F', rivalSprite: { species: 'leaf', stage: 'adult' } }, onClear: 'completeCourse' },
+  };
 }
 
 describe('PoolTab', () => {
@@ -27,6 +31,7 @@ describe('PoolTab', () => {
     // course-only fields must survive the pool edit
     expect(next.id).toBe('c');
     expect(next.gates).toEqual([]);
+    expect(next.finalBoss?.id).toBe('fb');
   });
 
   it('new-item id does not collide when item-1 and item-3 exist (post-delete gap)', () => {

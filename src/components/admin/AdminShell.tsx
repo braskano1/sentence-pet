@@ -35,6 +35,18 @@ export function AdminShell() {
     }
   }
 
+  async function commitImport(c: Course) {
+    setStatus('saving…');
+    try {
+      await saveCourse(c);
+      setDraft(c);
+      setCourse(c, 'live');
+      setStatus('imported ✓');
+    } catch (e) {
+      setStatus(`import failed: ${(e as Error).message}`);
+    }
+  }
+
   const tabBtn = (id: Tab, label: string) => (
     <button type="button" onClick={() => setTab(id)}
       className={`rounded px-3 py-1 ${tab === id ? 'bg-indigo-600 text-white' : 'border'}`}>{label}</button>
@@ -70,7 +82,7 @@ export function AdminShell() {
       {tab === 'pool' && <PoolTab course={draft} onChange={setDraft} />}
       {tab === 'journey' && <JourneyTab course={draft} onChange={setDraft} />}
       {tab === 'bosses' && <BossesTab course={draft} onChange={setDraft} />}
-      {tab === 'import' && <ImportTab onCommit={(c) => { setCourse(c, 'live'); setStatus('imported ✓'); }} />}
+      {tab === 'import' && <ImportTab onCommit={commitImport} />}
     </div>
   );
 }
