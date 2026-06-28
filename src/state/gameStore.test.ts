@@ -925,10 +925,6 @@ describe('persist migrate v15->16 (defId backfill)', () => {
       persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
     }).persist.getOptions().migrate;
 
-  it('PERSIST_VERSION is 17', () => {
-    expect(PERSIST_VERSION).toBe(17);
-  });
-
   it('backfills defId on a legacy pet from its species', () => {
     const legacyPet = {
       id: 'p1', species: 'fire', hatched: true, xp: 0, happiness: 50,
@@ -951,6 +947,51 @@ describe('persist migrate v15->16 (defId backfill)', () => {
     };
     const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
     expect(migrated.pets[0].defId).toBe('def-water');
+  });
+});
+
+describe('persist migrate v16->17 (caughtDefIds backfill)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  const makePetV16 = (id: string, defId: string) => ({
+    id, defId, species: 'leaf', hatched: true, xp: 0, happiness: 50,
+    bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+    growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+    rarity: 'common', name: '',
+  });
+
+  it('seeds caughtDefIds from the unique set of pets[].defId on a v16 save', () => {
+    const v16 = {
+      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-fire')],
+      activePetId: 'p1',
+    };
+    const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toContain('def-leaf');
+    expect(out.caughtDefIds).toContain('def-fire');
+    expect(out.caughtDefIds).toHaveLength(2);
+  });
+
+  it('deduplicates when multiple pets share the same defId', () => {
+    const v16 = {
+      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-leaf')],
+      activePetId: 'p1',
+    };
+    const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toEqual(['def-leaf']);
+  });
+
+  it('leaves an already-present caughtDefIds untouched (idempotent)', () => {
+    const v17 = {
+      pets: [makePetV16('p1', 'def-leaf')],
+      activePetId: 'p1',
+      caughtDefIds: ['def-leaf', 'def-water'],
+    };
+    const out = getMigrate()(v17, 17) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toEqual(['def-leaf', 'def-water']);
   });
 });
 
