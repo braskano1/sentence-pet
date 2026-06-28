@@ -11,7 +11,7 @@ function emptyBoss(): BossNode['boss'] {
 /** Reusable review/boss fields shared by gated + final editors. */
 function BossFields({ node, units, poolIds, onPatch }: {
   node: BossNode;
-  units: { id: string }[];
+  units: { id: string; title?: string }[];
   poolIds: string[];
   onPatch: (patch: Partial<BossNode>) => void;
 }) {
@@ -20,49 +20,49 @@ function BossFields({ node, units, poolIds, onPatch }: {
   const pinned = node.pinnedItemIds ?? [];
   return (
     <div className="flex flex-col gap-1">
-      <label>name
-        <input className="border px-1" aria-label={`${labelPrefix} name`} value={node.boss.name}
+      <label>{`${labelPrefix} name`}
+        <input className="border px-1" value={node.boss.name}
           onChange={(e) => onPatch({ boss: { ...node.boss, name: e.target.value } })} />
       </label>
-      <label>tierId
-        <input className="border px-1" aria-label={`${labelPrefix} tierId`} value={node.boss.tierId}
+      <label>{`${labelPrefix} tierId`}
+        <input className="border px-1" value={node.boss.tierId}
           onChange={(e) => onPatch({ boss: { ...node.boss, tierId: e.target.value } })} />
       </label>
-      <label>element
-        <select className="border px-1" aria-label={`${labelPrefix} element`} value={node.boss.element}
+      <label>{`${labelPrefix} element`}
+        <select className="border px-1" value={node.boss.element}
           onChange={(e) => onPatch({ boss: { ...node.boss, element: e.target.value as Species } })}>
           {SPECIES.map((s) => <option key={s}>{s}</option>)}
         </select>
       </label>
-      <label>sprite species
-        <select className="border px-1" aria-label={`${labelPrefix} sprite species`} value={node.boss.rivalSprite.species}
+      <label>{`${labelPrefix} sprite species`}
+        <select className="border px-1" value={node.boss.rivalSprite.species}
           onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, species: e.target.value as Species } } })}>
           {SPECIES.map((s) => <option key={s}>{s}</option>)}
         </select>
       </label>
-      <label>sprite stage
-        <select className="border px-1" aria-label={`${labelPrefix} sprite stage`} value={node.boss.rivalSprite.stage}
+      <label>{`${labelPrefix} sprite stage`}
+        <select className="border px-1" value={node.boss.rivalSprite.stage}
           onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, stage: e.target.value as Exclude<PetStage, 'egg'> } } })}>
           {STAGES.map((s) => <option key={s}>{s}</option>)}
         </select>
       </label>
-      <label>reviewCount
-        <input type="number" className="w-16 border px-1" aria-label={`${labelPrefix} reviewCount`} value={node.reviewCount ?? 0}
+      <label>{`${labelPrefix} reviewCount`}
+        <input type="number" className="w-16 border px-1" value={node.reviewCount ?? 0}
           onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch({ reviewCount: n }); }} />
       </label>
       <fieldset className="border p-1"><legend>reviews units</legend>
         {units.map((u) => (
           <label key={u.id} className="mr-2">
-            <input type="checkbox" aria-label={`${labelPrefix} reviews ${u.id}`} checked={reviews.includes(u.id)}
-              onChange={() => onPatch({ reviewsUnitIds: reviews.includes(u.id) ? reviews.filter((x) => x !== u.id) : [...reviews, u.id] })} /> {u.id}
+            <input type="checkbox" checked={reviews.includes(u.id)}
+              onChange={() => onPatch({ reviewsUnitIds: reviews.includes(u.id) ? reviews.filter((x) => x !== u.id) : [...reviews, u.id] })} /> {`${labelPrefix} reviews ${u.id}`}
           </label>
         ))}
       </fieldset>
       <fieldset className="border p-1"><legend>pinned items</legend>
         {poolIds.map((id) => (
           <label key={id} className="mr-2">
-            <input type="checkbox" aria-label={`${labelPrefix} pins ${id}`} checked={pinned.includes(id)}
-              onChange={() => onPatch({ pinnedItemIds: pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id] })} /> {id}
+            <input type="checkbox" checked={pinned.includes(id)}
+              onChange={() => onPatch({ pinnedItemIds: pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id] })} /> {`${labelPrefix} pins ${id}`}
           </label>
         ))}
       </fieldset>
@@ -107,10 +107,10 @@ export function BossesTab({ course, onChange }: { course: Course; onChange: (c: 
           <div key={g.id} className="mt-2 rounded border p-2">
             <div className="flex items-center gap-2">
               <strong>{g.id}</strong>
-              <label>afterUnit
-                <select className="border px-1" aria-label={`gate ${g.id} afterUnit`} value={g.afterUnitId ?? ''}
+              <label>{`gate ${g.id} afterUnit`}
+                <select className="border px-1" value={g.afterUnitId ?? ''}
                   onChange={(e) => patchGate(g.id, { afterUnitId: e.target.value })}>
-                  {course.units.map((u) => <option key={u.id} value={u.id}>{u.id}</option>)}
+                  {course.units.map((u) => <option key={u.id} value={u.id}>{u.title} ({u.id})</option>)}
                 </select>
               </label>
               <button type="button" aria-label={`delete gate ${g.id}`} onClick={() => deleteGate(g.id)}
