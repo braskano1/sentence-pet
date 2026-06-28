@@ -9,6 +9,7 @@ import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, 
 import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
 import type { Rarity } from '../data/types';
+import { DexGrid } from './DexGrid';
 
 /** A single battle-stat number that rolls when it changes (pet switch). */
 function StatNum({ value }: { value: number }) {
@@ -48,12 +49,27 @@ export function Collection() {
   const renamePet = useGameStore((s) => s.renamePet);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [tab, setTab] = useState<'pets' | 'dex'>('pets');
 
   return (
     <div className="flex h-full flex-col bg-amber-50">
       <div className="flex items-center justify-between border-b-2 border-amber-900/15 px-5 py-3">
         <h2 className="text-lg font-extrabold text-amber-950">My Pets ({pets.length})</h2>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-xl bg-amber-900/10 p-0.5 text-sm font-bold">
+            <PressButton
+              onClick={() => setTab('pets')}
+              className={`rounded-lg px-2.5 py-1 ${tab === 'pets' ? 'bg-amber-200 text-amber-950' : 'text-amber-900/60'}`}
+            >
+              My Pets
+            </PressButton>
+            <PressButton
+              onClick={() => setTab('dex')}
+              className={`rounded-lg px-2.5 py-1 ${tab === 'dex' ? 'bg-amber-200 text-amber-950' : 'text-amber-900/60'}`}
+            >
+              Dex
+            </PressButton>
+          </div>
           <PressButton
             onClick={() => setScreen('petRoom')}
             aria-label="Back to room"
@@ -66,6 +82,10 @@ export function Collection() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-5">
+        {tab === 'dex' ? (
+          <DexGrid />
+        ) : (
+          <>
         {/* ── detail: active pet, rarity, radar + stat numbers ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -198,6 +218,8 @@ export function Collection() {
             );
           })}
         </div>
+          </>
+        )}
       </div>
     </div>
   );
