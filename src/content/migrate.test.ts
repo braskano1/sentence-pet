@@ -37,6 +37,7 @@ describe('bundleToDefaultCourse', () => {
     expect(twice.units[0].l1Enabled).toBe(false);
     expect(twice.units[0].lessons[0].kind).toBe('dragdrop');
     expect(twice.id).toBe(DEFAULT_COURSE_ID);
+    expect(twice.finalBoss?.reviewsUnitIds).toEqual(twice.units.map((u) => u.id));
   });
 });
 

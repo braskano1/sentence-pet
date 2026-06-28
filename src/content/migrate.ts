@@ -25,9 +25,9 @@ function stampPoolKind(pool: Record<string, ContentItem>): Record<string, Conten
 /** A default final boss reviewing every unit, so every Course shape always has
  *  one (lets validateCourse enforce final-boss presence without rejecting
  *  migrated/legacy courses). Authored courses override this in the admin UI. */
-function defaultFinalBoss(courseId: string, unitIds: string[]): BossNode {
+function defaultFinalBoss(unitIds: string[]): BossNode {
   return {
-    id: `${courseId}-final`,
+    id: `${DEFAULT_COURSE_ID}-final`,
     title: 'Final Boss',
     scope: 'final',
     reviewsUnitIds: unitIds,
@@ -54,6 +54,6 @@ export function bundleToDefaultCourse(bundle: ContentBundle): Course {
     pool: stampPoolKind(bundle.pool),
     units,
     gates: [],
-    finalBoss: defaultFinalBoss(DEFAULT_COURSE_ID, units.map((u) => u.id)),
+    finalBoss: defaultFinalBoss(units.map((u) => u.id)),
   };
 }
