@@ -9,7 +9,7 @@ vi.mock('../../firebase/content', () => ({
 const writePetDefsCache = vi.fn();
 vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => writePetDefsCache(d) }));
 
-import { PetsTab, reconcileEvolution, stripDefault } from './PetsTab';
+import { PetsTab, reconcileEvolution, stripDefault, setVariant, clearVariant } from './PetsTab';
 import type { PetDef } from '../../data/types';
 import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '../../domain/petDef';
 
@@ -248,5 +248,35 @@ describe('stripDefault', () => {
   });
   it('returns undefined for undefined input', () => {
     expect(stripDefault(undefined)).toBeUndefined();
+  });
+});
+
+describe('setVariant / clearVariant', () => {
+  it('setVariant creates the variants map and stage cell on an empty sprite', () => {
+    expect(setVariant(undefined, 'baby', 'happy', 'https://cdn.test/bh.webp'))
+      .toEqual({ variants: { baby: { happy: 'https://cdn.test/bh.webp' } } });
+  });
+
+  it('setVariant preserves default and other cells', () => {
+    const sprite = { default: 'https://cdn.test/d.webp', variants: { baby: { happy: 'https://cdn.test/bh.webp' } } };
+    expect(setVariant(sprite, 'baby', 'sad', 'https://cdn.test/bs.webp')).toEqual({
+      default: 'https://cdn.test/d.webp',
+      variants: { baby: { happy: 'https://cdn.test/bh.webp', sad: 'https://cdn.test/bs.webp' } },
+    });
+  });
+
+  it('clearVariant removes the cell and drops an emptied stage', () => {
+    const sprite = { variants: { baby: { happy: 'https://cdn.test/bh.webp' }, adult: { sad: 'https://cdn.test/as.webp' } } };
+    expect(clearVariant(sprite, 'baby', 'happy'))
+      .toEqual({ variants: { adult: { sad: 'https://cdn.test/as.webp' } } });
+  });
+
+  it('clearVariant collapses to undefined when nothing remains', () => {
+    expect(clearVariant({ variants: { baby: { happy: 'https://cdn.test/bh.webp' } } }, 'baby', 'happy')).toBeUndefined();
+  });
+
+  it('clearVariant keeps default when the last variant is removed', () => {
+    const sprite = { default: 'https://cdn.test/d.webp', variants: { baby: { happy: 'https://cdn.test/bh.webp' } } };
+    expect(clearVariant(sprite, 'baby', 'happy')).toEqual({ default: 'https://cdn.test/d.webp' });
   });
 });
