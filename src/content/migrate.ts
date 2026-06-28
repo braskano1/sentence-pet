@@ -1,5 +1,5 @@
 import type { ContentBundle } from './model';
-import type { Course } from './course';
+import type { Course, BossNode } from './course';
 import type { ContentItem } from '../data/types';
 
 /** Firestore document id for the default/legacy course. */
@@ -22,21 +22,38 @@ function stampPoolKind(pool: Record<string, ContentItem>): Record<string, Conten
   return changed ? stamped : pool;
 }
 
+/** A default final boss reviewing every unit, so every Course shape always has
+ *  one (lets validateCourse enforce final-boss presence without rejecting
+ *  migrated/legacy courses). Authored courses override this in the admin UI. */
+function defaultFinalBoss(courseId: string, unitIds: string[]): BossNode {
+  return {
+    id: `${courseId}-final`,
+    title: 'Final Boss',
+    scope: 'final',
+    reviewsUnitIds: unitIds,
+    reviewCount: 6,
+    boss: { tierId: 'tier-3', element: 'leaf', name: 'Course Champion', rivalSprite: { species: 'leaf', stage: 'adult' } },
+    onClear: 'completeCourse',
+  };
+}
+
 /** Wrap the legacy two-doc bundle into a single default Course.
  *  Units missing l1Enabled default to false; lessons missing kind default to
  *  'dragdrop' (legacy content was all slot-fill). Pool items missing kind are
  *  likewise stamped 'dragdrop'. Idempotent. */
 export function bundleToDefaultCourse(bundle: ContentBundle): Course {
+  const units = bundle.units.map((u) => ({
+    ...u,
+    l1Enabled: u.l1Enabled ?? false,
+    lessons: u.lessons.map((l) => ({ ...l, kind: l.kind ?? 'dragdrop' })),
+  }));
   return {
     id: DEFAULT_COURSE_ID,
     title: 'Beginner Course',
     emoji: '📘',
     pool: stampPoolKind(bundle.pool),
-    units: bundle.units.map((u) => ({
-      ...u,
-      l1Enabled: u.l1Enabled ?? false,
-      lessons: u.lessons.map((l) => ({ ...l, kind: l.kind ?? 'dragdrop' })),
-    })),
+    units,
     gates: [],
+    finalBoss: defaultFinalBoss(DEFAULT_COURSE_ID, units.map((u) => u.id)),
   };
 }

@@ -13,12 +13,18 @@ const legacy: ContentBundle = {
 };
 
 describe('bundleToDefaultCourse', () => {
-  it('wraps a legacy bundle into a default course', () => {
+  it('wraps a legacy bundle into a default course with a synthesized final boss', () => {
     const c = bundleToDefaultCourse(legacy);
     expect(c.id).toBe(DEFAULT_COURSE_ID);
     expect(c.pool).toBe(legacy.pool);
     expect(c.gates).toEqual([]);
-    expect(c.finalBoss).toBeUndefined();
+    expect(c.finalBoss).toBeDefined();
+    expect(c.finalBoss!.scope).toBe('final');
+    expect(c.finalBoss!.onClear).toBe('completeCourse');
+    // reviews every authored unit
+    expect(c.finalBoss!.reviewsUnitIds).toEqual(c.units.map((u) => u.id));
+    expect(c.finalBoss!.reviewCount).toBeGreaterThanOrEqual(1);
+    expect(c.finalBoss!.boss).toBeDefined();
   });
   it('defaults l1Enabled=false on units and kind=dragdrop on lessons', () => {
     const c = bundleToDefaultCourse(legacy);

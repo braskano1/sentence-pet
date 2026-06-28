@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useContentStore } from './store';
 import { bundleToDefaultCourse } from './migrate';
+import { BOSS_UNIT_PREFIX } from './journey';
 import { SEED } from './seed';
 
 describe('content store (course-aware)', () => {
@@ -21,8 +22,9 @@ describe('content store (course-aware)', () => {
     const s = useContentStore.getState();
     expect(s.activeCourseId).toBe('other');
     expect(s.status).toBe('live');
-    // resolveCourseBundle always builds a new array, so use deep equality (not reference)
-    expect(s.bundle.units).toStrictEqual(next.units);
+    // resolveCourseBundle appends synthetic boss units; authored units still match
+    const authoredUnits = s.bundle.units.filter((u) => !u.id.startsWith(BOSS_UNIT_PREFIX));
+    expect(authoredUnits).toStrictEqual(next.units);
   });
 
   it('setBundle wraps a bundle into the default course and syncs', () => {
@@ -30,7 +32,8 @@ describe('content store (course-aware)', () => {
     const s = useContentStore.getState();
     expect(s.activeCourseId).toBe('default');
     expect(s.status).toBe('live');
-    // resolveCourseBundle always builds a new array, so use deep equality (not reference)
-    expect(s.bundle.units).toStrictEqual(s.course!.units);
+    // resolveCourseBundle appends synthetic boss units; authored units still match course units
+    const authoredUnits = s.bundle.units.filter((u) => !u.id.startsWith(BOSS_UNIT_PREFIX));
+    expect(authoredUnits).toStrictEqual(s.course!.units);
   });
 });
