@@ -76,6 +76,15 @@ describe('spriteSrc — element guard (orphaned-defId leak)', () => {
     expect(spriteSrc('fire', 'adult', 'happy', leafWithSprite)).toBe(SPRITES.fire.adult.happy);
   });
 
+  it('suppresses a mismatched def variant too (not just default)', () => {
+    const leafWithVariant = {
+      ...leafDef,
+      sprite: { default: 'https://cdn.test/leaf-override.webp', variants: { adult: { happy: 'https://cdn.test/leaf-adult-happy.webp' } } },
+    };
+    // the guard gates the whole override, so a mismatched variant must not leak either
+    expect(spriteSrc('fire', 'adult', 'happy', leafWithVariant)).toBe(SPRITES.fire.adult.happy);
+  });
+
   it('still applies the override when the def element matches the species', () => {
     const leafWithSprite = { ...leafDef, sprite: { default: 'https://cdn.test/leaf-override.webp' } };
     expect(spriteSrc('leaf', 'adult', 'happy', leafWithSprite)).toBe('https://cdn.test/leaf-override.webp');
