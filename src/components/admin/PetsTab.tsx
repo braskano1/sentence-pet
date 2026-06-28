@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import type { PetDef } from '../../data/types';
+import type { PetDef, Species } from '../../data/types';
 import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
 import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
+import { SPECIES } from '../../domain/species';
+import { PET_TYPES } from '../../domain/petType';
 
 /** Forward links (evolvesToId) win; back-pointers (evolvesFromId) are derived/reconciled. */
 export function reconcileEvolution(defs: PetDef[]): PetDef[] {
@@ -38,6 +40,15 @@ export function PetsTab() {
   const [draft, setDraft] = useState<PetDef[]>(() => [...getActivePetDefs()]);
   const [status, setStatus] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | number>('all');
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  function patch(id: string, p: Partial<PetDef>) {
+    setDraft(draft.map((d) => (d.id === id ? { ...d, ...p } : d)));
+  }
+
+  function setStarter(id: string) {
+    setDraft(draft.map((d) => ({ ...d, starter: d.id === id })));
+  }
 
   const gens = useMemo(() => [...new Set(draft.map((d) => d.gen))].sort((a, b) => a - b), [draft]);
   const shown = useMemo(() => (genFilter === 'all' ? draft : draft.filter((d) => d.gen === genFilter)), [draft, genFilter]);
@@ -118,11 +129,74 @@ export function PetsTab() {
             {d.starter && <span>· ⭐ starter</span>}
             {!d.enabled && <span>· (disabled)</span>}
             <span className="flex-1" />
+            <button type="button" aria-label={`edit ${d.name}`}
+              onClick={() => setEditingId(editingId === d.id ? null : d.id)}
+              className="text-indigo-600">Edit</button>
             <button type="button" aria-label={`delete ${d.name}`} disabled={!canDelete(d)}
               onClick={() => deletePet(d.id)} className="text-red-600 disabled:opacity-40">Delete</button>
           </li>
         ))}
       </ul>
+
+      {editingId && draft.some((d) => d.id === editingId) && (
+        <PetForm
+          def={draft.find((d) => d.id === editingId)!}
+          allDefs={draft}
+          onPatch={(p) => patch(editingId, p)}
+          onSetStarter={() => setStarter(editingId)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PetForm({ def, allDefs, onPatch, onSetStarter }: {
+  def: PetDef;
+  allDefs: PetDef[];
+  onPatch: (p: Partial<PetDef>) => void;
+  onSetStarter: () => void;
+}) {
+  void allDefs;
+  const starterEligible = def.gen === 1 && def.dexNo === 1;
+  return (
+    <div className="rounded border-2 border-indigo-300 p-3 flex flex-col gap-2">
+      <label>id
+        <input className="border px-1 ml-1" value={def.id}
+          onChange={(e) => onPatch({ id: e.target.value })} />
+      </label>
+      <label>name
+        <input className="border px-1 ml-1" value={def.name}
+          onChange={(e) => onPatch({ name: e.target.value })} />
+      </label>
+      <label>gen
+        <input type="number" className="w-16 border px-1 ml-1" value={def.gen}
+          onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch({ gen: n }); }} />
+      </label>
+      <label>dexNo
+        <input type="number" className="w-16 border px-1 ml-1" value={def.dexNo}
+          onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch({ dexNo: n }); }} />
+      </label>
+      <label>element
+        <select className="border px-1 ml-1" value={def.element}
+          onChange={(e) => onPatch({ element: e.target.value as Species })}>
+          {SPECIES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+      <label>types
+        <select multiple className="border px-1 ml-1 align-top" value={def.types}
+          onChange={(e) => onPatch({ types: Array.from(e.target.selectedOptions, (o) => o.value) })}>
+          {PET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </label>
+      <label>enabled
+        <input type="checkbox" className="ml-1" checked={def.enabled}
+          onChange={(e) => onPatch({ enabled: e.target.checked })} />
+      </label>
+      <label>starter
+        <input type="checkbox" className="ml-1" checked={!!def.starter} disabled={!starterEligible}
+          onChange={(e) => { if (e.target.checked) onSetStarter(); else onPatch({ starter: false }); }} />
+      </label>
+      {!starterEligible && <p className="text-xs text-slate-500">Starter must be gen 1, dexNo 1.</p>}
     </div>
   );
 }

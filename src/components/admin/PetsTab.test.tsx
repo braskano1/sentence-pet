@@ -11,7 +11,7 @@ vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => write
 
 import { PetsTab, reconcileEvolution } from './PetsTab';
 import type { PetDef } from '../../data/types';
-import { BUILTIN_PET_DEFS, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
+import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '../../domain/petDef';
 
 beforeEach(() => {
   savePetDefs.mockClear();
@@ -22,7 +22,7 @@ beforeEach(() => {
 describe('PetsTab — list + save', () => {
   it('lists every active def by name (seeded from getActivePetDefs)', () => {
     render(<PetsTab />);
-    for (const d of getActivePetDefs()) {
+    for (const d of active()) {
       expect(screen.getAllByText(new RegExp(d.name)).length).toBeGreaterThan(0);
     }
   });
@@ -34,7 +34,7 @@ describe('PetsTab — list + save', () => {
     fireEvent.click(save);
     await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
     expect(writePetDefsCache).toHaveBeenCalled();
-    expect(getActivePetDefs().map((d) => d.id)).toEqual(BUILTIN_PET_DEFS.map((d) => d.id));
+    expect(active().map((d) => d.id)).toEqual(BUILTIN_PET_DEFS.map((d) => d.id));
     expect(savePetDefs.mock.calls[0][0]).toHaveLength(BUILTIN_PET_DEFS.length);
   });
 });
@@ -77,6 +77,42 @@ describe('PetsTab — add / delete / filter', () => {
     fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // adds gen-1 def #5
     fireEvent.change(screen.getByLabelText(/filter by gen/i), { target: { value: '1' } });
     expect(screen.getAllByRole('listitem').length).toBe(5);
+  });
+});
+
+describe('PetsTab — edit form', () => {
+  function openFirstEditor() {
+    render(<PetsTab />);
+    fireEvent.click(screen.getAllByRole('button', { name: /^edit /i })[0]); // edit Leaflet (starter)
+  }
+
+  it('edits the name', () => {
+    openFirstEditor();
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Sprout' } });
+    expect(screen.getByText(/Sprout/)).toBeInTheDocument();
+  });
+
+  it('toggles types via the multi-select (>=1 enforced by validate)', () => {
+    openFirstEditor();
+    const sel = screen.getByLabelText(/^types$/i) as HTMLSelectElement;
+    Array.from(sel.options).forEach((o) => { o.selected = o.value === 'leaf' || o.value === 'fire'; });
+    fireEvent.change(sel);
+    expect(screen.getByText(/leaf, fire/)).toBeInTheDocument();
+  });
+
+  it('starter checkbox is disabled unless the def is gen 1 / dexNo 1', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i })); // gen1 dexNo4
+    expect(screen.getByLabelText(/^starter$/i)).toBeDisabled();
+  });
+
+  it('keeps exactly one starter after saving the gen1/dex1 def', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    const cb = screen.getByLabelText(/^starter$/i) as HTMLInputElement;
+    expect(cb.checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(active().filter((d) => d.starter)).toHaveLength(1);
   });
 });
 
