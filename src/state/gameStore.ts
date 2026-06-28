@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { defaultAudioSettings, clampLevel, type AudioSettings, type ChannelName } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { DRILL_FOOD, KIND_FOOD } from '../data/food';
-import type { BattleStats, ContentKind, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
+import type { BattleStats, ContentKind, DrillType, FoodGroup, NutritionBars, PetDef, PetInstance, PetStage, Screen, StageChange } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
 import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
@@ -292,9 +292,13 @@ export const useGameStore = create<GameState>()(
               return withXp.pet;
             });
             const rewardId = cleared?.rewardPetDefId;
-            const def = rewardId
-              ? resolvePetDef(rewardId)                                  // starter-fallback if dangling — never blank
-              : (() => { const pool = obtainablePool(); return pool[Math.floor(rng() * pool.length)]; })();
+            let def: PetDef;
+            if (rewardId) {
+              def = resolvePetDef(rewardId); // starter-fallback if dangling — never blank
+            } else {
+              const pool = obtainablePool();
+              def = pool[Math.floor(rng() * pool.length)];
+            }
             const egg = makePet({
               id: crypto.randomUUID(),
               species: def.element,
