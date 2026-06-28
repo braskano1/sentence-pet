@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { PetDef } from '../../data/types';
 import { getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
 import { validatePetDefs } from '../../content/validate';
@@ -11,6 +11,9 @@ export function reconcileEvolution(defs: PetDef[]): PetDef[] {
   for (const d of byId.values()) {
     if (d.evolvesToId && byId.has(d.evolvesToId)) byId.get(d.evolvesToId)!.evolvesFromId = d.id;
   }
+  // Second pass handles the reverse direction (a back-pointer with no matching forward
+  // link sets the parent's forward link). validatePetDefs is the backstop for any
+  // remaining multi-parent inconsistency the two passes can't reconcile.
   for (const d of byId.values()) {
     if (d.evolvesFromId && byId.has(d.evolvesFromId)) {
       const parent = byId.get(d.evolvesFromId)!;
@@ -24,8 +27,8 @@ export function PetsTab() {
   const [draft, setDraft] = useState<PetDef[]>(() => [...getActivePetDefs()]);
   const [status, setStatus] = useState('');
 
-  const reconciled = reconcileEvolution(draft);
-  const validation = validatePetDefs(reconciled);
+  const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
+  const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
 
   async function save() {
     if (!validation.ok) return;
@@ -51,11 +54,9 @@ export function PetsTab() {
         {status && <span className="font-mono">{status}</span>}
       </div>
 
-      {!validation.ok && (
-        <ul aria-live="polite" className="rounded bg-red-50 p-2 text-red-700">
-          {validation.errors.map((e) => <li key={e}>• {e}</li>)}
-        </ul>
-      )}
+      <ul aria-live="polite" className={!validation.ok ? 'rounded bg-red-50 p-2 text-red-700' : 'sr-only'}>
+        {!validation.ok && validation.errors.map((e) => <li key={e}>• {e}</li>)}
+      </ul>
 
       <ul className="flex flex-col gap-1">
         {draft.map((d) => (
