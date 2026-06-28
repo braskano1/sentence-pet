@@ -1,5 +1,22 @@
 # Handoff — Drill Revamp P3b (admin boss forms + Excel import + seed regen + finalBoss enforcement)
 
+## ✅ P3b COMPLETE (2026-06-28)
+
+16 commits on `journey-redesign`, `270c21e..340d616`. **819 tests pass | 13 skipped**, `tsc -b` clean, `npm run build` clean. Plan: `docs/superpowers/plans/2026-06-28-drill-revamp-p3b.md`; spec: `docs/superpowers/specs/2026-06-28-drill-revamp-p3b-design.md`. Executed subagent-driven (impl + spec review + code-quality review per task).
+
+What shipped:
+- **Course-based admin (keystone):** `AdminShell` drafts a `Course` (`validateCourse` + `saveCourse` + `setCourse`); `PoolTab`/`JourneyTab` retargeted to `course.pool`/`course.units`; new **Bosses tab** (`BossesTab.tsx`) authors gated + final bosses; new **Import tab** (`ImportTab.tsx`).
+- **Excel import:** `xlsx` dep + pure `parseWorkbookToCourse` (`src/content/excelImport.ts`, hardened: dup-id / cross-unit-node / blank-gated-afterUnit errors) → `validateCourse` → preview-then-commit → persists via `saveCourse` + syncs draft.
+- **Seed regen:** `SEED_COURSE` moved into `seed.ts`; Course-shaped `dist-seed/course.json` export; `seedCourse.ts` deleted; store fallback repointed.
+- **finalBoss enforcement:** `bundleToDefaultCourse` synthesizes a default finalBoss; `validateCourse` enforces finalBoss-presence + rejects duplicate gate `afterUnitId`.
+
+Final whole-impl review (opus) caught + fixed one real integration defect: import was live-only (no `saveCourse`), lost on reload — fixed in `340d616`.
+
+**Still pending (deferred, not in P3b):** deterministic boss sampling (seed RNG by course id); unify duplicate Fisher–Yates (`review.ts` vs `check.ts`); flashcard speaking + matching images (parent-spec "Reserved"). **Manual offline smoke not yet run** (see "How to run / test" below) — needs a human at the dev server with an admin claim. Draft PR #33 stays DRAFT until the whole drill-revamp line ships.
+
+---
+
+
 **Date:** 2026-06-28
 **Branch:** `journey-redesign` (integration branch — do NOT merge to main; promote the whole drill-revamp line as one release later)
 **Spec:** `docs/superpowers/specs/2026-06-27-drill-revamp-design.md` (§3.2 bosses, §6 admin, §7 course completion, §8 Excel import, §9 validate)
