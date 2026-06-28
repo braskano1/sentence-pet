@@ -1,6 +1,16 @@
 import { useMemo, useState } from 'react';
-import type { PetDef, Species } from '../../data/types';
+import type { BattleStats, PetDef, Rarity, Species, StatRange } from '../../data/types';
 import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
+
+const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
+const STAT_KEYS: ReadonlyArray<keyof BattleStats> = ['hp', 'atk', 'def', 'spd', 'luk'];
+
+/** Set one rarity's [min,max] across all 5 stats (representative-band editor). */
+export function setRarityBand(def: PetDef, rarity: Rarity, range: StatRange): PetDef {
+  const band = {} as Record<keyof BattleStats, StatRange>;
+  for (const stat of STAT_KEYS) band[stat] = range;
+  return { ...def, statBands: { ...def.statBands, [rarity]: band } };
+}
 import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
@@ -64,9 +74,9 @@ export function PetsTab() {
   async function save() {
     if (!validation.ok) return;
     setStatus('saving…');
+    setActivePetDefs(reconciled); // optimistic: update in-memory registry immediately
     try {
       await savePetDefs(reconciled);
-      setActivePetDefs(reconciled);
       writePetDefsCache(reconciled);
       setDraft(reconciled);
       setStatus('saved ✓');
@@ -204,6 +214,24 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
           onChange={(e) => { if (e.target.checked) onSetStarter(); else onPatch({ starter: false }); }} />
       </label>
       {!starterEligible && <p className="text-xs text-slate-500">Starter must be gen 1, dexNo 1.</p>}
+      <fieldset className="border p-2"><legend>stat bands (per rarity, applied to all stats)</legend>
+        {RARITIES.map((r) => {
+          const [min, max] = def.statBands[r].hp;
+          return (
+            <div key={r} className="flex items-center gap-2">
+              <span className="w-20">{r}</span>
+              <label className="text-xs">{`${r} min`}
+                <input type="number" aria-label={`${r} min`} className="w-16 border px-1 ml-1" value={min}
+                  onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch(setRarityBand(def, r, [n, max])); }} />
+              </label>
+              <label className="text-xs">{`${r} max`}
+                <input type="number" aria-label={`${r} max`} className="w-16 border px-1 ml-1" value={max}
+                  onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch(setRarityBand(def, r, [min, n])); }} />
+              </label>
+            </div>
+          );
+        })}
+      </fieldset>
     </div>
   );
 }

@@ -123,6 +123,18 @@ describe('PetsTab — edit form', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     expect(active().filter((d) => d.starter)).toHaveLength(1);
   });
+
+  it('editing a rarity band applies [min,max] to all 5 stats of that rarity on save', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.change(screen.getByLabelText(/common min/i), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText(/common max/i), { target: { value: '9' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    const leaf = active().find((d) => d.id === 'def-leaf')!;
+    for (const stat of ['hp', 'atk', 'def', 'spd', 'luk'] as const) {
+      expect(leaf.statBands.common[stat]).toEqual([3, 9]);
+    }
+  });
 });
 
 describe('reconcileEvolution', () => {
