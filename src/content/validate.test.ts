@@ -211,6 +211,29 @@ describe('validateCourse', () => {
     };
     expect(validateCourse(bad).errors.join()).toMatch(/onClear/);
   });
+
+  // P4c: optional reward cross-ref against the known pet-def id set.
+  const makeValidCourse = (): Course => JSON.parse(JSON.stringify(base)) as Course;
+
+  it('flags a boss rewardPetDefId with no matching PetDef', () => {
+    const course = makeValidCourse();
+    course.finalBoss!.rewardPetDefId = 'ghost';
+    const res = validateCourse(course, { petDefIds: new Set(['leaf-1', 'fire-1']) });
+    expect(res.ok).toBe(false);
+    expect(res.errors.some((e) => e.includes('rewardPetDefId') && e.includes('ghost'))).toBe(true);
+  });
+
+  it('accepts a known rewardPetDefId', () => {
+    const course = makeValidCourse();
+    course.finalBoss!.rewardPetDefId = 'leaf-1';
+    expect(validateCourse(course, { petDefIds: new Set(['leaf-1']) }).ok).toBe(true);
+  });
+
+  it('skips the reward cross-ref when no petDefIds are provided', () => {
+    const course = makeValidCourse();
+    course.finalBoss!.rewardPetDefId = 'ghost';
+    expect(validateCourse(course).ok).toBe(true); // no-arg = unchanged behavior
+  });
 });
 
 const clone = (): PetDef[] => JSON.parse(JSON.stringify(BUILTIN_PET_DEFS));

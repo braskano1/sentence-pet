@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import type { Course } from '../../content/course';
 import { parseWorkbookToCourse } from '../../content/excelImport';
 import { validateCourse } from '../../content/validate';
+import { getActivePetDefs } from '../../domain/petDef';
 
 /** Default reader: File → SheetJS WorkBook. Injectable for tests. */
 async function defaultReadWorkbook(file: File): Promise<XLSX.WorkBook> {
@@ -21,7 +22,9 @@ export function ImportTab({ onCommit, readWorkbook = defaultReadWorkbook }: {
     try {
       const wb = await readWorkbook(file);
       const { course: parsed, errors: parseErrors } = parseWorkbookToCourse(wb);
-      const validation = parsed ? validateCourse(parsed) : { ok: false, errors: [] };
+      const validation = parsed
+        ? validateCourse(parsed, { petDefIds: new Set(getActivePetDefs().map((d) => d.id)) })
+        : { ok: false, errors: [] };
       setCourse(parsed);
       setErrors([...parseErrors, ...validation.errors]);
     } catch (err) {

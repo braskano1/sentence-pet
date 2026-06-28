@@ -79,7 +79,10 @@ export function validateContent(bundle: ContentBundle): { ok: boolean; errors: s
 
 /** Course validation: structural bundle checks (via a Course→ContentBundle
  *  projection) + gate/final-boss reference checks. */
-export function validateCourse(course: Course): { ok: boolean; errors: string[] } {
+export function validateCourse(
+  course: Course,
+  opts?: { petDefIds?: ReadonlySet<string> },
+): { ok: boolean; errors: string[] } {
   const errors: string[] = [];
   const push = (m: string) => errors.push(m);
 
@@ -118,6 +121,16 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
   // P3b: two gates after the same unit both resolve to order N+0.5 (a tie the resolver can't place).
   const afterIds = course.gates.map((g) => g.afterUnitId).filter((x): x is string => !!x);
   if (new Set(afterIds).size !== afterIds.length) push('duplicate gate afterUnitId');
+
+  // P4c: optional reward cross-ref — a boss's rewardPetDefId must name a known pet-def.
+  if (opts?.petDefIds) {
+    const bosses = [...course.gates, ...(course.finalBoss ? [course.finalBoss] : [])];
+    for (const b of bosses) {
+      if (b.rewardPetDefId && !opts.petDefIds.has(b.rewardPetDefId)) {
+        push(`boss ${b.id}: unknown rewardPetDefId "${b.rewardPetDefId}"`);
+      }
+    }
+  }
 
   return { ok: errors.length === 0, errors };
 }

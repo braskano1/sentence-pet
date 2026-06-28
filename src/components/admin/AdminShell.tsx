@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { useContentStore } from '../../content/store';
 import { validateCourse } from '../../content/validate';
+import { getActivePetDefs } from '../../domain/petDef';
 import { saveCourse } from '../../firebase/content';
 import type { Course } from '../../content/course';
 import { PoolTab } from './PoolTab';
@@ -22,7 +23,7 @@ export function AdminShell() {
 
   if (!draft) return <p className="p-4 text-sm text-red-600">No course loaded.</p>;
   const currentDraft: Course = draft;
-  const validation = validateCourse(currentDraft);
+  const validation = validateCourse(currentDraft, { petDefIds: new Set(getActivePetDefs().map((d) => d.id)) });
 
   async function save() {
     if (!validation.ok) return;
