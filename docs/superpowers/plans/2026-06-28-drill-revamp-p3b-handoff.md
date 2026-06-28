@@ -12,6 +12,10 @@ What shipped:
 
 Final whole-impl review (opus) caught + fixed one real integration defect: import was live-only (no `saveCourse`), lost on reload — fixed in `340d616`.
 
+**Smoke test: RUN + PASS** (against local emulators, automated). Harness kept: `e2e/p3b-smoke.spec.ts` (opt-in, `RUN_P3B_SMOKE=1`) + `scripts/p3b-smoke-setup.mjs` (seeds an emulator admin user + xlsx fixtures); `dist-smoke/` (screenshots) gitignored. Verified end-to-end: admin sign-in (custom claim) → Bosses tab authors a gate → Save → the gate round-trips through the Firestore emulator and appears as `boss-unit:gate-1` in the player's hydrated bundle; Excel import previews a valid workbook + commits, and blocks an invalid one (`missing required sheet`) with Commit disabled.
+
+> **⚠️ Finding (follow-up, not a P3b regression):** the admin tool does NOT self-hydrate from Firestore — `main.tsx:21-23` runs `hydrateCourse('default')` only on *player* entry. So in a **cold browser** (empty localStorage, no prior player visit) opening `/#admin` after a save shows the `SEED_COURSE` fallback, not the just-saved course (the Firestore write itself is correct — proven via the player app). The "admin saves → reload → persists" expectation holds for the *player*, not the admin view on a cold cache. Cheap fix when convenient: call `hydrateCourse` on admin entry too, or write the course cache in `AdminShell.save()`.
+
 **Still pending (deferred, not in P3b):** deterministic boss sampling (seed RNG by course id); unify duplicate Fisher–Yates (`review.ts` vs `check.ts`); flashcard speaking + matching images (parent-spec "Reserved"). **Manual offline smoke not yet run** (see "How to run / test" below) — needs a human at the dev server with an admin claim. Draft PR #33 stays DRAFT until the whole drill-revamp line ships.
 
 ---

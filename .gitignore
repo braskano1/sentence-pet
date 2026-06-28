@@ -40,6 +40,9 @@ playwright-report/
 # Seed export
 dist-seed/
 
+# P3b smoke-test artifacts (screenshots + generated xlsx fixtures)
+dist-smoke/
+
 # Raw intro master (62 MB) — never commit; transcoded into public/intro.{mp4,webm} + poster
 sentencepet.mp4
 
