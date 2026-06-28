@@ -93,7 +93,9 @@ export interface PetInstance {
 }
 ```
 
-### 2. Built-in registry + resolution (`src/content/petDef.ts`, new)
+### 2. Built-in registry + resolution (`src/domain/petDef.ts`, new)
+
+> Implementation note: the registry lives in `src/domain/petDef.ts` (domain layer — `makePet` resolves against it). Persistence/validation helpers live in `src/content/*` and `src/firebase/content.ts`. The `validatePetDefs` test lives in `src/content/validate.test.ts`.
 
 - `BUILTIN_PET_DEFS: readonly PetDef[]` — 4 defs, one per element (`leaf`,`fire`,`air`,`water`).
   - Each def's `statBands` extracted from today's `GAME_CONFIG.gacha.rarities` stat bands (same numbers
