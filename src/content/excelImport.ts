@@ -3,6 +3,10 @@ import type { Course, BossNode } from './course';
 import type { Unit, Lesson, CheckpointBoss } from './model';
 import type { ContentItem, ContentKind, DragDropItem, PosLabel, Species, PetStage } from '../data/types';
 
+// xlsx@0.18.5 has published prototype-pollution + ReDoS advisories that apply only to
+// untrusted input. This parser runs admin-only, post-auth (see ImportTab call site), so
+// neither is reachable here. Revisit if the import surface ever accepts pre-auth files.
+
 type Row = Record<string, unknown>;
 
 const REQUIRED_SHEETS = ['Course', 'Units', 'Items', 'Bosses'] as const;
@@ -138,9 +142,14 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
         return;
     }
 
+    if (pool[id]) { errors.push(`Items row ${i + 2}: duplicate id "${id}"`); return; }
     pool[id] = item;
     const nodeId = str(r.node) || `${str(r.unit)}-${kind}`;
     const grp = nodeItems.get(nodeId) ?? { unit: str(r.unit), kind, level, ids: [] };
+    if (nodeItems.has(nodeId) && grp.unit !== str(r.unit)) {
+      errors.push(`Items row ${i + 2}: node "${nodeId}" spans units "${grp.unit}" and "${str(r.unit)}"`);
+      return;
+    }
     grp.ids.push(id);
     nodeItems.set(nodeId, grp);
   });
@@ -192,6 +201,7 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
       id,
       title: id,
       ...(reviewsUnits.length ? { reviewsUnitIds: reviewsUnits } : {}),
+      // falsy 0/NaN both omit reviewCount; a literal 0 in the sheet is treated as absent (validateCourse rejects <1)
       ...(reviewCountVal ? { reviewCount: reviewCountVal } : {}),
       ...(pinnedItemIds.length ? { pinnedItemIds } : {}),
       boss: bossCfg(),
@@ -200,7 +210,9 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
     if (scope === 'final') {
       finalBoss = { ...common, scope: 'final', onClear: 'completeCourse' };
     } else if (scope === 'gated') {
-      gates.push({ ...common, scope: 'gated', afterUnitId: str(r.afterUnit) });
+      const afterUnitId = str(r.afterUnit);
+      if (!afterUnitId) errors.push(`Bosses row ${i + 2}: gated boss requires afterUnit`);
+      gates.push({ ...common, scope: 'gated', afterUnitId });
     } else {
       errors.push(`Bosses row ${i + 2}: unknown scope "${scope}"`);
     }

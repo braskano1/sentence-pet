@@ -64,4 +64,71 @@ describe('parseWorkbookToCourse', () => {
     expect(d1.kind).toBe('dragdrop');
     if (d1.kind === 'dragdrop') expect(d1.thaiHint).toBe('ฉันวิ่ง');
   });
+
+  it('sets onClear on finalBoss and omits it on gated bosses', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer'],
+              ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Verb', 'run']],
+      Bosses: [
+        ['id', 'scope', 'afterUnit', 'reviewsUnits', 'reviewCount'],
+        ['gate-1', 'gated', 'u1', 'u1', 3],
+        ['final-1', 'final', '', 'u1', 6],
+      ],
+    });
+    const { course } = parseWorkbookToCourse(book);
+    expect(course!.finalBoss?.onClear).toBe('completeCourse');
+    expect(course!.gates[0]).not.toHaveProperty('onClear');
+    expect(course!.gates[0].afterUnitId).toBe('u1');
+    expect(course!.gates[0].scope).toBe('gated');
+  });
+
+  it('marks only the last lesson per unit as isCheckpoint', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Verb', 'run'],
+        ['d2', 'dragdrop', 1, 'u1', 'u1-n2', 'hint', 'Verb', 'walk'],
+      ],
+      Bosses: [['id', 'scope', 'reviewsUnits', 'reviewCount'], ['f1', 'final', 'u1', 6]],
+    });
+    const { course } = parseWorkbookToCourse(book);
+    const lessons = course!.units[0].lessons;
+    expect(lessons).toHaveLength(2);
+    expect(lessons[0].isCheckpoint).toBeUndefined();
+    expect(lessons[1].isCheckpoint).toBe(true);
+  });
+
+  it('reports duplicate item ids', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Verb', 'run'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n2', 'hint', 'Verb', 'walk'],
+      ],
+      Bosses: [['id', 'scope', 'reviewsUnits', 'reviewCount'], ['f1', 'final', 'u1', 6]],
+    });
+    const { errors } = parseWorkbookToCourse(book);
+    expect(errors.some((e) => /duplicate id/.test(e))).toBe(true);
+  });
+
+  it('reports a node id that spans two units', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U1', '🐣', 1, false], ['u2', 'U2', '🌱', 2, false]],
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer'],
+        ['d1', 'dragdrop', 1, 'u1', 'shared', 'hint', 'Verb', 'run'],
+        ['d2', 'dragdrop', 1, 'u2', 'shared', 'hint', 'Verb', 'walk'],
+      ],
+      Bosses: [['id', 'scope', 'reviewsUnits', 'reviewCount'], ['f1', 'final', 'u1', 6]],
+    });
+    const { errors } = parseWorkbookToCourse(book);
+    expect(errors.some((e) => /spans units/.test(e))).toBe(true);
+  });
 });
