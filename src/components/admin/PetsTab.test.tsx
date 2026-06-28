@@ -279,4 +279,16 @@ describe('setVariant / clearVariant', () => {
     const sprite = { default: 'https://cdn.test/d.webp', variants: { baby: { happy: 'https://cdn.test/bh.webp' } } };
     expect(clearVariant(sprite, 'baby', 'happy')).toEqual({ default: 'https://cdn.test/d.webp' });
   });
+
+  it('setVariant does not mutate its input', () => {
+    const sprite = { default: 'https://cdn.test/d.webp', variants: { baby: { happy: 'orig' } } };
+    const before = JSON.stringify(sprite);
+    setVariant(sprite, 'baby', 'sad', 'new');
+    expect(JSON.stringify(sprite)).toBe(before);
+  });
+
+  it('clearVariant is a no-op when the stage/mood does not exist', () => {
+    const sprite = { variants: { adult: { sad: 'https://cdn.test/as.webp' } } };
+    expect(clearVariant(sprite, 'baby', 'happy')).toEqual(sprite);
+  });
 });

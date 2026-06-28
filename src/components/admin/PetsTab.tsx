@@ -28,7 +28,7 @@ export function stripDefault(sprite: PetDef['sprite']): PetDef['sprite'] {
 type VariantStage = Exclude<PetStage, 'egg'>;
 
 /** Immutably set variants[stage][mood] = url, preserving default and other cells. */
-export function setVariant(sprite: PetDef['sprite'], stage: VariantStage, mood: PetMood, url: string): PetDef['sprite'] {
+export function setVariant(sprite: PetDef['sprite'], stage: VariantStage, mood: PetMood, url: string): NonNullable<PetDef['sprite']> {
   const variants = { ...(sprite?.variants ?? {}) };
   variants[stage] = { ...(variants[stage] ?? {}), [mood]: url };
   return { ...sprite, variants };
