@@ -28,6 +28,7 @@ export function PetSprite({
   const controls = useAnimationControls();
   const prevStage = useRef(stage);
   const prevFeed = useRef(feedTrigger);
+  const [errored, setErrored] = useState(false);
 
   // feed bounce
   useEffect(() => {
@@ -50,7 +51,6 @@ export function PetSprite({
   const def = defId ? resolvePetDef(defId) : undefined;
   const primary = spriteSrc(species, stage, mood, def);
   const elementArt = spriteSrc(species, stage, mood); // override-free fallback
-  const [errored, setErrored] = useState(false);
   useEffect(() => { setErrored(false); }, [primary]); // re-arm when the chosen src changes
   const src = errored ? elementArt : primary;
   const alt = isEgg ? 'pet-egg' : `pet-${species}-${stage}-${mood}`;
