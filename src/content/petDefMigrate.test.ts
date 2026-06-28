@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { backfillPetDefs } from './petDefMigrate';
+import { backfillPetDefs, type RawPetDef } from './petDefMigrate';
 import { validatePetDefs } from './validate';
 import { BUILTIN_PET_DEFS } from '../domain/petDef';
 
@@ -13,18 +13,18 @@ function preV2() {
 
 describe('backfillPetDefs', () => {
   it('fills gen 1, sequential dexNo, and element-derived types on pre-v2 defs', () => {
-    const out = backfillPetDefs(preV2() as never);
+    const out = backfillPetDefs(preV2() as RawPetDef[]);
     expect(out.every((d) => d.gen === 1)).toBe(true);
-    expect(out.map((d) => d.dexNo)).toEqual([1, 2, 3, 4]);
+    expect(out.map((d) => d.dexNo)).toEqual(BUILTIN_PET_DEFS.map((_, i) => i + 1));
     for (const d of out) expect(d.types).toEqual([d.element]);
   });
 
   it('produces a catalog that passes validatePetDefs', () => {
-    expect(validatePetDefs(backfillPetDefs(preV2() as never)).ok).toBe(true);
+    expect(validatePetDefs(backfillPetDefs(preV2() as RawPetDef[])).ok).toBe(true);
   });
 
   it('preserves already-present v2 fields', () => {
-    const out = backfillPetDefs(BUILTIN_PET_DEFS as never);
+    const out = backfillPetDefs(BUILTIN_PET_DEFS as RawPetDef[]);
     expect(out).toEqual(BUILTIN_PET_DEFS);
   });
 });

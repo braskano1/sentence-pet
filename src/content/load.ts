@@ -54,6 +54,7 @@ export async function hydratePetDefs(): Promise<void> {
   try {
     const live = await fetchPetDefs();
     if (live) {
+      // fetchPetDefs returns unvalidated Firestore data; backfill missing v2 fields, then validate
       const migrated = backfillPetDefs(live);
       if (validatePetDefs(migrated).ok) {
         setActivePetDefs(migrated);
