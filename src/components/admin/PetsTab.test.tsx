@@ -9,7 +9,7 @@ vi.mock('../../firebase/content', () => ({
 const writePetDefsCache = vi.fn();
 vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => writePetDefsCache(d) }));
 
-import { PetsTab, reconcileEvolution } from './PetsTab';
+import { PetsTab, reconcileEvolution, stripDefault } from './PetsTab';
 import type { PetDef } from '../../data/types';
 import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '../../domain/petDef';
 
@@ -232,5 +232,21 @@ describe('reconcileEvolution', () => {
   it('derives evolvesToId from a back evolvesFromId link', () => {
     const out = reconcileEvolution([base('a', 1), { ...base('b', 2), evolvesFromId: 'a' }]);
     expect(out.find((d) => d.id === 'a')!.evolvesToId).toBe('b');
+  });
+});
+
+describe('stripDefault', () => {
+  it('returns undefined when only default was present', () => {
+    expect(stripDefault({ default: 'https://cdn.test/x.webp' })).toBeUndefined();
+  });
+  it('returns undefined for an empty variants object', () => {
+    expect(stripDefault({ default: 'https://cdn.test/x.webp', variants: {} })).toBeUndefined();
+  });
+  it('keeps a non-empty variants set (drops default)', () => {
+    expect(stripDefault({ default: 'https://cdn.test/x.webp', variants: { adult: { happy: 'https://cdn.test/a.webp' } } }))
+      .toEqual({ variants: { adult: { happy: 'https://cdn.test/a.webp' } } });
+  });
+  it('returns undefined for undefined input', () => {
+    expect(stripDefault(undefined)).toBeUndefined();
   });
 });

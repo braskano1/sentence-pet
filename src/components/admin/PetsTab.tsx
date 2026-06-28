@@ -21,7 +21,8 @@ export function setRarityBand(def: PetDef, rarity: Rarity, range: StatRange): Pe
 export function stripDefault(sprite: PetDef['sprite']): PetDef['sprite'] {
   if (!sprite) return undefined;
   const { default: _omit, ...rest } = sprite;
-  return rest.variants ? rest : undefined;
+  const hasVariants = rest.variants && Object.keys(rest.variants).length > 0;
+  return hasVariants ? rest : undefined;
 }
 
 /** Forward links (evolvesToId) win; back-pointers (evolvesFromId) are derived/reconciled. */
