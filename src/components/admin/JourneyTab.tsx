@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { ContentBundle, Lesson, Unit } from '../../content/model';
+import type { Course } from '../../content/course';
+import type { Lesson, Unit } from '../../content/model';
 import type { ContentItem, ContentKind } from '../../data/types';
 import { isDragDrop } from '../../data/types';
 
@@ -8,19 +9,19 @@ export function eligibleItemIds(pool: Record<string, ContentItem>, kind: Content
   return Object.values(pool).filter((i) => i.kind === kind).map((i) => i.id);
 }
 
-export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChange: (b: ContentBundle) => void }) {
+export function JourneyTab({ course, onChange }: { course: Course; onChange: (c: Course) => void }) {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(
-    bundle.units[0]?.lessons[0]?.id ?? null,
+    course.units[0]?.lessons[0]?.id ?? null,
   );
 
-  function setUnits(units: Unit[]) { onChange({ ...bundle, units }); }
+  function setUnits(units: Unit[]) { onChange({ ...course, units }); }
 
   function patchUnit(unitId: string, patch: Partial<Unit>) {
-    setUnits(bundle.units.map((u) => (u.id === unitId ? { ...u, ...patch } : u)));
+    setUnits(course.units.map((u) => (u.id === unitId ? { ...u, ...patch } : u)));
   }
 
   function patchLesson(unitId: string, lessonId: string, patch: Partial<Lesson>) {
-    setUnits(bundle.units.map((u) => u.id !== unitId ? u : {
+    setUnits(course.units.map((u) => u.id !== unitId ? u : {
       ...u, lessons: u.lessons.map((l) => (l.id === lessonId ? { ...l, ...patch } : l)),
     }));
   }
@@ -32,13 +33,13 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
     patchLesson(unitId, lesson.id, { itemIds });
   }
 
-  const selected = bundle.units.flatMap((u) => u.lessons.map((l) => ({ u, l })))
+  const selected = course.units.flatMap((u) => u.lessons.map((l) => ({ u, l })))
     .find(({ l }) => l.id === selectedLessonId);
 
   return (
     <div className="flex gap-4 text-sm">
       <div className="w-56 flex-col gap-2">
-        {bundle.units.map((unit) => (
+        {course.units.map((unit) => (
           <div key={unit.id} className="mb-3 rounded border p-2">
             <input className="w-full border px-1 font-semibold" value={unit.title}
               onChange={(e) => patchUnit(unit.id, { title: e.target.value })} />
@@ -66,7 +67,7 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
                   const kind = e.target.value as ContentKind;
                   patchLesson(selected.u.id, selected.l.id, {
                     kind,
-                    itemIds: selected.l.itemIds.filter((id) => bundle.pool[id]?.kind === kind),
+                    itemIds: selected.l.itemIds.filter((id) => course.pool[id]?.kind === kind),
                   });
                 }}>
                 {['flashcard', 'matching', 'dragdrop', 'fillblank'].map((k) => <option key={k}>{k}</option>)}
@@ -89,10 +90,10 @@ export function JourneyTab({ bundle, onChange }: { bundle: ContentBundle; onChan
               onChange={(e) => patchUnit(selected.u.id, { l1Enabled: e.target.checked })} /> L1 enabled (TH/ENG toggle)</label>
             <p className="mt-2 font-semibold">Items in lesson</p>
             <div className="flex flex-col">
-              {eligibleItemIds(bundle.pool, selected.l.kind ?? 'dragdrop').map((id) => (
+              {eligibleItemIds(course.pool, selected.l.kind ?? 'dragdrop').map((id) => (
                 <label key={id}>
                   <input type="checkbox" aria-label={`item ${id}`} checked={selected.l.itemIds.includes(id)}
-                    onChange={() => toggleItem(selected.u.id, selected.l, id)} /> {id} <span className="text-xs text-slate-400">({(() => { const it = bundle.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{bundle.pool[id].level})</span>
+                    onChange={() => toggleItem(selected.u.id, selected.l, id)} /> {id} <span className="text-xs text-slate-400">({(() => { const it = course.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{course.pool[id].level})</span>
                 </label>
               ))}
             </div>
