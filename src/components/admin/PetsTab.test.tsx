@@ -143,6 +143,28 @@ describe('PetsTab — edit form', () => {
   });
 });
 
+describe('PetsTab — evolution UI + validate gate', () => {
+  it('setting evolvesToId in the form persists reciprocal links on save', async () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i })); // def-leaf, gen1 dex1
+    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => {
+      const fire = active().find((d) => d.id === 'def-fire')!;
+      expect(fire.evolvesFromId).toBe('def-leaf');
+    });
+  });
+
+  it('Save is disabled + error shown when a duplicate (gen,dexNo) exists', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // gen1 dex5
+    fireEvent.click(screen.getByRole('button', { name: /edit .*new pet/i }));
+    fireEvent.change(screen.getByLabelText(/^dexNo$/i), { target: { value: '1' } }); // collide with starter
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    expect(screen.getByText(/duplicate \(gen 1, dexNo 1\)/i)).toBeInTheDocument();
+  });
+});
+
 describe('reconcileEvolution', () => {
   const base = (id: string, dexNo: number): PetDef => ({
     id, name: id, gen: 1, dexNo, types: ['leaf'], element: 'leaf',

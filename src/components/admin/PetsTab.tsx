@@ -173,7 +173,6 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
   onRename: (newId: string) => void;
   onSetStarter: () => void;
 }) {
-  void allDefs;
   const starterEligible = def.gen === 1 && def.dexNo === 1;
   return (
     <div className="rounded border-2 border-indigo-300 p-3 flex flex-col gap-2">
@@ -231,6 +230,26 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
             </div>
           );
         })}
+      </fieldset>
+      <fieldset className="border p-2"><legend>evolution</legend>
+        <label>evolves from
+          <select className="border px-1 ml-1" value={def.evolvesFromId ?? ''}
+            onChange={(e) => onPatch({ evolvesFromId: e.target.value || undefined })}>
+            <option value="">— none —</option>
+            {allDefs.filter((o) => o.id !== def.id).map((o) => <option key={o.id} value={o.id}>{o.name} ({o.id})</option>)}
+          </select>
+        </label>
+        <label>evolves to
+          <select className="border px-1 ml-1" value={def.evolvesToId ?? ''}
+            onChange={(e) => onPatch({ evolvesToId: e.target.value || undefined })}>
+            <option value="">— none —</option>
+            {allDefs.filter((o) => o.id !== def.id).map((o) => <option key={o.id} value={o.id}>{o.name} ({o.id})</option>)}
+          </select>
+        </label>
+        <label>evolutionStage
+          <input type="number" step="1" min="1" className="w-16 border px-1 ml-1" value={def.evolutionStage ?? ''}
+            onChange={(e) => { const n = e.target.valueAsNumber; onPatch({ evolutionStage: Number.isNaN(n) ? undefined : n }); }} />
+        </label>
       </fieldset>
     </div>
   );
