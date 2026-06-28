@@ -35,12 +35,26 @@ export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element, i): Pet
 /** Module-level active catalog. Hydration swaps this; defaults to the built-ins so the game never blanks. */
 let active: readonly PetDef[] = BUILTIN_PET_DEFS;
 
+/** Subscribers notified when the active catalog is swapped (e.g. async hydration).
+ *  Lets React views (via useSyncExternalStore) re-render instead of snapshotting once. */
+const listeners = new Set<() => void>();
+
+/** Current catalog snapshot. Stable reference between swaps — safe as a useSyncExternalStore getSnapshot. */
 export function getActivePetDefs(): readonly PetDef[] {
   return active;
 }
 
 export function setActivePetDefs(defs: readonly PetDef[]): void {
-  active = defs.length > 0 ? defs : BUILTIN_PET_DEFS;
+  const next = defs.length > 0 ? defs : BUILTIN_PET_DEFS;
+  if (next === active) return; // no-op: don't wake subscribers on an identical swap
+  active = next;
+  listeners.forEach((l) => l());
+}
+
+/** Subscribe to active-catalog swaps. Returns an unsubscribe fn. */
+export function subscribePetDefs(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
 /** The default def for an element. P1 has exactly one def per element; falls back to the starter. */

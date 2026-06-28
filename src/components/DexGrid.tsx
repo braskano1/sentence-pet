@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGameStore } from '../state/gameStore';
-import { getActivePetDefs } from '../domain/petDef';
+import { usePetDefs } from '../state/usePetDefs';
 import { spriteSrc } from '../config/sprites';
 import { formatDexNo } from '../config/petDisplay';
 import { PressButton } from './PressButton';
@@ -14,9 +14,11 @@ export function DexGrid() {
   const caught = useMemo(() => new Set(caughtDefIds), [caughtDefIds]);
   const [selected, setSelected] = useState<PetDef | null>(null);
 
+  // Reactive catalog: re-renders when hydratePetDefs swaps the registry post-mount.
+  const allDefs = usePetDefs();
   const defs = useMemo(
-    () => getActivePetDefs().filter((d) => d.enabled).sort((a, b) => a.gen - b.gen || a.dexNo - b.dexNo),
-    [],
+    () => allDefs.filter((d) => d.enabled).slice().sort((a, b) => a.gen - b.gen || a.dexNo - b.dexNo),
+    [allDefs],
   );
   const caughtCount = defs.filter((d) => caught.has(d.id)).length;
 

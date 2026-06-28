@@ -3,6 +3,7 @@ import {
   BUILTIN_PET_DEFS,
   getActivePetDefs,
   setActivePetDefs,
+  subscribePetDefs,
   resolvePetDef,
   defaultDefForElement,
   starterDef,
@@ -92,5 +93,30 @@ describe('active registry', () => {
     setActivePetDefs(BUILTIN_PET_DEFS);
     expect(defaultDefForElement('water').element).toBe('water');
     expect(starterDef().starter).toBe(true);
+  });
+
+  it('notifies subscribers on a catalog swap and stops after unsubscribe', () => {
+    setActivePetDefs(BUILTIN_PET_DEFS);
+    let calls = 0;
+    const unsub = subscribePetDefs(() => { calls += 1; });
+
+    const custom = [{ ...BUILTIN_PET_DEFS[0], id: 'custom-leaf' }];
+    setActivePetDefs(custom);
+    expect(calls).toBe(1);
+
+    unsub();
+    setActivePetDefs(BUILTIN_PET_DEFS);
+    expect(calls).toBe(1); // unsubscribed — no further notifications
+
+    setActivePetDefs(BUILTIN_PET_DEFS); // restore for other suites
+  });
+
+  it('does not notify on an identical (same-reference) swap', () => {
+    setActivePetDefs(BUILTIN_PET_DEFS);
+    let calls = 0;
+    const unsub = subscribePetDefs(() => { calls += 1; });
+    setActivePetDefs(BUILTIN_PET_DEFS); // same ref as current active
+    expect(calls).toBe(0);
+    unsub();
   });
 });
