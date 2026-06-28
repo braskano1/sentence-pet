@@ -62,9 +62,15 @@ function LoginForm({ onSubmit }: { onSubmit: (email: string, password: string) =
 }
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAdmin, loading, signIn } = useAuth();
+  const { user, isAdmin, loading, signIn, signOut } = useAuth();
   if (loading) return <p className="mt-24 text-center">Loading…</p>;
   if (!user) return <LoginForm onSubmit={signIn} />;
-  if (!isAdmin) return <p role="alert" className="mt-24 text-center">Not authorized.</p>;
+  if (!isAdmin) return (
+    <div className="mt-24 flex flex-col items-center gap-3">
+      <p role="alert">Not authorized.</p>
+      <button type="button" onClick={() => void signOut()}
+        className="rounded border px-3 py-1 text-sm">Sign out</button>
+    </div>
+  );
   return <>{children}</>;
 }
