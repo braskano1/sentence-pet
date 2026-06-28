@@ -350,7 +350,7 @@ describe('validatePetDefs — sprite override', () => {
 
   it('rejects variants.egg (egg is never overridable)', () => {
     const defs = clone();
-    defs[0] = { ...defs[0], sprite: { variants: { egg: { happy: 'https://cdn.test/e.webp' } } } as PetDef['sprite'] };
+    defs[0] = { ...defs[0], sprite: { variants: { egg: { happy: 'https://cdn.test/e.webp' } } } };
     const res = validatePetDefs(defs);
     expect(res.ok).toBe(false);
     expect(res.errors.some((e) => /egg/i.test(e))).toBe(true);
@@ -360,5 +360,11 @@ describe('validatePetDefs — sprite override', () => {
     const defs = clone();
     defs[0] = { ...defs[0], sprite: { variants: { adult: { happy: 'https://cdn.test/a.webp' } } } };
     expect(validatePetDefs(defs).ok).toBe(true);
+  });
+
+  it('rejects a malformed url inside variants', () => {
+    const defs = clone();
+    defs[0] = { ...defs[0], sprite: { variants: { adult: { happy: 'not-a-url' } } } };
+    expect(validatePetDefs(defs).ok).toBe(false);
   });
 });

@@ -185,7 +185,7 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
         if ('egg' in d.sprite.variants) push(`pet-def ${d.id} sprite.variants.egg is not allowed (egg is never overridable)`);
         for (const [stage, byMood] of Object.entries(d.sprite.variants)) {
           if (stage === 'egg') continue; // already reported above
-          for (const url of Object.values(byMood ?? {})) if (url !== undefined) urls.push(url as string);
+          for (const url of Object.values(byMood ?? {})) if (url !== undefined) urls.push(url);
         }
       }
       for (const u of urls) if (!isHttpUrl(u)) push(`pet-def ${d.id} sprite url is not a valid http(s) URL: ${String(u)}`);
