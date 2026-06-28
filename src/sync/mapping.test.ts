@@ -3,6 +3,7 @@ import { toCloud, fromCloud, PERSIST_VERSION } from './mapping';
 import type { PersistedState } from '../state/gameStore';
 import { defaultAudioSettings } from '../audio/mixer';
 import type { PetInstance } from '../data/types';
+import { defaultDefForElement } from '../domain/petDef';
 
 function pet(id: string): PetInstance {
   return {
@@ -37,5 +38,13 @@ describe('mapping', () => {
     const restored = fromCloud(toCloud(sample));
     expect(restored).toEqual(sample);
     expect(restored).not.toHaveProperty('persistVersion');
+  });
+
+  it('fromCloud backfills defId on a legacy cloud pet missing it', () => {
+    const legacy = { ...pet('a') } as Record<string, unknown>;
+    delete legacy.defId; // simulate a pre-v16 cloud pet doc
+    const cloud = toCloud({ ...sample, pets: [legacy as unknown as PetInstance] });
+    const restored = fromCloud(cloud);
+    expect(restored.pets[0].defId).toBe(defaultDefForElement('leaf').id);
   });
 });

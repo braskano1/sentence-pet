@@ -1,5 +1,6 @@
 import { PERSIST_VERSION, type PersistedState } from '../state/gameStore';
 import type { PetInstance } from '../data/types';
+import { defaultDefForElement } from '../domain/petDef';
 
 export { PERSIST_VERSION };
 
@@ -21,9 +22,13 @@ export function toCloud(s: PersistedState): CloudSave {
   return { profile: { ...rest, persistVersion: PERSIST_VERSION }, pets };
 }
 
-/** Recombine cloud docs back into the persisted shape. Pure. Drops persistVersion. */
+/** Recombine cloud docs back into the persisted shape. Pure. Drops persistVersion.
+ *  Backfills defId on legacy pet docs (pre-v16) so cloud-restored pets are never blank. */
 export function fromCloud(c: CloudSave): PersistedState {
   const { persistVersion: _persistVersion, ...profile } = c.profile;
   void _persistVersion;
-  return { ...profile, pets: c.pets };
+  const pets = c.pets.map((p) =>
+    p.defId ? p : { ...p, defId: defaultDefForElement(p.species).id },
+  );
+  return { ...profile, pets };
 }
