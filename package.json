@@ -14,6 +14,7 @@
     "emulators": "firebase emulators:start --only auth,firestore",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run src/firebase/rules.test.ts\"",
     "set-admin": "node scripts/set-admin-claim.mjs",
+    "dev:admin": "node scripts/seed-dev-admin.mjs",
     "seed:export": "vite-node scripts/export-seed.ts",
     "seed:push": "node scripts/seed-content.mjs"
   },
