@@ -36,6 +36,11 @@ describe('evolvePetDef', () => {
     expect(evolvePetDef(p, DEFS, 'baby', () => 0)).toBe(p);
   });
 
+  it("no-op for the 'egg' stage (hatch never def-hops; no HOP_RANGE entry)", () => {
+    const p = pet({ defId: 'base', hatched: false });
+    expect(evolvePetDef(p, DEFS, 'egg', () => 0)).toBe(p);
+  });
+
   it('swaps defId and species to the next def', () => {
     const out = evolvePetDef(pet({ defId: 'base' }), DEFS, 'young', () => 0);
     expect(out.defId).toBe('mid');

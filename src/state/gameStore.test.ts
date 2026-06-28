@@ -1143,7 +1143,10 @@ describe('P4d def-chain evolution in the store', () => {
     expect(useGameStore.getState().caughtDefIds).toContain('p4d-mid');
   });
 
-  it('does NOT hop on egg->baby (hatch)', () => {
+  it('hatch() (egg->baby) does not def-hop', () => {
+    // hatch() only flips hatched:true — it never runs applyXp/evolvePetDef, so the
+    // store's `from !== 'egg'` guard is belt-and-suspenders (the egg-stage no-op is
+    // pinned at the unit level in evolution.test.ts).
     const base: PetDef = {
       id: 'p4d-h', name: 'H', gen: 9, dexNo: 92, types: ['leaf'], element: 'leaf',
       statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, evolvesToId: 'p4d-h2',
@@ -1166,5 +1169,35 @@ describe('P4d def-chain evolution in the store', () => {
     useGameStore.getState().hatch();
     const p = selectActivePet(useGameStore.getState());
     expect(p.defId).toBe('p4d-h');
+  });
+
+  it('end-of-chain def (no evolvesToId) keeps its defId and adds nothing to the dex on baby->young', () => {
+    const solo: PetDef = {
+      id: 'p4d-solo', name: 'Solo', gen: 9, dexNo: 94, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, // no evolvesToId -> end of chain
+    };
+    setActivePetDefs([solo]);
+
+    // Park a hatched baby just below L16 so one finishRound round tips it into young.
+    const gain = xpPerCorrect(1);
+    useGameStore.setState({
+      pets: [{
+        id: 'c', defId: 'p4d-solo', species: 'leaf', hatched: true, xp: totalXpForLevel(16) - gain, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'c',
+      caughtDefIds: ['p4d-solo'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+
+    // Crossed L16 (baby->young) but the def has no next hop: defId is unchanged and
+    // nothing new is recorded in the dex.
+    const p = selectActivePet(useGameStore.getState());
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
+    expect(p.defId).toBe('p4d-solo');
+    expect(useGameStore.getState().caughtDefIds).toEqual(['p4d-solo']);
   });
 });
