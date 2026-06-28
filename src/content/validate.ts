@@ -127,7 +127,7 @@ export function validateCourse(
     const bosses = [...course.gates, ...(course.finalBoss ? [course.finalBoss] : [])];
     for (const b of bosses) {
       if (b.rewardPetDefId && !opts.petDefIds.has(b.rewardPetDefId)) {
-        push(`boss ${b.id}: unknown rewardPetDefId "${b.rewardPetDefId}"`);
+        push(`boss ${b.id} has unknown rewardPetDefId ${b.rewardPetDefId}`);
       }
     }
   }
