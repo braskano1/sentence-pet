@@ -1,4 +1,4 @@
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from './db';
 import type { ContentBundle, Unit } from '../content/model';
 import type { Course, CourseIndexEntry } from '../content/course';
@@ -77,7 +77,5 @@ export async function fetchPetDefs(): Promise<PetDef[] | null> {
 
 /** Overwrite the whole pet-def catalog doc. (P2 admin save uses this.) */
 export async function savePetDefs(defs: PetDef[]): Promise<void> {
-  const batch = writeBatch(db);
-  batch.set(PET_DEFS, { defs });
-  await batch.commit();
+  await setDoc(PET_DEFS, { defs });
 }
