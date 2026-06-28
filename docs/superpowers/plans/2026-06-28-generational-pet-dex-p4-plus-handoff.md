@@ -14,8 +14,12 @@ The structural-but-unwired end-game systems. The dex *data model* exists; nothin
 
 ---
 
-## P4a — Dex tracking (seen / caught)
-**Goal:** Record which `PetDef`s the player has discovered/obtained; show caught vs silhouette in the Collection screen. Foundation for obtainability (P4b).
+## P4a — Dex tracking (seen / caught) — ✅ DONE (PR #33, commits 5695bc4→c26fc9a)
+**Shipped:** persisted accumulating `caughtDefIds` (PERSIST_VERSION 16→17 + migration), `src/domain/dex.ts` (`addCaught` + `evolutionChain`), `DexGrid` (caught/silhouette grid) + `DexDetail` (def-chain overlay), `My Pets | Dex` ARIA tab in Collection, shared `formatDexNo`. 951 tests green. Decision: single "caught" flag, one dex entry per PetDef (not per stage), adult-stage art. Spec `docs/superpowers/specs/2026-06-28-generational-pet-dex-p4a-dex-tracking-design.md`. **Follow-up (tracked, non-blocking):** DexGrid catalog goes stale after async `hydratePetDefs` (no reactive signal on `setActivePetDefs`); a newly-published def needs an app reload to show. Fix = add a `petDefsLoaded`/catalogVersion zustand signal to DexGrid's useMemo deps. Also: `selectCaughtSet` must NOT be passed directly to `useGameStore()` (new Set/call → infinite loop) — use useShallow+useMemo.
+
+---
+
+**Original goal (for reference):** Record which `PetDef`s the player has discovered/obtained; show caught vs silhouette in the Collection screen. Foundation for obtainability (P4b).
 
 **What exists:** Nothing. No seen/caught state anywhere (`grep` for seen/caught/discovered → empty). `Collection` screen exists (`Screen` union has `'collection'`); `PetInstance` records owned pets but there's no "dex" of all defs with discovery status.
 
