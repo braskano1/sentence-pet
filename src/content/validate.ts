@@ -2,6 +2,7 @@ import type { ContentBundle } from './model';
 import type { Course } from './course';
 import type { BattleStats, ContentItem, PetDef, Rarity } from '../data/types';
 import { SPECIES } from '../domain/species';
+import { isPetType } from '../domain/petType';
 
 /** Per-kind item checks. Self-dispatches on item.kind so every pool kind is
  *  validated structurally; shared checks (level, l1) run for all kinds. */
@@ -132,10 +133,23 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
   const ids = defs.map((d) => d.id);
   if (new Set(ids).size !== ids.length) push('duplicate pet-def ids');
 
+  const idSet = new Set(ids);
+  const seenGenDex = new Set<string>();
+
   for (const d of defs) {
     if (!d.id || d.id.trim() === '') push('pet-def has empty id');
     if (!d.name || d.name.trim() === '') push(`pet-def ${d.id} name is empty`);
     if (!SPECIES.includes(d.element)) push(`pet-def ${d.id} element ${String(d.element)} is not one of the fixed four`);
+
+    if (typeof d.gen !== 'number' || d.gen < 1) push(`pet-def ${d.id} gen must be >= 1`);
+    if (typeof d.dexNo !== 'number' || d.dexNo < 1) push(`pet-def ${d.id} dexNo must be >= 1`);
+    const gd = `${d.gen}:${d.dexNo}`;
+    if (seenGenDex.has(gd)) push(`pet-def ${d.id} duplicate (gen ${d.gen}, dexNo ${d.dexNo})`);
+    seenGenDex.add(gd);
+
+    if (!Array.isArray(d.types) || d.types.length === 0) push(`pet-def ${d.id} must have at least one type`);
+    else for (const t of d.types) if (!isPetType(t)) push(`pet-def ${d.id} unknown type ${String(t)}`);
+
     for (const r of RARITY_KEYS) {
       const band = d.statBands?.[r];
       if (!band) { push(`pet-def ${d.id} missing stat bands for rarity ${r}`); continue; }
@@ -148,10 +162,34 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
         else if (min < 0) push(`pet-def ${d.id} ${r}.${stat} band min < 0`);
       }
     }
+
+    if (d.evolvesFromId !== undefined && !idSet.has(d.evolvesFromId)) push(`pet-def ${d.id} evolvesFromId ${d.evolvesFromId} is unknown`);
+    if (d.evolvesToId !== undefined && !idSet.has(d.evolvesToId)) push(`pet-def ${d.id} evolvesToId ${d.evolvesToId} is unknown`);
+    if (d.evolutionStage !== undefined && (typeof d.evolutionStage !== 'number' || d.evolutionStage < 1)) push(`pet-def ${d.id} evolutionStage must be >= 1`);
   }
 
-  const starters = defs.filter((d) => d.starter).length;
-  if (starters !== 1) push(`expected exactly one starter pet-def, found ${starters}`);
+  // Walk evolvesToId chains: detect cycles and non-increasing stages.
+  const byId = new Map(defs.map((d) => [d.id, d]));
+  for (const start of defs) {
+    let cur: PetDef | undefined = start;
+    const walked = new Set<string>();
+    while (cur && cur.evolvesToId !== undefined) {
+      if (walked.has(cur.id)) break; // already traversed (cycle not through start)
+      walked.add(cur.id);
+      const next = byId.get(cur.evolvesToId);
+      if (!next) break; // dangling ref already reported above
+      if (next.id === start.id) { push(`pet-def evolution cycle through ${start.id}`); break; }
+      if (cur.evolutionStage !== undefined && next.evolutionStage !== undefined && next.evolutionStage <= cur.evolutionStage) {
+        push(`pet-def ${next.id} evolutionStage must exceed ${cur.id}`);
+      }
+      cur = next;
+    }
+  }
+
+  const starterDefs = defs.filter((d) => d.starter);
+  if (starterDefs.length !== 1) push(`expected exactly one starter pet-def, found ${starterDefs.length}`);
+  else if (starterDefs[0].gen !== 1 || starterDefs[0].dexNo !== 1) push(`starter pet-def ${starterDefs[0].id} must be gen 1, dexNo 1`);
+
   if (!defs.some((d) => d.enabled)) push('no pet-def is enabled');
 
   return { ok: errors.length === 0, errors };

@@ -261,4 +261,54 @@ describe('validatePetDefs', () => {
     defs.forEach((d) => { d.enabled = false; });
     expect(validatePetDefs(defs).ok).toBe(false);
   });
+
+  it('rejects gen < 1 or dexNo < 1', () => {
+    const a = clone(); a[0].gen = 0; expect(validatePetDefs(a).ok).toBe(false);
+    const b = clone(); b[0].dexNo = 0; expect(validatePetDefs(b).ok).toBe(false);
+  });
+
+  it('rejects a duplicate (gen, dexNo)', () => {
+    const defs = clone();
+    defs[1].gen = defs[0].gen; defs[1].dexNo = defs[0].dexNo;
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('rejects empty or unknown types', () => {
+    const empty = clone(); empty[0].types = []; expect(validatePetDefs(empty).ok).toBe(false);
+    const bad = clone(); bad[0].types = ['dragon']; expect(validatePetDefs(bad).ok).toBe(false);
+  });
+
+  it('rejects a dangling evolution ref', () => {
+    const defs = clone();
+    defs[0].evolvesToId = 'does-not-exist';
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('rejects an evolution cycle', () => {
+    const defs = clone();
+    defs[0].evolvesToId = defs[1].id;
+    defs[1].evolvesToId = defs[0].id;
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('rejects a non-increasing evolutionStage along a chain', () => {
+    const defs = clone();
+    defs[0].evolvesToId = defs[1].id;
+    defs[0].evolutionStage = 2; defs[1].evolutionStage = 1;
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('accepts a valid two-stage evolution chain', () => {
+    const defs = clone();
+    defs[0].evolvesToId = defs[1].id; defs[1].evolvesFromId = defs[0].id;
+    defs[0].evolutionStage = 1; defs[1].evolutionStage = 2;
+    expect(validatePetDefs(defs)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('rejects a starter that is not gen 1 / dexNo 1', () => {
+    const defs = clone();
+    const starter = defs.find((d) => d.starter)!;
+    starter.dexNo = 5;
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
 });
