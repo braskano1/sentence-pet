@@ -146,7 +146,13 @@ export function selectPersisted(s: GameState): PersistedState {
 export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string }): PetInstance =>
   s.pets.find((p) => p.id === s.activePetId) ?? s.pets[0];
 
-/** The caught-dex as a Set for O(1) membership in the UI. */
+/**
+ * The caught-dex as a Set for O(1) membership. NOTE: returns a new Set each call —
+ * do NOT pass directly to `useGameStore(selectCaughtSet)` as a reactive selector
+ * (new reference every render → infinite loop). Subscribe to `caughtDefIds` with
+ * `useShallow` and derive the Set via `useMemo` instead (see DexGrid). Safe for
+ * one-off reads: `selectCaughtSet(useGameStore.getState())`.
+ */
 export const selectCaughtSet = (s: { caughtDefIds: string[] }): Set<string> =>
   new Set(s.caughtDefIds);
 

@@ -3,10 +3,8 @@ import { motion } from 'framer-motion';
 import type { PetDef } from '../data/types';
 import { evolutionChain } from '../domain/dex';
 import { spriteSrc } from '../config/sprites';
-import { ELEMENT_EMOJI, PET_NAME } from '../config/petDisplay';
+import { ELEMENT_EMOJI, formatDexNo, PET_NAME } from '../config/petDisplay';
 import { PressButton } from './PressButton';
-
-const dexNo = (n: number) => `#${String(n).padStart(3, '0')}`;
 
 /** One chain node: full art + name if caught, silhouette + ??? if not. */
 function ChainNode({ def, caught }: { def: PetDef; caught: boolean }) {
@@ -18,7 +16,7 @@ function ChainNode({ def, caught }: { def: PetDef; caught: boolean }) {
         className="h-16 w-16 object-contain"
         style={caught ? undefined : { filter: 'brightness(0)' }}
       />
-      <span className="text-[10px] font-bold text-amber-900/60">{dexNo(def.dexNo)}</span>
+      <span className="text-[10px] font-bold text-amber-900/60">{formatDexNo(def.dexNo)}</span>
       <span className="text-xs font-extrabold text-amber-950">{caught ? def.name : '???'}</span>
     </div>
   );
@@ -69,7 +67,7 @@ export function DexDetail({
         </div>
         {/* Footer describes the selected def, not the chain root. */}
         <p className="mt-4 text-center text-xs font-semibold text-amber-900/70">
-          {ELEMENT_EMOJI[def.element]} {PET_NAME[def.element]} · {def.types.join(', ')} · {dexNo(def.dexNo)}
+          {ELEMENT_EMOJI[def.element]} {PET_NAME[def.element]} · {def.types.join(', ')} · {formatDexNo(def.dexNo)}
         </p>
       </motion.div>
     </div>
