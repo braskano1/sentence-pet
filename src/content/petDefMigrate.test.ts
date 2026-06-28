@@ -25,6 +25,18 @@ describe('backfillPetDefs', () => {
 
   it('preserves already-present v2 fields', () => {
     const out = backfillPetDefs(BUILTIN_PET_DEFS as RawPetDef[]);
-    expect(out).toEqual(BUILTIN_PET_DEFS);
+    // backfill stamps gachaObtainable: true (absent in built-ins); strip it before comparing the v2 fields.
+    expect(out.map(({ gachaObtainable: _g, ...rest }) => rest)).toEqual(BUILTIN_PET_DEFS);
+  });
+
+  it('defaults gachaObtainable to true when absent', () => {
+    const out = backfillPetDefs(preV2() as RawPetDef[]);
+    for (const d of out) expect(d.gachaObtainable).toBe(true);
+  });
+
+  it('preserves an explicit gachaObtainable false', () => {
+    const raw = preV2() as RawPetDef[];
+    raw[0].gachaObtainable = false;
+    expect(backfillPetDefs(raw)[0].gachaObtainable).toBe(false);
   });
 });

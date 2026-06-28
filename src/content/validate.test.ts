@@ -321,6 +321,21 @@ describe('validatePetDefs', () => {
     starter.dexNo = 5;
     expect(validatePetDefs(defs).ok).toBe(false);
   });
+
+  it('rejects gachaObtainable that is present but not boolean', () => {
+    const defs = clone();
+    // @ts-expect-error deliberately wrong type
+    defs[0].gachaObtainable = 'yes';
+    expect(validatePetDefs(defs).ok).toBe(false);
+  });
+
+  it('accepts gachaObtainable absent or boolean', () => {
+    const a = clone();
+    expect(validatePetDefs(a).ok).toBe(true);
+    const b = clone();
+    b[0].gachaObtainable = false;
+    expect(validatePetDefs(b).ok).toBe(true);
+  });
 });
 
 describe('validatePetDefs — sprite override', () => {

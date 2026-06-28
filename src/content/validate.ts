@@ -178,6 +178,9 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
     if (d.evolvesToId !== undefined && !idSet.has(d.evolvesToId)) push(`pet-def ${d.id} evolvesToId ${d.evolvesToId} is unknown`);
     if (d.evolutionStage !== undefined && (typeof d.evolutionStage !== 'number' || d.evolutionStage < 1)) push(`pet-def ${d.id} evolutionStage must be >= 1`);
 
+    if (d.gachaObtainable !== undefined && typeof d.gachaObtainable !== 'boolean')
+      push(`pet-def ${d.id} gachaObtainable must be a boolean`);
+
     if (d.sprite) {
       const urls: string[] = [];
       if (d.sprite.default !== undefined) urls.push(d.sprite.default);

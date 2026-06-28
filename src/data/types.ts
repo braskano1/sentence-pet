@@ -128,6 +128,7 @@ export interface PetDef {
   evolutionStage?: number;  // 1-based stage in its chain
   starter?: boolean;        // exactly one def true; must be the gen 1, dexNo 1 def
   enabled: boolean;         // gacha-pool gate; P4 reads it
+  gachaObtainable?: boolean; // P4b gacha eligibility; absent = obtainable (read as `!== false`)
   /**
    * Optional custom-art override (P3a). `default` covers ALL stage×mood; `variants`
    * (P3b) overrides per stage×mood, each falling back to `default` then element art.

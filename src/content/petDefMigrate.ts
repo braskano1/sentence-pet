@@ -17,5 +17,6 @@ export function backfillPetDefs(raw: readonly RawPetDef[]): PetDef[] {
     gen: typeof d.gen === 'number' ? d.gen : 1,
     dexNo: typeof d.dexNo === 'number' ? d.dexNo : i + 1,
     types: Array.isArray(d.types) && d.types.length > 0 ? d.types : [d.element],
+    gachaObtainable: typeof d.gachaObtainable === 'boolean' ? d.gachaObtainable : true,
   })) as PetDef[];
 }
