@@ -78,4 +78,14 @@ describe('resolveCourseBundle', () => {
     const b = resolveCourseBundle(c, zero);
     expect(b.units.map((u) => u.id).sort()).toEqual(['u1', 'u2']);
   });
+
+  it('propagates rewardPetDefId from a boss node onto its synth lesson', () => {
+    const c = course();
+    c.finalBoss = { ...c.finalBoss!, rewardPetDefId: 'leaf-1' };
+    const b = resolveCourseBundle(c, zero);
+    const finalLesson = findLesson(b, 'final-1')?.lesson;
+    const gateLesson = findLesson(b, 'gate-1')?.lesson;
+    expect(finalLesson?.rewardPetDefId).toBe('leaf-1');
+    expect(gateLesson?.rewardPetDefId).toBeUndefined();
+  });
 });

@@ -21,6 +21,7 @@ export interface Lesson {
   title?: string;
   boss?: CheckpointBoss;
   onClear?: 'completeCourse'; // set only on a synthetic final-boss lesson (see content/journey.ts)
+  rewardPetDefId?: string;    // set only on a synthetic boss lesson (see content/journey.ts) — P4c reward grant
 }
 
 /** A themed cluster of lessons. Cleared checkpoint unlocks the next unit. */

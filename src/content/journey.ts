@@ -26,6 +26,7 @@ function bossUnit(course: Course, node: BossNode, rng: () => number, order: numb
     title: node.title,
     boss: node.boss,
     ...(node.onClear ? { onClear: node.onClear } : {}),
+    ...(node.rewardPetDefId ? { rewardPetDefId: node.rewardPetDefId } : {}),
   };
   return { id: `${BOSS_UNIT_PREFIX}${node.id}`, title: node.title, emoji, order, lessons: [lesson] };
 }

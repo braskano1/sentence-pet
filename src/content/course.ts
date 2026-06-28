@@ -15,6 +15,7 @@ export interface BossNode {
   pinnedItemIds?: string[];    // gated/final: always-included items; rest sampled
   boss: CheckpointBoss;        // reuse existing CheckpointBoss (tierId/element/name/rivalSprite)
   onClear?: 'completeCourse';  // final only
+  rewardPetDefId?: string;     // P4c: grant this specific PetDef on first clear (else pool-pick fallback)
 }
 
 /** A course: a shared item pool, ordered units, multi-unit gates, and a final boss.
