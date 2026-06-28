@@ -1,6 +1,6 @@
 import type { ContentBundle } from './model';
 import type { Course } from './course';
-import type { ContentItem, PetDef, Rarity } from '../data/types';
+import type { BattleStats, ContentItem, PetDef, Rarity } from '../data/types';
 import { SPECIES } from '../domain/species';
 
 /** Per-kind item checks. Self-dispatches on item.kind so every pool kind is
@@ -122,7 +122,7 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
 }
 
 const RARITY_KEYS: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
-const PETDEF_STAT_KEYS = ['hp', 'atk', 'def', 'spd', 'luk'] as const;
+const PETDEF_STAT_KEYS: ReadonlyArray<keyof BattleStats> = ['hp', 'atk', 'def', 'spd', 'luk'];
 
 /** Structural validation for the pet-def catalog. Mirrors validateCourse's gate-before-save discipline. */
 export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[] } {
