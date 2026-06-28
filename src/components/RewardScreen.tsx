@@ -16,6 +16,7 @@ export function RewardScreen() {
   const clearLevelUp = useGameStore((s) => s.clearLevelUp);
   const setScreen = useGameStore((s) => s.setScreen);
   const lastStageChange = useGameStore((s) => s.lastStageChange);
+  const lastHatch = useGameStore((s) => s.lastHatch);
   const pendingStinger = useGameStore((s) => s.pendingStinger);
   const clearPendingStinger = useGameStore((s) => s.clearPendingStinger);
   const { play, playStinger } = useAudio();
@@ -116,7 +117,7 @@ export function RewardScreen() {
         )}
       </motion.div>
       <PressButton
-        onClick={() => setScreen(lastStageChange ? 'evolution' : 'petRoom')}
+        onClick={() => setScreen(lastHatch ? 'rewardHatch' : lastStageChange ? 'evolution' : 'petRoom')}
         className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
       >
         Continue

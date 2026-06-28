@@ -9,6 +9,7 @@ import { PetRoom } from './components/PetRoom';
 import { DrillScreen } from './components/DrillScreen';
 import { RewardScreen } from './components/RewardScreen';
 import { EvolutionScreen } from './components/EvolutionScreen';
+import { RewardHatchScreen } from './components/RewardHatchScreen';
 import { JourneyMap } from './components/JourneyMap';
 import { Shop } from './components/Shop';
 import { Gacha } from './components/Gacha';
@@ -53,6 +54,7 @@ export function screenKeyAndNode(
     }
     case 'reward': return { key: 'reward', node: <RewardScreen /> };
     case 'evolution': return { key: 'evolution', node: <EvolutionScreen /> };
+    case 'rewardHatch': return { key: 'rewardHatch', node: <RewardHatchScreen /> };
     case 'shop': return { key: 'shop', node: <Shop /> };
     case 'gacha': return { key: 'gacha', node: <Gacha /> };
     case 'collection': return { key: 'collection', node: <Collection /> };
@@ -80,6 +82,7 @@ export function zoneForScreen(key: string, isCheckpoint: boolean): Zone | null {
     case 'battle':
       return 'boss';
     case 'evolution':
+    case 'rewardHatch':
       return null; // stop music during the cinematic; overworld resumes after
     case 'reward':
       return null; // no overworld loop on level-cleared; the sting plays instead
