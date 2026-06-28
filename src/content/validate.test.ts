@@ -169,7 +169,9 @@ describe('validateCourse', () => {
     const g = (id: string): BossNode =>
       ({ id, title: id, scope: 'gated', afterUnitId: 'u', reviewsUnitIds: ['u'], boss: sampleBoss });
     const bad: Course = { ...base, gates: [g('g1'), g('g2')] };
-    expect(validateCourse(bad).errors.join()).toMatch(/duplicate afterUnitId/i);
+    const res = validateCourse(bad);
+    expect(res.ok).toBe(false);
+    expect(res.errors.join()).toMatch(/duplicate gate afterUnitId/i);
   });
   it('rejects a gated boss with no afterUnitId', () => {
     const bad: Course = {

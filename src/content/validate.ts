@@ -111,11 +111,11 @@ export function validateCourse(course: Course): { ok: boolean; errors: string[] 
   }
 
   // P3b: every course must carry a final boss (safe — bundleToDefaultCourse synthesizes one).
-  if (!course.finalBoss) push('course has no final boss');
+  if (!course.finalBoss) push(`course ${course.id} has no final boss`);
 
   // P3b: two gates after the same unit both resolve to order N+0.5 (a tie the resolver can't place).
   const afterIds = course.gates.map((g) => g.afterUnitId).filter((x): x is string => !!x);
-  if (new Set(afterIds).size !== afterIds.length) push('duplicate afterUnitId across gates');
+  if (new Set(afterIds).size !== afterIds.length) push('duplicate gate afterUnitId');
 
   return { ok: errors.length === 0, errors };
 }
