@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import type { PetDef } from '../data/types';
 import { evolutionChain } from '../domain/dex';
 import { spriteSrc } from '../config/sprites';
@@ -32,11 +34,23 @@ export function DexDetail({
   onClose: () => void;
 }) {
   const chain = evolutionChain(def, defs);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-sm rounded-3xl bg-amber-50 p-5 shadow-xl">
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="dex-detail-heading">
+      <motion.div
+        className="w-full max-w-sm rounded-3xl bg-amber-50 p-5 shadow-xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+      >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-amber-950">Evolution</h3>
+          <h3 id="dex-detail-heading" className="text-base font-extrabold text-amber-950">Evolution</h3>
           <PressButton
             onClick={onClose}
             aria-label="Close"
@@ -53,10 +67,11 @@ export function DexDetail({
             </div>
           ))}
         </div>
+        {/* Footer describes the selected def, not the chain root. */}
         <p className="mt-4 text-center text-xs font-semibold text-amber-900/70">
           {ELEMENT_EMOJI[def.element]} {PET_NAME[def.element]} · {def.types.join(', ')} · {dexNo(def.dexNo)}
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

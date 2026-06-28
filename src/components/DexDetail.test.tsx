@@ -26,4 +26,12 @@ describe('DexDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(closed).toBe(true);
   });
+
+  it('closes on Escape', () => {
+    const a = def('a', { name: 'Alpha' });
+    let closed = false;
+    render(<DexDetail def={a} defs={[a]} caught={new Set(['a'])} onClose={() => { closed = true; }} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(closed).toBe(true);
+  });
 });
