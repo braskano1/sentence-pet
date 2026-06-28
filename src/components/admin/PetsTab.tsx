@@ -4,11 +4,14 @@ import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../
 import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
+import { uploadSprite, type SpriteSlot } from '../../firebase/storage';
 import { SPECIES } from '../../domain/species';
 import { PET_TYPES } from '../../domain/petType';
 
 const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 const STAT_KEYS: ReadonlyArray<keyof BattleStats> = ['hp', 'atk', 'def', 'spd', 'luk'];
+const VARIANT_STAGES: readonly VariantStage[] = ['baby', 'young', 'adult'];
+const MOODS: readonly PetMood[] = ['happy', 'sad'];
 
 /** Set one rarity's [min,max] across all 5 stats (representative-band editor). */
 export function setRarityBand(def: PetDef, rarity: Rarity, range: StatRange): PetDef {
@@ -198,6 +201,45 @@ export function PetsTab() {
   );
 }
 
+function SpriteUpload({ label, slot, defId, value, onUpload, onClear }: {
+  label: string;
+  slot: SpriteSlot;
+  defId: string;
+  value?: string;
+  onUpload: (url: string) => void;
+  onClear: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function pick(file: File) {
+    setBusy(true);
+    setErr('');
+    try {
+      onUpload(await uploadSprite(defId, slot, file));
+    } catch (e) {
+      setErr((e as Error).message || 'upload failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-xs">{label}
+        <input type="file" accept="image/*" className="ml-1 w-40"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
+      </label>
+      {value && (
+        <>
+          <img src={value} alt={`${label} preview`} className="h-10 w-10 object-contain border"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
+          <button type="button" aria-label={`clear ${label}`} onClick={onClear} className="text-red-600 text-xs">Clear</button>
+        </>
+      )}
+      <span aria-live="polite" className="text-xs text-slate-600">{busy ? 'uploading…' : err ? `⚠ ${err}` : ''}</span>
+    </div>
+  );
+}
+
 function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
   def: PetDef;
   allDefs: PetDef[];
@@ -283,24 +325,19 @@ function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
             onChange={(e) => { const n = e.target.valueAsNumber; onPatch({ evolutionStage: Number.isNaN(n) ? undefined : n }); }} />
         </label>
       </fieldset>
-      <fieldset className="border p-2 flex flex-col gap-1"><legend>sprite (custom art override)</legend>
-        <label>image URL
-          <input className="border px-1 ml-1 w-full" value={def.sprite?.default ?? ''}
-            placeholder="https://… (overrides element art; leave blank to use element art)"
-            onChange={(e) => {
-              const v = e.target.value.trim();
-              onPatch({ sprite: v ? { ...def.sprite, default: v } : stripDefault(def.sprite) });
-            }} />
-        </label>
-        {def.sprite?.default && (
-          <div className="flex items-center gap-2">
-            <img src={def.sprite.default} alt={`${def.name} custom sprite preview`}
-              className="h-12 w-12 object-contain border"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
-            <button type="button" onClick={() => onPatch({ sprite: stripDefault(def.sprite) })}
-              className="text-red-600">Clear</button>
-          </div>
-        )}
+      <fieldset className="border p-2 flex flex-col gap-1"><legend>sprite (custom art override — upload images)</legend>
+        <SpriteUpload label="default sprite" slot="default" defId={def.id} value={def.sprite?.default}
+          onUpload={(url) => onPatch({ sprite: { ...def.sprite, default: url } })}
+          onClear={() => onPatch({ sprite: stripDefault(def.sprite) })} />
+        <div className="grid grid-cols-2 gap-x-4">
+          {VARIANT_STAGES.map((stage) => MOODS.map((mood) => (
+            <SpriteUpload key={`${stage}-${mood}`} label={`${stage} ${mood} sprite`}
+              slot={`${stage}-${mood}` as SpriteSlot} defId={def.id}
+              value={def.sprite?.variants?.[stage]?.[mood]}
+              onUpload={(url) => onPatch({ sprite: setVariant(def.sprite, stage, mood, url) })}
+              onClear={() => onPatch({ sprite: clearVariant(def.sprite, stage, mood) })} />
+          )))}
+        </div>
       </fieldset>
     </div>
   );

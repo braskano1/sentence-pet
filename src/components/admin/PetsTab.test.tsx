@@ -8,6 +8,8 @@ vi.mock('../../firebase/content', () => ({
 }));
 const writePetDefsCache = vi.fn();
 vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => writePetDefsCache(d) }));
+const uploadSprite = vi.fn().mockResolvedValue('https://download/leaf.webp');
+vi.mock('../../firebase/storage', () => ({ uploadSprite: (...a: unknown[]) => uploadSprite(...a) }));
 
 import { PetsTab, reconcileEvolution, stripDefault, setVariant, clearVariant } from './PetsTab';
 import type { PetDef } from '../../data/types';
@@ -16,6 +18,8 @@ import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '
 beforeEach(() => {
   savePetDefs.mockClear();
   writePetDefsCache.mockClear();
+  uploadSprite.mockClear();
+  uploadSprite.mockResolvedValue('https://download/leaf.webp');
   setActivePetDefs([...BUILTIN_PET_DEFS]); // reset module-level registry between tests
 });
 
@@ -184,32 +188,55 @@ describe('PetsTab — evolution UI + validate gate', () => {
   });
 });
 
-describe('PetsTab — sprite override field', () => {
-  it('typing a URL shows a preview, and Clear removes the override', () => {
+describe('PetsTab — sprite upload', () => {
+  function openLeaflet() {
     render(<PetsTab />);
     fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
-    const input = screen.getByLabelText(/image url/i);
-    fireEvent.change(input, { target: { value: 'https://cdn.test/leaf.webp' } });
-    expect(screen.getByAltText(/custom sprite preview/i)).toHaveAttribute('src', 'https://cdn.test/leaf.webp');
-    fireEvent.click(screen.getByRole('button', { name: /^clear$/i }));
-    expect(screen.queryByAltText(/custom sprite preview/i)).not.toBeInTheDocument();
+  }
+  const webp = () => new File(['x'], 'leaf.webp', { type: 'image/webp' });
+
+  it('uploading a default sprite calls uploadSprite(defId, "default", file) and shows a preview', async () => {
+    openLeaflet();
+    const input = screen.getByLabelText(/^default sprite$/i);
+    fireEvent.change(input, { target: { files: [webp()] } });
+    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'default', expect.any(File)));
+    expect(await screen.findByAltText(/default sprite preview/i)).toHaveAttribute('src', 'https://download/leaf.webp');
   });
 
-  it('a malformed sprite URL disables Save', () => {
-    render(<PetsTab />);
-    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
-    fireEvent.change(screen.getByLabelText(/image url/i), { target: { value: 'not-a-url' } });
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
-  });
-
-  it('a valid sprite URL persists through Save', async () => {
-    render(<PetsTab />);
-    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
-    fireEvent.change(screen.getByLabelText(/image url/i), { target: { value: 'https://cdn.test/leaf.webp' } });
+  it('an uploaded default sprite persists through Save', async () => {
+    openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    await screen.findByAltText(/default sprite preview/i);
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
     const saved = savePetDefs.mock.calls[0][0] as PetDef[];
-    expect(saved.find((d) => d.name === 'Leaflet')?.sprite?.default).toBe('https://cdn.test/leaf.webp');
+    expect(saved.find((d) => d.name === 'Leaflet')?.sprite?.default).toBe('https://download/leaf.webp');
+  });
+
+  it('uploading a variant writes sprite.variants[stage][mood]', async () => {
+    openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^baby happy sprite$/i), { target: { files: [webp()] } });
+    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'baby-happy', expect.any(File)));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
+    const saved = savePetDefs.mock.calls[0][0] as PetDef[];
+    expect(saved.find((d) => d.name === 'Leaflet')?.sprite?.variants?.baby?.happy).toBe('https://download/leaf.webp');
+  });
+
+  it('a failed upload surfaces an error and leaves the sprite unset', async () => {
+    uploadSprite.mockRejectedValueOnce(new Error('network down'));
+    openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument();
+    expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument();
+  });
+
+  it('Clear removes an uploaded default sprite', async () => {
+    openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    await screen.findByAltText(/default sprite preview/i);
+    fireEvent.click(screen.getByRole('button', { name: /clear default sprite/i }));
+    expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument();
   });
 });
 
