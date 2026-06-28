@@ -3,7 +3,7 @@
 **Date:** 2026-06-28
 **Repo:** `sentence-pet` (Windows / PowerShell) — actual checkout `D:/ai_projects/AI_design_thinking/sentence-pet` (the `H:\` Google-Drive copy holds design docs only).
 **Branch:** `journey-redesign` (integration branch — commit here, do **NOT** merge to `main`; the whole line promotes as one release — open as **PR #33**, base `main`, 161 commits ahead).
-**Status:** NOT STARTED. **Brainstorm first** (`superpowers:brainstorming`), then spec → plan → subagent-driven execution.
+**Status:** ✅ DONE (2026-06-28). Shipped on `journey-redesign`, commits `adb439c..9c6ef87` (8 impl) + `5ee9e8e` (hermetic e2e). 962 unit + 3 P4b e2e green; tsc + build clean. Brainstorm → spec (`docs/superpowers/specs/2026-06-28-generational-pet-dex-p4b-gacha-design.md`) → plan (`docs/superpowers/plans/2026-06-28-generational-pet-dex-p4b-gacha.md`) → subagent-driven execution complete. **Deferred:** visual manual smoke (custom sprite in reveal/cinematic, broken-URL→element fallback — needs browser); P4c follow-ups (`EvolutionScreen` real-evolution custom art, gameStore obtainable-filter unit test). See `[[sentence-pet-generational-dex-p4b-gacha]]`.
 **Predecessors:** `[[sentence-pet-generational-dex-p4a]]` (dex tracking — DONE), `[[sentence-pet-generational-dex-p3b]]`. Epic handoff `docs/superpowers/plans/2026-06-28-generational-pet-dex-p4-plus-handoff.md`; epic spec `docs/superpowers/specs/2026-06-28-generational-pet-dex-design.md`.
 
 ## ⚠️ Deferred (not in this slice)
