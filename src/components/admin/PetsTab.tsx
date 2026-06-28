@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { PetDef } from '../../data/types';
-import { getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
+import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
 import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
@@ -23,9 +23,24 @@ export function reconcileEvolution(defs: PetDef[]): PetDef[] {
   return defs.map((d) => byId.get(d.id)!);
 }
 
+function nextDexNo(defs: PetDef[], gen: number): number {
+  const used = defs.filter((d) => d.gen === gen).map((d) => d.dexNo);
+  return used.length ? Math.max(...used) + 1 : 1;
+}
+
+function genId(defs: PetDef[]): string {
+  let n = 1;
+  while (defs.some((d) => d.id === `def-${n}`)) n++;
+  return `def-${n}`;
+}
+
 export function PetsTab() {
   const [draft, setDraft] = useState<PetDef[]>(() => [...getActivePetDefs()]);
   const [status, setStatus] = useState('');
+  const [genFilter, setGenFilter] = useState<'all' | number>('all');
+
+  const gens = [...new Set(draft.map((d) => d.gen))].sort((a, b) => a - b);
+  const shown = genFilter === 'all' ? draft : draft.filter((d) => d.gen === genFilter);
 
   const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
   const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
@@ -44,10 +59,43 @@ export function PetsTab() {
     }
   }
 
+  function addPet() {
+    const gen = genFilter === 'all' ? 1 : genFilter;
+    const base = defaultDefForElement('leaf', draft);
+    const newDef: PetDef = {
+      ...base,
+      id: genId(draft),
+      name: 'New Pet',
+      gen,
+      dexNo: nextDexNo(draft, gen),
+      starter: false,
+      enabled: true,
+    };
+    setDraft([...draft, newDef]);
+  }
+
+  function deletePet(id: string) {
+    setDraft(draft.filter((d) => d.id !== id));
+  }
+
+  function canDelete(d: PetDef): boolean {
+    if (d.starter) return false;
+    if (d.enabled && draft.filter((x) => x.enabled).length <= 1) return false;
+    return true;
+  }
+
   return (
     <div className="flex flex-col gap-3 text-sm">
       <div className="flex items-center gap-2">
         <h2 className="font-semibold">Pets</h2>
+        <label className="text-xs">filter by gen
+          <select className="ml-1 border px-1" value={String(genFilter)}
+            onChange={(e) => setGenFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}>
+            <option value="all">all</option>
+            {gens.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+        </label>
+        <button type="button" onClick={addPet} className="rounded bg-slate-800 px-2 py-0.5 text-white">+ Add pet</button>
         <span className="flex-1" />
         <button type="button" onClick={save} disabled={!validation.ok}
           className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-40">Save</button>
@@ -59,12 +107,16 @@ export function PetsTab() {
       </ul>
 
       <ul className="flex flex-col gap-1">
-        {draft.map((d) => (
-          <li key={d.id} className="rounded border p-2">
-            <span className="font-mono">#{d.dexNo}</span>{' '}
-            <strong>{d.name}</strong> · {d.element} · [{d.types.join(', ')}]
-            {d.starter && <span> · ⭐ starter</span>}
-            {!d.enabled && <span> · (disabled)</span>}
+        {shown.map((d) => (
+          <li key={d.id} className="rounded border p-2 flex items-center gap-2">
+            <span className="font-mono">#{d.dexNo}</span>
+            <strong>{d.name}</strong>
+            <span>· {d.element} · [{d.types.join(', ')}]</span>
+            {d.starter && <span>· ⭐ starter</span>}
+            {!d.enabled && <span>· (disabled)</span>}
+            <span className="flex-1" />
+            <button type="button" aria-label={`delete ${d.name}`} disabled={!canDelete(d)}
+              onClick={() => deletePet(d.id)} className="text-red-600 disabled:opacity-40">Delete</button>
           </li>
         ))}
       </ul>

@@ -39,6 +39,36 @@ describe('PetsTab — list + save', () => {
   });
 });
 
+describe('PetsTab — add / delete / filter', () => {
+  it('Add creates a new def with a unique id and the next free dexNo', () => {
+    render(<PetsTab />);
+    const before = screen.getAllByRole('listitem').length;
+    fireEvent.click(screen.getByRole('button', { name: /add pet/i }));
+    expect(screen.getAllByRole('listitem').length).toBe(before + 1);
+    // builtins are gen1 dexNo 1..4, so the new gen-1 def gets dexNo 5
+    expect(screen.getByText(/#5/)).toBeInTheDocument();
+  });
+
+  it('Delete removes a def', () => {
+    render(<PetsTab />);
+    // delete the last builtin (Dewdrop / water) — not the starter, not the last enabled
+    fireEvent.click(screen.getByRole('button', { name: /delete .*dewdrop/i }));
+    expect(screen.queryByText(/Dewdrop/)).not.toBeInTheDocument();
+  });
+
+  it('Delete is disabled for the sole starter', () => {
+    render(<PetsTab />);
+    expect(screen.getByRole('button', { name: /delete .*leaflet/i })).toBeDisabled();
+  });
+
+  it('gen filter narrows the list (no defs shown for an empty gen)', () => {
+    render(<PetsTab />);
+    fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // adds gen-1 def #5
+    fireEvent.change(screen.getByLabelText(/filter by gen/i), { target: { value: '1' } });
+    expect(screen.getAllByRole('listitem').length).toBe(5);
+  });
+});
+
 describe('reconcileEvolution', () => {
   const base = (id: string, dexNo: number): PetDef => ({
     id, name: id, gen: 1, dexNo, types: ['leaf'], element: 'leaf',
