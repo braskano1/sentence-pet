@@ -1,4 +1,4 @@
-import type { PetMood, PetStage, Species } from '../data/types';
+import type { PetDef, PetMood, PetStage, Species } from '../data/types';
 
 import egg from '../assets/sprites/egg.webp';
 
@@ -63,9 +63,11 @@ export const SPRITES: Record<Species, Record<SpriteStage, Record<PetMood, string
   },
 };
 
-/** Single source of truth for resolving a pet's artwork. Egg is generic. */
-export function spriteSrc(species: Species, stage: PetStage, mood: PetMood): string {
-  return stage === 'egg' ? EGG_SPRITE : SPRITES[species][stage][mood];
+/** Single source of truth for resolving a pet's artwork. Egg is generic and never
+ *  overridable. With a `def`, a sprite override resolves variant → default → element art. */
+export function spriteSrc(species: Species, stage: PetStage, mood: PetMood, def?: PetDef): string {
+  if (stage === 'egg') return EGG_SPRITE;
+  return def?.sprite?.variants?.[stage]?.[mood] ?? def?.sprite?.default ?? SPRITES[species][stage][mood];
 }
 
 /** Reserved for Phase B (species shop icons). Unused by Phase 0 components. */

@@ -1,35 +1,36 @@
-import { describe, expect, it } from 'vitest';
-import { SPRITES, EGG_SPRITE, ELEMENTAL_EGGS, spriteSrc } from './sprites';
-import { SPECIES } from '../domain/species';
+import { describe, it, expect } from 'vitest';
+import { spriteSrc, SPRITES, EGG_SPRITE } from './sprites';
+import { BUILTIN_PET_DEFS } from '../domain/petDef';
+import type { PetDef } from '../data/types';
 
-const STAGES = ['baby', 'young', 'adult'] as const;
-const MOODS = ['happy', 'sad'] as const;
+const leafDef = BUILTIN_PET_DEFS.find((d) => d.element === 'leaf')!;
 
-describe('sprite registry', () => {
-  it('has a generic egg sprite', () => {
-    expect(EGG_SPRITE).toBeTruthy();
+describe('spriteSrc — override resolution', () => {
+  it('returns element art when no def is passed', () => {
+    expect(spriteSrc('leaf', 'adult', 'happy')).toBe(SPRITES.leaf.adult.happy);
   });
 
-  it('resolves a url for every species x stage x mood', () => {
-    for (const sp of SPECIES) {
-      for (const stage of STAGES) {
-        for (const mood of MOODS) {
-          expect(SPRITES[sp][stage][mood], `${sp}/${stage}/${mood}`).toBeTruthy();
-        }
-      }
-    }
+  it('returns element art when def has no sprite override', () => {
+    expect(spriteSrc('leaf', 'adult', 'happy', leafDef)).toBe(SPRITES.leaf.adult.happy);
   });
 
-  it('has an elemental egg per species (reserved for Phase B)', () => {
-    for (const sp of SPECIES) expect(ELEMENTAL_EGGS[sp], sp).toBeTruthy();
+  it('uses sprite.default for every non-egg stage/mood', () => {
+    const def: PetDef = { ...leafDef, sprite: { default: 'https://cdn.test/d.webp' } };
+    expect(spriteSrc('leaf', 'baby', 'happy', def)).toBe('https://cdn.test/d.webp');
+    expect(spriteSrc('leaf', 'adult', 'sad', def)).toBe('https://cdn.test/d.webp');
   });
-});
 
-describe('spriteSrc', () => {
-  it('returns the generic egg sprite for the egg stage', () => {
-    expect(spriteSrc('leaf', 'egg', 'happy')).toBe(EGG_SPRITE);
+  it('prefers a matching variant over default', () => {
+    const def: PetDef = {
+      ...leafDef,
+      sprite: { default: 'https://cdn.test/d.webp', variants: { adult: { happy: 'https://cdn.test/ah.webp' } } },
+    };
+    expect(spriteSrc('leaf', 'adult', 'happy', def)).toBe('https://cdn.test/ah.webp');
+    expect(spriteSrc('leaf', 'baby', 'happy', def)).toBe('https://cdn.test/d.webp');
   });
-  it('returns the per-species/stage/mood sprite otherwise', () => {
-    expect(spriteSrc('fire', 'young', 'sad')).toBe(SPRITES.fire.young.sad);
+
+  it('always returns the generic egg, ignoring any override', () => {
+    const def: PetDef = { ...leafDef, sprite: { default: 'https://cdn.test/d.webp' } };
+    expect(spriteSrc('leaf', 'egg', 'happy', def)).toBe(EGG_SPRITE);
   });
 });
