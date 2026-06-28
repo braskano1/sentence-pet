@@ -41,13 +41,13 @@
 Pure domain layer. No consumers yet; the test drives it.
 
 **Files:**
-- Modify: `src/data/types.ts` (add `StatRange`, `PetDef`; add `defId` to `PetInstance`)
+- Modify: `src/data/types.ts` (add `StatRange`, `PetDef` — do NOT touch `PetInstance` yet; that lands in Task 2 so this task stays green)
 - Create: `src/domain/petDef.ts`
 - Create: `src/domain/petDef.test.ts`
 
 - [ ] **Step 1: Add types to `src/data/types.ts`**
 
-Add near `Species`/`Rarity`/`BattleStats` (after the `PetInstance` interface is fine; order within the file doesn't matter):
+Add near `Species`/`Rarity`/`BattleStats` (order within the file doesn't matter). **Do not modify `PetInstance` in this task** — the required `defId` field is added in Task 2, paired with `makePet` + the literal fixes, so the build stays green at every commit.
 
 ```ts
 /** Inclusive integer stat range [min, max]. */
@@ -65,17 +65,6 @@ export interface PetDef {
   statBands: Record<Rarity, Record<keyof BattleStats, StatRange>>;
   starter?: boolean; // marks the first-egg creature (exactly one def true)
   enabled: boolean;  // gacha-pool gate; P1 stores only, P4 reads it
-}
-```
-
-Then add the required field to `PetInstance` (insert right after `id`):
-
-```ts
-export interface PetInstance {
-  id: string;
-  defId: string; // the authored creature (PetDef.id)
-  species: Species;
-  // …existing fields unchanged…
 }
 ```
 
@@ -240,10 +229,10 @@ void STAT_KEYS; // exported shape reference; kept for parity with pets.ts
 Run: `npx vitest run src/domain/petDef.test.ts`
 Expected: PASS (all cases).
 
-- [ ] **Step 6: Type-check (PetInstance.defId is now required — this WILL surface broken literals)**
+- [ ] **Step 6: Type-check (must be clean — `PetInstance` untouched this task)**
 
 Run: `npx tsc -b`
-Expected: errors in files that hand-build `PetInstance` literals without `defId` (e.g. `src/sync/mapping.test.ts`, `src/sync/reconcile.test.ts`, `src/sync/cloudSync.test.ts`, and any others). These are fixed in Task 2. Note the exact list from the output.
+Expected: clean. (`PetInstance.defId` is NOT added yet, so no literals break here.)
 
 - [ ] **Step 7: Commit**
 
@@ -259,10 +248,11 @@ git commit -m "feat(pets): PetDef type + built-in registry + resolve helpers"
 Make `PetInstance.defId` always populated. `makePet` defaults it from the element; hand-built test literals get an explicit `defId`.
 
 **Files:**
+- Modify: `src/data/types.ts` (add required `defId` to `PetInstance`)
 - Modify: `src/domain/pets.ts:75-95` (`makePet`)
 - Modify: `src/domain/pets.test.ts` (assert `defId`)
 - Modify: `src/sync/mapping.test.ts:7-15`, `src/sync/reconcile.test.ts:8-16`, `src/sync/cloudSync.test.ts:7-15` (pet helpers)
-- Modify: any other file flagged by `tsc -b` in Task 1 Step 6
+- Modify: any other file flagged by `tsc -b`
 
 - [ ] **Step 1: Add a failing assertion to `src/domain/pets.test.ts`**
 
@@ -282,7 +272,22 @@ In the `describe('makePet', …)` block add:
 Run: `npx vitest run src/domain/pets.test.ts`
 Expected: FAIL — `defId` is `undefined` / arg not accepted.
 
-- [ ] **Step 3: Update `makePet` in `src/domain/pets.ts`**
+- [ ] **Step 3: Add the required `defId` field to `PetInstance` in `src/data/types.ts`**
+
+Insert right after `id`:
+
+```ts
+export interface PetInstance {
+  id: string;
+  defId: string; // the authored creature (PetDef.id)
+  species: Species;
+  // …existing fields unchanged…
+}
+```
+
+This makes the field required; the rest of this task (makePet default + literal fixes) restores a clean `tsc -b`.
+
+- [ ] **Step 4: Update `makePet` in `src/domain/pets.ts`**
 
 Add the import at the top:
 
@@ -318,7 +323,7 @@ export function makePet(args: {
 }
 ```
 
-- [ ] **Step 4: Fix the 3 hand-built pet helpers (and any others tsc flagged)**
+- [ ] **Step 5: Fix the 3 hand-built pet helpers (and any others tsc flagged)**
 
 In `src/sync/mapping.test.ts`, `src/sync/reconcile.test.ts`, `src/sync/cloudSync.test.ts`, add `defId: 'def-leaf',` to each `pet()` helper's returned literal, e.g. in `mapping.test.ts`:
 
@@ -334,9 +339,9 @@ function pet(id: string): PetInstance {
 }
 ```
 
-Apply the same `defId: 'def-leaf',` insertion to the `pet()` helper in `reconcile.test.ts` and `cloudSync.test.ts`. For any other file `tsc -b` flagged in Task 1 Step 6 (e.g. a literal in `battleStore.test.ts` / `gameStore.test.ts`), add `defId: 'def-leaf'` to that literal too.
+Apply the same `defId: 'def-leaf',` insertion to the `pet()` helper in `reconcile.test.ts` and `cloudSync.test.ts`. For any other file `tsc -b` flags (e.g. a literal in `battleStore.test.ts` / `gameStore.test.ts`), add `defId: 'def-leaf'` to that literal too.
 
-- [ ] **Step 5: Run the type gate and tests**
+- [ ] **Step 6: Run the type gate and tests**
 
 Run: `npx tsc -b`
 Expected: clean (no errors).
@@ -344,10 +349,10 @@ Expected: clean (no errors).
 Run: `npx vitest run src/domain/pets.test.ts src/sync`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/domain/pets.ts src/domain/pets.test.ts src/sync/mapping.test.ts src/sync/reconcile.test.ts src/sync/cloudSync.test.ts
+git add src/data/types.ts src/domain/pets.ts src/domain/pets.test.ts src/sync/mapping.test.ts src/sync/reconcile.test.ts src/sync/cloudSync.test.ts
 # add any other test files tsc flagged:
 # git add src/state/battleStore.test.ts src/state/gameStore.test.ts
 git commit -m "feat(pets): makePet defaults defId from element; backfill test fixtures"
