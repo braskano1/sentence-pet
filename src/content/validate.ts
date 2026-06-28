@@ -178,9 +178,13 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
       walked.add(cur.id);
       const next = byId.get(cur.evolvesToId);
       if (!next) break; // dangling ref already reported above
-      if (next.id === start.id) { push(`pet-def evolution cycle through ${start.id}`); break; }
+      if (next.id === start.id) {
+        // Report each cycle once: only from its lexicographically-smallest member.
+        if (start.id === [...walked].sort()[0]) push(`pet-def evolution cycle through ${start.id}`);
+        break;
+      }
       if (cur.evolutionStage !== undefined && next.evolutionStage !== undefined && next.evolutionStage <= cur.evolutionStage) {
-        push(`pet-def ${next.id} evolutionStage must exceed ${cur.id}`);
+        push(`pet-def ${next.id} evolutionStage (${next.evolutionStage}) must exceed ${cur.id} (${cur.evolutionStage})`);
       }
       cur = next;
     }

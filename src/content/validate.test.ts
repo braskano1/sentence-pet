@@ -288,6 +288,16 @@ describe('validatePetDefs', () => {
     const defs = clone();
     defs[0].evolvesToId = defs[1].id;
     defs[1].evolvesToId = defs[0].id;
+    const r = validatePetDefs(defs);
+    expect(r.ok).toBe(false);
+    expect(r.errors.filter((e) => e.includes('cycle')).length).toBe(1);
+  });
+
+  it('rejects a three-node evolution cycle', () => {
+    const defs = clone();
+    defs[0].evolvesToId = defs[1].id;
+    defs[1].evolvesToId = defs[2].id;
+    defs[2].evolvesToId = defs[0].id;
     expect(validatePetDefs(defs).ok).toBe(false);
   });
 
