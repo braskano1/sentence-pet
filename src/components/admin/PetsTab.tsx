@@ -39,8 +39,8 @@ export function PetsTab() {
   const [status, setStatus] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | number>('all');
 
-  const gens = [...new Set(draft.map((d) => d.gen))].sort((a, b) => a - b);
-  const shown = genFilter === 'all' ? draft : draft.filter((d) => d.gen === genFilter);
+  const gens = useMemo(() => [...new Set(draft.map((d) => d.gen))].sort((a, b) => a - b), [draft]);
+  const shown = useMemo(() => (genFilter === 'all' ? draft : draft.filter((d) => d.gen === genFilter)), [draft, genFilter]);
 
   const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
   const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
@@ -70,6 +70,9 @@ export function PetsTab() {
       dexNo: nextDexNo(draft, gen),
       starter: false,
       enabled: true,
+      evolvesFromId: undefined,
+      evolvesToId: undefined,
+      evolutionStage: undefined,
     };
     setDraft([...draft, newDef]);
   }
@@ -80,7 +83,7 @@ export function PetsTab() {
 
   function canDelete(d: PetDef): boolean {
     if (d.starter) return false;
-    if (d.enabled && draft.filter((x) => x.enabled).length <= 1) return false;
+    if (d.enabled && draft.filter((x) => x.enabled && !x.starter).length <= 1) return false;
     return true;
   }
 
