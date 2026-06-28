@@ -101,6 +101,10 @@ export type FoodGroup = keyof NutritionBars;
 
 export type Species = 'leaf' | 'fire' | 'air' | 'water';
 
+/** Expandable battle-type taxonomy id. Decoupled from the 4 art-family `Species`;
+ *  membership is checked against the PET_TYPES registry in domain/petType.ts. */
+export type PetType = string;
+
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 /** Inclusive integer stat range [min, max]. */
