@@ -69,4 +69,17 @@ describe('evolvePetDef', () => {
     expect(HOP_RANGE.baby).toBeUndefined();
     expect(HOP_RANGE.egg).toBeUndefined();
   });
+
+  it('young hop upper bound: rng()=>1 yields max factor (1+hi)', () => {
+    const out = evolvePetDef(pet({ defId: 'base' }), DEFS, 'young', () => 1);
+    // total 40 * 1.10 = 44 -> newBase 44 - growth 10 = 34
+    expect(out.stats).toEqual({ hp: 34, atk: 34, def: 34, spd: 34, luk: 34 });
+  });
+
+  it('interpolates within the range: mid rng lands between the bounds', () => {
+    // young [0.03,0.10], rng()=>0.5 -> factor 1 + 0.03 + 0.5*0.07 = 1.065
+    // total 40 * 1.065 = 42.6 -> round 43 -> newBase 43 - 10 = 33
+    const out = evolvePetDef(pet({ defId: 'base' }), DEFS, 'young', () => 0.5);
+    expect(out.stats.hp).toBe(33);
+  });
 });
