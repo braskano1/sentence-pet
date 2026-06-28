@@ -19,13 +19,16 @@ function bandsFromGacha(): Record<Rarity, Record<keyof BattleStats, StatRange>> 
 
 const ELEMENT_NAME: Record<Species, string> = { leaf: 'Leaflet', fire: 'Embers', air: 'Zephyr', water: 'Dewdrop' };
 
-/** One built-in def per fixed element. Leaf is the starter. All enabled. */
-export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element): PetDef => ({
+/** One built-in def per fixed element. Leaf (dexNo 1) is the gen-1 starter. All enabled. */
+export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element, i): PetDef => ({
   id: `def-${element}`,
   name: ELEMENT_NAME[element],
+  gen: 1,
+  dexNo: i + 1,
+  types: [element],
   element,
   statBands: bandsFromGacha(),
-  ...(element === 'leaf' ? { starter: true } : {}),
+  ...(i === 0 ? { starter: true } : {}),
   enabled: true,
 }));
 

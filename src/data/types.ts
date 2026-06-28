@@ -118,10 +118,16 @@ export type StatRange = readonly [min: number, max: number];
 export interface PetDef {
   id: string;
   name: string;
-  element: Species;
+  gen: number;              // generation; >= 1
+  dexNo: number;            // index within its gen; (gen, dexNo) unique across the catalog
+  types: PetType[];         // >= 1; each a member of the PET_TYPES registry
+  element: Species;         // art-family / fallback sprite source (1 of 4) until P3
   statBands: Record<Rarity, Record<keyof BattleStats, StatRange>>;
-  starter?: boolean; // marks the first-egg creature (exactly one def true)
-  enabled: boolean;  // gacha-pool gate; P1 stores only, P4 reads it
+  evolvesFromId?: string;   // ref to another PetDef.id
+  evolvesToId?: string;     // ref to another PetDef.id
+  evolutionStage?: number;  // 1-based stage in its chain
+  starter?: boolean;        // exactly one def true; must be the gen 1, dexNo 1 def
+  enabled: boolean;         // gacha-pool gate; P2 stores only, P4 reads it
 }
 
 export type PetMood = 'happy' | 'sad';
