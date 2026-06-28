@@ -5,7 +5,7 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
 import { SettingsButton } from './SettingsButton';
-import { EGG_SPRITE, SPRITES, spriteSrc } from '../config/sprites';
+import { EGG_SPRITE, spriteSrc } from '../config/sprites';
 import { resolvePetDef } from '../domain/petDef';
 import { usePetDefs } from '../state/usePetDefs';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
@@ -79,7 +79,7 @@ export function Gacha() {
       ) : (
         <div className="flex flex-col items-center gap-3">
           <img
-            src={pulledDef ? spriteSrc(pulledDef.element, 'baby', 'happy', pulledDef) : SPRITES[pulled.species].baby.happy}
+            src={spriteSrc(pulled.species, 'baby', 'happy', pulledDef)}
             alt={PET_NAME[pulled.species]}
             className="h-40 w-auto object-contain drop-shadow-[0_14px_26px_rgba(0,0,0,0.3)]"
           />
