@@ -133,6 +133,7 @@ export interface BattleStats {
 /** One owned creature. `coins` is NOT here — it is an account-level wallet. */
 export interface PetInstance {
   id: string;          // unique; 'starter-leaf' for the seeded/migrated first pet
+  defId: string;       // the authored creature (PetDef.id)
   species: Species;
   hatched: boolean;    // the egg ceremony gates the first pet
   xp: number;

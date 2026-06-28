@@ -55,6 +55,13 @@ describe('makePet', () => {
     const p = makePet({ id: 'x', species: 'fire', stats: rollStats(() => 0), rarity: 'common' });
     expect(p.growth).toEqual({ hp: 0, atk: 0, def: 0, spd: 0, luk: 0 });
   });
+
+  it('defaults defId to the element default and honors an explicit defId', () => {
+    const def = makePet({ id: 'a', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common' });
+    expect(def.defId).toBe('def-fire');
+    const explicit = makePet({ id: 'b', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', defId: 'custom' });
+    expect(explicit.defId).toBe('custom');
+  });
 });
 
 describe('rollRarity', () => {

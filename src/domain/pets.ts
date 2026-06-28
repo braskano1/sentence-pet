@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from '../config/gameConfig';
 import type { BattleStats, NutritionBars, PetInstance, Rarity, Species } from '../data/types';
+import { defaultDefForElement } from './petDef';
 
 const STAT_MIN = 40;
 const STAT_MAX = 90;
@@ -79,9 +80,11 @@ export function makePet(args: {
   rarity: Rarity;
   name?: string;
   hatched?: boolean;
+  defId?: string;
 }): PetInstance {
   return {
     id: args.id,
+    defId: args.defId ?? defaultDefForElement(args.species).id,
     species: args.species,
     hatched: args.hatched ?? false,
     xp: 0,
