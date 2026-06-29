@@ -66,3 +66,25 @@ describe('PoolTab', () => {
     expect(next.pool['item-3'].id).toBe('item-3');
   });
 });
+
+describe('PoolTab import wiring', () => {
+  it('opens the drawer and merges imported items additively', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {
+        'item-1': { id: 'item-1', kind: 'flashcard', level: 1, front: 'a', back: 'b' },
+      }, units: [], gates: [],
+    } as unknown as import('../../content/course').Course;
+    const parseItemsFile = async () => ({
+      entities: [{ id: 'item-2', kind: 'flashcard', level: 1, front: 'c', back: 'd' }] as import('../../data/types').ContentItem[],
+      errors: [],
+    });
+    render(<PoolTab course={course} onChange={onChange} parseItemsFile={parseItemsFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 1 change/i }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(Object.keys(next.pool).sort()).toEqual(['item-1', 'item-2']);
+  });
+});
