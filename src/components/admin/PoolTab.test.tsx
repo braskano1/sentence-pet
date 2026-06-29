@@ -16,9 +16,24 @@ function course(): Course {
 }
 
 describe('PoolTab', () => {
-  it('lists pool items by id', () => {
+  it('lists pool items by their content label', () => {
     render(<PoolTab course={course()} onChange={() => {}} />);
-    expect(screen.getByText('a')).toBeInTheDocument();
+    // item 'a' is a dragdrop with answer ['I','run'] -> label "I run"
+    expect(screen.getByText('I run')).toBeInTheDocument();
+    // id is still visible (in the meta line)
+    expect(screen.getByText(/\ba\b/)).toBeInTheDocument();
+  });
+
+  it('filters the list by search query', () => {
+    const c = course();
+    c.pool = {
+      a: item('a'),
+      b: { id: 'b', kind: 'flashcard', level: 1, front: 'hello', back: 'hi' },
+    };
+    render(<PoolTab course={c} onChange={() => {}} />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'hello' } });
+    expect(screen.getByText('hello')).toBeInTheDocument();
+    expect(screen.queryByText('I run')).not.toBeInTheDocument();
   });
 
   it('adding a new item calls onChange with the item in the pool', () => {
