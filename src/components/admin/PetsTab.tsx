@@ -55,6 +55,10 @@ export function PetsTab() {
 
   const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
   const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
+  const genChips: FilterChip<string>[] = useMemo(
+    () => [{ id: 'all', label: 'All' }, ...gens.map((g) => ({ id: String(g), label: `Gen ${g}` }))],
+    [gens],
+  );
 
   // Live-fetch the catalog on mount, re-seed the draft, then unblock. Blocking until the
   // fetch resolves means a stale draft can never be saved over the live Firestore catalog.
@@ -121,11 +125,6 @@ export function PetsTab() {
   if (!loaded) return <p role="status" className="p-4 text-sm">loading pets…</p>;
 
   const editing = editingId ? draft.find((d) => d.id === editingId) ?? null : null;
-
-  const genChips: FilterChip<string>[] = [
-    { id: 'all', label: 'All' },
-    ...gens.map((g) => ({ id: String(g), label: `Gen ${g}` })),
-  ];
 
   return (
     <div className="flex flex-col gap-4 text-sm text-slate-800">
