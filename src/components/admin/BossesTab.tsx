@@ -195,7 +195,8 @@ export function BossesTab({ course, onChange, parseBossesFile = defaultParseBoss
   }
   function applyImport(merged: BossNode[]) {
     const gates = merged.filter((n) => n.scope !== 'final');
-    const finalBoss = merged.find((n) => n.scope === 'final');
+    const finals = merged.filter((n) => n.scope === 'final');
+    const finalBoss = finals.at(-1); // a course has one final; an imported final (appended last) wins
     onChange({ ...course, gates, ...(finalBoss ? { finalBoss } : {}) });
   }
 

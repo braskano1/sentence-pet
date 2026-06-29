@@ -37,7 +37,16 @@ export function JourneyTab({ course, onChange, parseUnitsFile = defaultParseUnit
   const [importing, setImporting] = useState(false);
   useEffect(() => { setConfirming(false); }, [selected]);
 
-  function applyImport(merged: Unit[]) { onChange({ ...course, units: merged }); }
+  function applyImport(merged: Unit[]) {
+    const prior = new Map(course.units.map((u) => [u.id, u]));
+    const units = merged.map((u) => {
+      const existing = prior.get(u.id);
+      return u.lessons.length === 0 && existing && existing.lessons.length > 0
+        ? { ...u, lessons: existing.lessons }
+        : u;
+    });
+    onChange({ ...course, units });
+  }
 
   function selectNode(s: TreeSelection) {
     if (selected && s.type === selected.type && s.id === selected.id) return;

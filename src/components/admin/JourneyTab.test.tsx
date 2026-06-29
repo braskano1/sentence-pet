@@ -154,4 +154,31 @@ describe('JourneyTab import wiring', () => {
     const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
     expect(next.units.map((u) => u.id)).toEqual(['u1', 'u2']);
   });
+
+  it('preserves existing lessons when an imported unit carries none', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '📘', order: 1, lessons: [
+        { id: 'u1-l1', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: [] },
+      ] }],
+      gates: [],
+    } as unknown as import('../../content/course').Course;
+    const parseUnitsFile = async () => ({
+      entities: [
+        { id: 'u1', title: 'U1 renamed', emoji: '📗', order: 1, lessons: [] }, // meta update, no lessons
+        { id: 'u2', title: 'U2', emoji: '', order: 2, lessons: [] },           // genuinely new
+      ] as import('../../content/model').Unit[],
+      errors: [],
+    });
+    render(<JourneyTab course={course} onChange={onChange} parseUnitsFile={parseUnitsFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply/i }));  // some changes
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    const u1 = next.units.find((u) => u.id === 'u1')!;
+    expect(u1.title).toBe('U1 renamed');     // meta updated
+    expect(u1.lessons.map((l: { id: string }) => l.id)).toEqual(['u1-l1']); // lessons PRESERVED, not wiped
+    expect(next.units.map((u) => u.id)).toEqual(['u1', 'u2']);              // new unit added
+  });
 });

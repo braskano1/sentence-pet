@@ -140,4 +140,28 @@ describe('BossesTab import wiring', () => {
     expect(next.gates.map((g) => g.id)).toEqual(['g1']);
     expect(next.finalBoss?.id).toBe('f');
   });
+
+  it('lets an imported final boss replace a pre-existing differently-id\'d final', async () => {
+    const onChange = vi.fn();
+    const existingFinal = { id: 'c1-final', title: 'Old', scope: 'final', onClear: 'completeCourse',
+      boss: { tierId: 't', element: 'leaf', name: 'OldFinal', rivalSprite: { species: 'leaf', stage: 'adult' } } };
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [], finalBoss: existingFinal,
+    } as unknown as import('../../content/course').Course;
+    const parseBossesFile = async () => ({
+      entities: [
+        { id: 'other-final', title: 'New', scope: 'final', onClear: 'completeCourse',
+          boss: { tierId: 't', element: 'fire', name: 'NewFinal', rivalSprite: { species: 'fire', stage: 'adult' } } },
+      ] as unknown as import('../../content/course').BossNode[],
+      errors: [],
+    });
+    render(<BossesTab course={course} onChange={onChange} parseBossesFile={parseBossesFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 1 change/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.finalBoss?.id).toBe('other-final'); // imported final wins, not silently dropped
+  });
 });
