@@ -54,6 +54,20 @@ export async function saveCourse(course: Course): Promise<void> {
   await batch.commit();
 }
 
+/** Delete one course: remove its doc and drop its index entry (single batch).
+ *  Refuses to delete the last remaining course (the app must always have one). */
+export async function deleteCourse(id: string): Promise<void> {
+  const indexSnap = await getDoc(COURSES_INDEX);
+  const existing = (indexSnap.data()?.courses ?? []) as CourseIndexEntry[];
+  const remaining = existing.filter((e) => e.id !== id);
+  if (remaining.length === 0) throw new Error('Cannot delete the last course.');
+
+  const batch = writeBatch(db);
+  batch.delete(courseDoc(id));
+  batch.set(COURSES_INDEX, { courses: remaining });
+  await batch.commit();
+}
+
 // Legacy single-bundle save kept for admin code paths until P3.
 export async function saveContent(bundle: ContentBundle): Promise<void> {
   await saveCourse(bundleToDefaultCourse(bundle));
