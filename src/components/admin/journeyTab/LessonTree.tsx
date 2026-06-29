@@ -12,7 +12,7 @@ const FILTERS: readonly FilterChip<'all' | 'checkpoints'>[] = [
 type TreeFilter = (typeof FILTERS)[number]['id'];
 
 function lessonText(l: { id: string; title?: string }): string {
-  return `${l.title ?? ''} ${l.id}`.toLowerCase();
+  return [l.title, l.id].filter(Boolean).join(' ').toLowerCase();
 }
 
 export function LessonTree({ units, selected, onSelect, onAddUnit, onAddLesson }: {
@@ -38,6 +38,11 @@ export function LessonTree({ units, selected, onSelect, onAddUnit, onAddLesson }
       return true;
     });
   }
+
+  const anyVisible = units.some((u) => {
+    const ls = visibleLessons(u);
+    return !(q || filter === 'checkpoints') || ls.length > 0;
+  });
 
   return (
     <div className="flex w-80 shrink-0 flex-col self-start rounded-lg border border-slate-200 bg-white">
@@ -69,6 +74,11 @@ export function LessonTree({ units, selected, onSelect, onAddUnit, onAddLesson }
       </div>
 
       <ul className="max-h-[28rem] flex-1 overflow-auto">
+        {!anyVisible && (
+          <li className="px-3 py-6 text-center text-sm text-slate-400">
+            No matches{query ? <> for &ldquo;{query}&rdquo;</> : null}.
+          </li>
+        )}
         {units.map((u) => {
           const lessons = visibleLessons(u);
           // Hide units with no matching lessons while a filter or query is active
@@ -87,7 +97,7 @@ export function LessonTree({ units, selected, onSelect, onAddUnit, onAddLesson }
               >
                 <span aria-hidden>{u.emoji}</span>
                 <span className="truncate">{u.title}</span>
-                <span className="ml-auto text-xs font-normal text-slate-400">{u.lessons.length}</span>
+                <span className="ml-auto text-xs font-normal text-slate-400">{lessons.length}</span>
               </button>
               <ul>
                 {lessons.map((l) => (
