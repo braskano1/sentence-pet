@@ -21,7 +21,7 @@ export function AdminShell() {
   const { user, signOut } = useAuth();
   const liveCourse = useContentStore((s) => s.course);
   const setCourse = useContentStore((s) => s.setCourse);
-  const { index, activeCourseId, switchTo, create, remove } = useCoursesAdmin();
+  const { index, activeCourseId, refresh, switchTo, create, remove } = useCoursesAdmin();
 
   const [draft, setDraft] = useState<Course | null>(liveCourse);
   const [surface, setSurface] = useState<Surface>('courses');
@@ -58,6 +58,7 @@ export function AdminShell() {
     try {
       await saveCourse(currentDraft);
       setCourse(currentDraft, 'live');
+      await refresh();
       setStatus('saved ✓');
     } catch (e) {
       setStatus(`save failed: ${(e as Error).message}`);
@@ -69,6 +70,7 @@ export function AdminShell() {
     try {
       await saveCourse(c);
       setCourse(c, 'live'); // draft resyncs via the effect (id change)
+      await refresh();
       setStatus('imported ✓');
     } catch (e) {
       setStatus(`import failed: ${(e as Error).message}`);

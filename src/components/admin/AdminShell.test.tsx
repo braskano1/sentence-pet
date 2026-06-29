@@ -7,10 +7,11 @@ vi.mock('../../auth/useAuth', () => ({
 }));
 const saveCourse = vi.fn().mockResolvedValue(undefined);
 const deleteCourse = vi.fn().mockResolvedValue(undefined);
+const fetchCoursesIndex = vi.fn().mockResolvedValue([{ id: 'default', title: 'Beginner Course', emoji: '📘' }]);
 vi.mock('../../firebase/content', () => ({
   saveCourse: (c: unknown) => saveCourse(c),
   fetchCourse: vi.fn().mockResolvedValue(null),
-  fetchCoursesIndex: vi.fn().mockResolvedValue([{ id: 'default', title: 'Beginner Course', emoji: '📘' }]),
+  fetchCoursesIndex: () => fetchCoursesIndex(),
   deleteCourse: (id: string) => deleteCourse(id),
 }));
 
@@ -93,5 +94,14 @@ describe('AdminShell', () => {
     await screen.findByText(/save failed/i);
     // The live store course must be the same reference - no partial update.
     expect(useContentStore.getState().course).toBe(courseBefore);
+  });
+
+  it('refreshes the course index after a successful save (so switcher/list reflect edits)', async () => {
+    render(<AdminShell />);
+    // Let the mount-time index load settle.
+    await screen.findByRole('tab', { name: /courses/i });
+    const callsBefore = fetchCoursesIndex.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(fetchCoursesIndex.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 });
