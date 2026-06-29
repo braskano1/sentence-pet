@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeById } from './mergeById';
+import { mergeById, stableStringify } from './mergeById';
 
 const id = (x: { id: string }) => x.id;
 
@@ -48,5 +48,21 @@ describe('mergeById', () => {
     expect(r.merged).toEqual(existing);
     expect(r.changes).toEqual([]);
     expect(r.counts).toEqual({ new: 0, updated: 0, unchanged: 0 });
+  });
+});
+
+describe('stableStringify', () => {
+  it('is invariant to object key order', () => {
+    expect(stableStringify({ a: 1, b: 2 })).toBe(stableStringify({ b: 2, a: 1 }));
+  });
+  it('preserves array order (arrays are not sorted)', () => {
+    expect(stableStringify(['x', 'y'])).not.toBe(stableStringify(['y', 'x']));
+  });
+  it('omits undefined object values, matching {} and distinguishing null', () => {
+    expect(stableStringify({ a: undefined })).toBe(stableStringify({}));
+    expect(stableStringify({ a: null })).not.toBe(stableStringify({}));
+  });
+  it('handles nested null and primitives', () => {
+    expect(stableStringify({ a: { b: null }, c: 3 })).toBe('{"a":{"b":null},"c":3}');
   });
 });

@@ -20,7 +20,7 @@ export function stableStringify(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
   const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).sort();
+  const keys = Object.keys(obj).filter((k) => obj[k] !== undefined).sort();
   return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`;
 }
 
@@ -55,10 +55,9 @@ export function mergeById<T>(
     if (!existingById.has(getId(inc))) merged.push(inc);
   }
 
-  const counts = {
-    new: changes.filter((c) => c.status === 'new').length,
-    updated: changes.filter((c) => c.status === 'updated').length,
-    unchanged: changes.filter((c) => c.status === 'unchanged').length,
-  };
+  const counts = changes.reduce(
+    (acc, c) => { acc[c.status] += 1; return acc; },
+    { new: 0, updated: 0, unchanged: 0 } as Record<MergeStatus, number>,
+  );
   return { merged, changes, counts };
 }
