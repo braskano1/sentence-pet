@@ -9,7 +9,11 @@ vi.mock('../../firebase/content', () => ({
 const writePetDefsCache = vi.fn();
 vi.mock('../../content/cache', () => ({ writePetDefsCache: (d: unknown) => writePetDefsCache(d) }));
 const uploadSprite = vi.fn().mockResolvedValue('https://download/leaf.webp');
-vi.mock('../../firebase/storage', () => ({ uploadSprite: (...a: unknown[]) => uploadSprite(...a) }));
+const deleteSpriteByUrl = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../firebase/storage', () => ({
+  uploadSprite: (...a: unknown[]) => uploadSprite(...a),
+  deleteSpriteByUrl: (...a: unknown[]) => deleteSpriteByUrl(...a),
+}));
 const hydratePetDefs = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../content/load', () => ({ hydratePetDefs: () => hydratePetDefs() }));
 
@@ -22,6 +26,8 @@ beforeEach(() => {
   writePetDefsCache.mockClear();
   uploadSprite.mockClear();
   uploadSprite.mockResolvedValue('https://download/leaf.webp');
+  deleteSpriteByUrl.mockClear();
+  deleteSpriteByUrl.mockResolvedValue(undefined);
   hydratePetDefs.mockClear();
   hydratePetDefs.mockResolvedValue(undefined);
   setActivePetDefs([...BUILTIN_PET_DEFS]); // reset module-level registry between tests
@@ -289,6 +295,89 @@ describe('PetsTab — sprite upload', () => {
     fireEvent.change(input, { target: { files: [webp()] } });
     await screen.findByAltText(/baby sad sprite preview/i);
     expect(screen.queryByText(/boom/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('PetsTab — orphan-sprite cleanup on clear/replace', () => {
+  // Seed Leaflet with a pre-existing stored sprite so clear/replace have an "old url".
+  const OLD = 'https://download/old-default.webp';
+  function seedLeafletWithDefault() {
+    setActivePetDefs(BUILTIN_PET_DEFS.map((d) =>
+      d.id === 'def-leaf' ? { ...d, sprite: { default: OLD } } : d));
+  }
+  async function openLeaflet() {
+    render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
+    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+  }
+  const webp = () => new File(['x'], 'leaf.webp', { type: 'image/webp' });
+
+  it('clearing a slot that HAS a url deletes the old file then strips the url', async () => {
+    seedLeafletWithDefault();
+    await openLeaflet();
+    expect(screen.getByAltText(/default sprite preview/i)).toHaveAttribute('src', OLD);
+    fireEvent.click(screen.getByRole('button', { name: /clear default sprite/i }));
+    await waitFor(() => expect(deleteSpriteByUrl).toHaveBeenCalledWith(OLD));
+    expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument();
+  });
+
+  it('clearing a slot with NO url does not call deleteSpriteByUrl', async () => {
+    await openLeaflet(); // builtins have no sprite override
+    // upload then clear the freshly-uploaded url is a separate case; here assert the
+    // empty-slot clear path: there is no Clear button when there is no value, so a
+    // clear can never fire with an empty slot — assert no stray delete on mount/edit.
+    expect(deleteSpriteByUrl).not.toHaveBeenCalled();
+  });
+
+  it('uploading over an existing different url deletes the prior url and keeps the new one', async () => {
+    seedLeafletWithDefault();
+    uploadSprite.mockResolvedValueOnce('https://download/new-default.webp');
+    await openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    await waitFor(() => expect(deleteSpriteByUrl).toHaveBeenCalledWith(OLD));
+    expect(await screen.findByAltText(/default sprite preview/i))
+      .toHaveAttribute('src', 'https://download/new-default.webp');
+    // it must NOT delete the just-uploaded url
+    expect(deleteSpriteByUrl).not.toHaveBeenCalledWith('https://download/new-default.webp');
+  });
+
+  it('uploading the SAME url back does not delete it', async () => {
+    seedLeafletWithDefault();
+    uploadSprite.mockResolvedValueOnce(OLD); // overwrite produced the identical url
+    await openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    await screen.findByAltText(/default sprite preview/i);
+    expect(deleteSpriteByUrl).not.toHaveBeenCalled();
+  });
+
+  it('a delete rejection does not block the clear (best-effort)', async () => {
+    seedLeafletWithDefault();
+    deleteSpriteByUrl.mockRejectedValueOnce(new Error('storage down'));
+    await openLeaflet();
+    fireEvent.click(screen.getByRole('button', { name: /clear default sprite/i }));
+    await waitFor(() => expect(screen.queryByAltText(/default sprite preview/i)).not.toBeInTheDocument());
+    // no error UI for a failed cleanup
+    expect(screen.queryByText(/storage down/i)).not.toBeInTheDocument();
+  });
+
+  it('a delete rejection does not block the upload (best-effort)', async () => {
+    seedLeafletWithDefault();
+    deleteSpriteByUrl.mockRejectedValueOnce(new Error('storage down'));
+    uploadSprite.mockResolvedValueOnce('https://download/new-default.webp');
+    await openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [webp()] } });
+    expect(await screen.findByAltText(/default sprite preview/i))
+      .toHaveAttribute('src', 'https://download/new-default.webp');
+    expect(screen.queryByText(/storage down/i)).not.toBeInTheDocument();
+  });
+
+  it('clearing a variant with a url deletes the old variant file', async () => {
+    setActivePetDefs(BUILTIN_PET_DEFS.map((d) =>
+      d.id === 'def-leaf' ? { ...d, sprite: { variants: { baby: { happy: 'https://download/old-bh.webp' } } } } : d));
+    await openLeaflet();
+    fireEvent.click(screen.getByRole('button', { name: /clear baby happy sprite/i }));
+    await waitFor(() => expect(deleteSpriteByUrl).toHaveBeenCalledWith('https://download/old-bh.webp'));
+    expect(screen.queryByAltText(/baby happy sprite preview/i)).not.toBeInTheDocument();
   });
 });
 

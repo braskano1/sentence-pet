@@ -1,4 +1,4 @@
-import { getStorage, connectStorageEmulator, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, connectStorageEmulator, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { PetMood, PetStage } from '../data/types';
 import { firebaseApp } from './app';
 
@@ -27,4 +27,10 @@ export async function uploadSprite(defId: string, slot: SpriteSlot, file: File):
   const objRef = ref(storage, `petDefs/${defId}/${slot}.${extOf(file)}`);
   await uploadBytes(objRef, file);
   return getDownloadURL(objRef);
+}
+
+/** Best-effort delete of a stored sprite by its download URL (ref() accepts the
+ *  https download URL directly). Throws on failure — callers decide whether to swallow. */
+export async function deleteSpriteByUrl(url: string): Promise<void> {
+  await deleteObject(ref(storage, url));
 }
