@@ -4,6 +4,7 @@ import type { Course } from '../../content/course';
 import { parseWorkbookToCourse } from '../../content/excelImport';
 import { validateCourse } from '../../content/validate';
 import { getActivePetDefs } from '../../domain/petDef';
+import { Card, Field, Button, ValidationSummary } from './ui';
 
 /** Default reader: File → SheetJS WorkBook. Injectable for tests. */
 async function defaultReadWorkbook(file: File): Promise<XLSX.WorkBook> {
@@ -37,31 +38,26 @@ export function ImportTab({ onCommit, readWorkbook = defaultReadWorkbook }: {
 
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <label>Excel file (.xlsx)
+      <Field label="Excel file (.xlsx)">
         <input type="file" accept=".xlsx"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); }} />
-      </label>
+      </Field>
 
-      {errors.length > 0 && (
-        <ul aria-live="polite" className="rounded bg-red-50 p-2 text-red-700">
-          {errors.map((e, i) => <li key={`${i}:${e}`}>• {e}</li>)}
-        </ul>
-      )}
+      <ValidationSummary errors={errors} />
 
       {course && (
-        <div className="rounded border p-2">
-          <p className="font-semibold">{course.emoji} {course.title} <span className="text-slate-400">({course.id})</span></p>
-          <ul>
+        <Card>
+          <p className="font-semibold text-slate-800">{course.emoji} {course.title} <span className="text-slate-400">({course.id})</span></p>
+          <ul className="mt-1">
             {course.units.map((u) => (
               <li key={u.id}>{u.emoji} {u.title} — {u.lessons.reduce((n, l) => n + l.itemIds.length, 0)} items</li>
             ))}
           </ul>
-          <p>Gates: {course.gates.length} · Final boss: {course.finalBoss ? course.finalBoss.boss.name : 'none'}</p>
-        </div>
+          <p className="mt-1">Gates: {course.gates.length} · Final boss: {course.finalBoss ? course.finalBoss.boss.name : 'none'}</p>
+        </Card>
       )}
 
-      <button type="button" disabled={!canCommit} onClick={() => course && onCommit(course)}
-        className="self-start rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-40">Commit import</button>
+      <Button className="self-start" disabled={!canCommit} onClick={() => course && onCommit(course)}>Commit import</Button>
     </div>
   );
 }
