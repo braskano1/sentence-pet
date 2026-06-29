@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import type { Course, BossNode } from '../../content/course';
 import type { Species, PetStage } from '../../data/types';
 import { usePetDefs } from '../../state/usePetDefs';
+import { importBosses } from '../../content/surfaceImport';
 import {
   Card, SectionLabel, Field, TextInput, NumberInput, Select, Checkbox, Button,
-  SearchableList, FilterChips, AssignList,
+  SearchableList, FilterChips, AssignList, ImportDrawer,
 } from './ui';
 import type { FilterChip } from './ui';
 import type { ContentItem } from '../../data/types';
@@ -133,13 +135,23 @@ function BossFields({ node, units, pool, onPatch }: {
   );
 }
 
-export function BossesTab({ course, onChange }: { course: Course; onChange: (c: Course) => void }) {
+async function defaultParseBossesFile(file: File) {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  return importBosses(wb);
+}
+
+export function BossesTab({ course, onChange, parseBossesFile = defaultParseBossesFile }: {
+  course: Course;
+  onChange: (c: Course) => void;
+  parseBossesFile?: (file: File) => Promise<{ entities: BossNode[]; errors: string[] }>;
+}) {
   const list: BossNode[] = [...course.gates, ...(course.finalBoss ? [course.finalBoss] : [])];
   const petDefs = usePetDefs();
   const [selectedId, setSelectedId] = useState<string | null>(list[0]?.id ?? null);
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<ScopeFilter>('all');
   const [confirming, setConfirming] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => { setConfirming(false); }, [selectedId]);
 
@@ -181,11 +193,20 @@ export function BossesTab({ course, onChange }: { course: Course; onChange: (c: 
     setSelectedId((rest[0]?.id) ?? (course.finalBoss?.id ?? null));
     setConfirming(false);
   }
+  function applyImport(merged: BossNode[]) {
+    const gates = merged.filter((n) => n.scope !== 'final');
+    const finalBoss = merged.find((n) => n.scope === 'final');
+    onChange({ ...course, gates, ...(finalBoss ? { finalBoss } : {}) });
+  }
 
   const selected = list.find((n) => n.id === selectedId) ?? null;
 
   return (
-    <div className="flex gap-4 text-sm">
+    <div className="flex flex-col gap-3 text-sm">
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={() => setImporting(true)}>⬇ Import…</Button>
+      </div>
+      <div className="flex gap-4">
       <SearchableList
         items={filtered}
         total={list.length}
@@ -244,6 +265,19 @@ export function BossesTab({ course, onChange }: { course: Course; onChange: (c: 
           <Card><p className="text-slate-500">Add a gate or a final boss to begin.</p></Card>
         )}
       </div>
+      </div>
+
+      <ImportDrawer<BossNode>
+        open={importing}
+        title="Import bosses"
+        noun="boss"
+        existing={list}
+        getId={(n) => n.id}
+        parseFile={parseBossesFile}
+        onApply={applyImport}
+        onClose={() => setImporting(false)}
+        renderChange={(c) => <>{c.incoming.boss.name} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.scope}</span></>}
+      />
     </div>
   );
 }

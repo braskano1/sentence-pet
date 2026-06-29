@@ -116,3 +116,28 @@ describe('BossesTab', () => {
     });
   });
 });
+
+describe('BossesTab import wiring', () => {
+  it('merges imported bosses and splits gates vs finalBoss', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [], finalBoss: undefined,
+    } as unknown as import('../../content/course').Course;
+    const parseBossesFile = async () => ({
+      entities: [
+        { id: 'g1', title: 'g1', scope: 'gated', afterUnitId: 'u1', boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } },
+        { id: 'f', title: 'f', scope: 'final', onClear: 'completeCourse', boss: { tierId: 't', element: 'leaf', name: 'F', rivalSprite: { species: 'leaf', stage: 'adult' } } },
+      ] as unknown as import('../../content/course').BossNode[],
+      errors: [],
+    });
+    render(<BossesTab course={course} onChange={onChange} parseBossesFile={parseBossesFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 2 changes/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.gates.map((g) => g.id)).toEqual(['g1']);
+    expect(next.finalBoss?.id).toBe('f');
+  });
+});
