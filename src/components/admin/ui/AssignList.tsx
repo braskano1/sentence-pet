@@ -25,7 +25,7 @@ export function AssignList<T>({
   onToggle: (item: T) => void;
   renderLabel: (item: T) => ReactNode;
   searchText: (item: T) => string;
-  ariaLabel?: (item: T) => string;
+  ariaLabel: (item: T) => string;
   placeholder?: string;
   emptyHint?: string;
   headerNote?: ReactNode;
@@ -37,7 +37,7 @@ export function AssignList<T>({
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200">
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 focus-within:border-indigo-400">
         <span aria-hidden>🔎</span>
         <label htmlFor={searchId} className="sr-only">Filter items</label>
         <input
@@ -63,11 +63,12 @@ export function AssignList<T>({
                   type="button"
                   role="checkbox"
                   aria-checked={selected}
-                  aria-label={ariaLabel ? ariaLabel(item) : key}
+                  aria-label={ariaLabel(item)}
                   onClick={() => onToggle(item)}
                   className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-500"
                 >
                   <span
+                    aria-hidden="true"
                     className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[11px] text-white ${
                       selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'
                     }`}
