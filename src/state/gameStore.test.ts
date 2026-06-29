@@ -1227,7 +1227,7 @@ describe('finishBoss reward rarity override', () => {
       units: [{
         id: 'rar-unit', title: 'Rarity Unit', emoji: '⚔️', order: 1,
         lessons: [{
-          id: 'rar-boss', title: 'Boss', emoji: '⚔️', level: 1, isCheckpoint: true,
+          id: 'rar-boss', kind: 'dragdrop', drill: 'mixed', level: 1, isCheckpoint: true,
           itemIds: ['mx-l1-1', 'mx-l1-2'],
           boss: { tierId: 'tier-1', element: 'fire', name: 'Rival', rivalSprite: { species: 'fire', stage: 'young' } },
           ...(rewardPetDefId ? { rewardPetDefId } : {}),
