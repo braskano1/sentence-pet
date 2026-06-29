@@ -25,4 +25,9 @@ describe('AdminHeader', () => {
     render(<AdminHeader email={null} onSignOut={() => {}} />);
     expect(screen.getByText(/admin ✓/)).toBeInTheDocument();
   });
+
+  it('omits the separator when email is absent', () => {
+    render(<AdminHeader email={null} onSignOut={() => {}} />);
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+  });
 });

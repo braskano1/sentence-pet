@@ -19,7 +19,8 @@ export function AdminHeader({
       </h1>
       <div className="flex items-center gap-3 text-sm text-slate-600">
         <span>
-          {email} · <span className="font-medium text-emerald-600">admin ✓</span>
+          {email && <>{email} · </>}
+          <span className="font-medium text-emerald-600">admin ✓</span>
         </span>
         <Button variant="ghost" onClick={onSignOut}>Sign out</Button>
       </div>
