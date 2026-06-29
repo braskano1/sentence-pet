@@ -9,6 +9,7 @@ import {
   setRarityBand, stripDefault, setVariant, clearVariant, reconcileEvolution,
 } from './petsTab/helpers';
 import { PetForm } from './petsTab/PetForm';
+import { Card, Field, Select, Button, SaveBar, ValidationSummary } from './ui';
 
 // Re-exported so existing test imports (`import { … } from './PetsTab'`) keep resolving.
 export { setRarityBand, stripDefault, setVariant, clearVariant, reconcileEvolution };
@@ -110,55 +111,66 @@ export function PetsTab() {
 
   if (!loaded) return <p role="status" className="p-4 text-sm">loading pets…</p>;
 
+  const editing = editingId ? draft.find((d) => d.id === editingId) ?? null : null;
+
   return (
-    <div className="flex flex-col gap-3 text-sm">
-      <div className="flex items-center gap-2">
-        <h2 className="font-semibold">Pets</h2>
-        <label className="text-xs">filter by gen
-          <select className="ml-1 border px-1" value={String(genFilter)}
+    <div className="flex flex-col gap-4 text-sm text-slate-800">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-base font-semibold">Pets</h2>
+        <Field label="filter by gen">
+          <Select value={String(genFilter)}
             onChange={(e) => setGenFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}>
             <option value="all">all</option>
             {gens.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-        </label>
-        <button type="button" onClick={addPet} className="rounded bg-slate-800 px-2 py-0.5 text-white">+ Add pet</button>
+          </Select>
+        </Field>
+        <Button onClick={addPet}>+ Add pet</Button>
         <span className="flex-1" />
-        <button type="button" onClick={save} disabled={!validation.ok}
-          className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-40">Save</button>
-        {status && <span className="font-mono">{status}</span>}
+        <SaveBar
+          valid={validation.ok}
+          status={status}
+          onSave={save}
+          errorCount={validation.errors.length}
+        />
       </div>
 
-      <ul aria-live="polite" className={!validation.ok ? 'rounded bg-red-50 p-2 text-red-700' : 'sr-only'}>
-        {!validation.ok && validation.errors.map((e) => <li key={e}>• {e}</li>)}
-      </ul>
+      <ValidationSummary errors={validation.ok ? [] : validation.errors} />
 
-      <ul className="flex flex-col gap-1">
-        {shown.map((d) => (
-          <li key={d.id} className="rounded border p-2 flex items-center gap-2">
-            <span className="font-mono">#{d.dexNo}</span>
-            <strong>{d.name}</strong>
-            <span>· {d.element} · [{d.types.join(', ')}]</span>
-            {d.starter && <span>· ⭐ starter</span>}
-            {!d.enabled && <span>· (disabled)</span>}
-            <span className="flex-1" />
-            <button type="button" aria-label={`edit ${d.name}`}
-              onClick={() => setEditingId(editingId === d.id ? null : d.id)}
-              className="text-indigo-600">Edit</button>
-            <button type="button" aria-label={`delete ${d.name}`} disabled={!canDelete(d)}
-              onClick={() => deletePet(d.id)} className="text-red-600 disabled:opacity-40">Delete</button>
-          </li>
-        ))}
-      </ul>
+      <div className="flex gap-4">
+        <ul className="flex w-72 shrink-0 flex-col gap-1">
+          {shown.map((d) => {
+            const isActive = d.id === editingId;
+            return (
+              <li key={d.id}
+                className={`flex items-center gap-2 rounded-md border p-2 ${isActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200'}`}>
+                <span className="font-mono text-slate-500">#{d.dexNo}</span>
+                <strong>{d.name}</strong>
+                <span className="text-slate-500">· {d.element} · [{d.types.join(', ')}]</span>
+                {d.starter && <span>· ⭐ starter</span>}
+                {!d.enabled && <span className="text-slate-400">· (disabled)</span>}
+                <span className="flex-1" />
+                <button type="button" aria-label={`edit ${d.name}`}
+                  onClick={() => setEditingId(editingId === d.id ? null : d.id)}
+                  className="text-indigo-600">Edit</button>
+                <button type="button" aria-label={`delete ${d.name}`} disabled={!canDelete(d)}
+                  onClick={() => deletePet(d.id)} className="text-red-600 disabled:opacity-40">Delete</button>
+              </li>
+            );
+          })}
+        </ul>
 
-      {editingId && draft.some((d) => d.id === editingId) && (
-        <PetForm
-          def={draft.find((d) => d.id === editingId)!}
-          allDefs={draft}
-          onPatch={(p) => patch(editingId, p)}
-          onRename={(newId) => rename(editingId!, newId)}
-          onSetStarter={() => setStarter(editingId)}
-        />
-      )}
+        <div className="flex-1">
+          {editing
+            ? <PetForm
+                def={editing}
+                allDefs={draft}
+                onPatch={(p) => patch(editing.id, p)}
+                onRename={(newId) => rename(editing.id, newId)}
+                onSetStarter={() => setStarter(editing.id)}
+              />
+            : <Card><p className="text-slate-500">Select a pet to edit, or add a new one.</p></Card>}
+        </div>
+      </div>
     </div>
   );
 }

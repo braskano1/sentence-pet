@@ -525,3 +525,13 @@ describe('PetsTab — block until live load', () => {
     expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
   });
 });
+
+describe('PetsTab — master-detail layout', () => {
+  it('renders the editor in a detail panel beside the list when a pet is selected', async () => {
+    render(<PetsTab />);
+    await screen.findByRole('button', { name: /add pet/i });
+    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Leaflet/).length).toBeGreaterThan(0);
+  });
+});
