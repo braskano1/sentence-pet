@@ -104,4 +104,10 @@ describe('AdminShell', () => {
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     await waitFor(() => expect(fetchCoursesIndex.mock.calls.length).toBeGreaterThan(callsBefore));
   });
+
+  it('hides the course Save changes bar on the global Pets surface (PetsTab owns its own SaveBar)', async () => {
+    render(<AdminShell />);
+    fireEvent.click(await screen.findByRole('tab', { name: /pets/i }));
+    expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+  });
 });

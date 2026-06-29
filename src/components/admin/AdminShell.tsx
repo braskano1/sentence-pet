@@ -84,14 +84,16 @@ export function AdminShell() {
       <div className="flex flex-wrap items-center gap-3">
         <CourseSwitcher courses={index} activeId={activeCourseId} onSelect={(id) => runAction('switch', switchTo(id))} />
         <span className="flex-1" />
-        <SaveBar
-          valid={validation.ok}
-          dirty={dirty}
-          status={status}
-          onSave={save}
-          saveLabel="Save changes"
-          errorCount={validation.errors.length}
-        />
+        {surface !== 'pets' && (
+          <SaveBar
+            valid={validation.ok}
+            dirty={dirty}
+            status={status}
+            onSave={save}
+            saveLabel="Save changes"
+            errorCount={validation.errors.length}
+          />
+        )}
       </div>
 
       <ValidationSummary errors={validation.ok ? [] : validation.errors} />
