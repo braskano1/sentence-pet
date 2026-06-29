@@ -7,6 +7,8 @@ import {
   SearchableList, FilterChips, AssignList,
 } from './ui';
 import type { FilterChip } from './ui';
+import type { ContentItem } from '../../data/types';
+import { itemLabel, itemSearchText } from './poolTab/itemLabel';
 
 const SPECIES: Species[] = ['leaf', 'fire', 'air', 'water'];
 const STAGES: Exclude<PetStage, 'egg'>[] = ['baby', 'young', 'adult'];
@@ -26,7 +28,7 @@ function emptyBoss(): BossNode['boss'] {
 function BossFields({ node, units, pool, onPatch }: {
   node: BossNode;
   units: { id: string; title?: string }[];
-  pool: Record<string, { id: string }>;
+  pool: Record<string, ContentItem>;
   onPatch: (patch: Partial<BossNode>) => void;
 }) {
   const labelPrefix = node.scope === 'final' ? 'final boss' : `gate ${node.id}`;
@@ -121,8 +123,8 @@ function BossFields({ node, units, pool, onPatch }: {
           ariaLabel={(it) => `${labelPrefix} pins ${it.id}`}
           isSelected={(it) => pinned.includes(it.id)}
           onToggle={(it) => onPatch({ pinnedItemIds: pinned.includes(it.id) ? pinned.filter((x) => x !== it.id) : [...pinned, it.id] })}
-          searchText={(it) => it.id}
-          renderLabel={(it) => it.id}
+          searchText={(it) => itemSearchText(it)}
+          renderLabel={(it) => itemLabel(it)}
           placeholder="Search items by id…"
           emptyHint="No items in this course pool."
         />
@@ -141,7 +143,7 @@ export function BossesTab({ course, onChange }: { course: Course; onChange: (c: 
 
   useEffect(() => { setConfirming(false); }, [selectedId]);
 
-  const filtered = scope === 'all' ? list : list.filter((n) => (scope === 'final' ? n.scope === 'final' : n.scope !== 'final'));
+  const filtered = scope === 'all' ? list : list.filter((n) => (scope === 'final' ? n.scope === 'final' : n.scope === 'gated'));
   const unitTitle = (id?: string) => course.units.find((u) => u.id === id)?.title ?? id ?? '—';
   const rewardName = (n: BossNode) => (n.rewardPetDefId ? petDefs.find((d) => d.id === n.rewardPetDefId)?.name ?? n.rewardPetDefId : 'random');
 
