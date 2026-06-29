@@ -16,6 +16,11 @@ vi.mock('../../firebase/storage', () => ({
 }));
 const hydratePetDefs = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../content/load', () => ({ hydratePetDefs: () => hydratePetDefs() }));
+// Default: pass the file through untouched (mirrors the real within-cap / jsdom-fallback path).
+const downscaleSprite = vi.fn(async (f: File) => f);
+vi.mock('../../firebase/imageTranscode', () => ({
+  downscaleSprite: (f: File) => downscaleSprite(f),
+}));
 
 import { PetsTab, reconcileEvolution, stripDefault, setVariant, clearVariant } from './PetsTab';
 import type { PetDef } from '../../data/types';
@@ -30,6 +35,8 @@ beforeEach(() => {
   deleteSpriteByUrl.mockResolvedValue(undefined);
   hydratePetDefs.mockClear();
   hydratePetDefs.mockResolvedValue(undefined);
+  downscaleSprite.mockClear();
+  downscaleSprite.mockImplementation(async (f: File) => f);
   setActivePetDefs([...BUILTIN_PET_DEFS]); // reset module-level registry between tests
 });
 
@@ -295,6 +302,17 @@ describe('PetsTab — sprite upload', () => {
     fireEvent.change(input, { target: { files: [webp()] } });
     await screen.findByAltText(/baby sad sprite preview/i);
     expect(screen.queryByText(/boom/i)).not.toBeInTheDocument();
+  });
+
+  it('uploads the DOWNSCALED file from downscaleSprite, not the raw input', async () => {
+    const raw = webp();
+    const downscaled = new File(['y'], 'leaf.png', { type: 'image/png' });
+    downscaleSprite.mockResolvedValueOnce(downscaled);
+    await openLeaflet();
+    fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [raw] } });
+    await waitFor(() => expect(uploadSprite).toHaveBeenCalled());
+    expect(downscaleSprite).toHaveBeenCalledWith(raw);
+    expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'default', downscaled);
   });
 });
 

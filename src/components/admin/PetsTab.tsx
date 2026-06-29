@@ -6,6 +6,7 @@ import { validatePetDefs } from '../../content/validate';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
 import { uploadSprite, deleteSpriteByUrl, type SpriteSlot } from '../../firebase/storage';
+import { downscaleSprite } from '../../firebase/imageTranscode';
 import { SPECIES } from '../../domain/species';
 import { PET_TYPES } from '../../domain/petType';
 
@@ -241,7 +242,8 @@ function SpriteUpload({ label, slot, defId, value, onUpload, onClear }: {
     setErr('');
     const prior = value; // the slot's current url, before the upload replaces it
     try {
-      const url = await uploadSprite(defId, slot, file);
+      const toUpload = await downscaleSprite(file); // shrink oversized sprites; within-cap passes through untouched
+      const url = await uploadSprite(defId, slot, toUpload);
       onUpload(url);
       // Replace: if a different file backed this slot, drop the now-orphaned old object.
       // Same-url overwrite (identical path/ext) already replaced the blob — never delete it.
