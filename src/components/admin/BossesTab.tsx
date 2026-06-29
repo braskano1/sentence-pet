@@ -1,13 +1,7 @@
 import type { Course, BossNode } from '../../content/course';
 import type { Species, PetStage } from '../../data/types';
 import { usePetDefs } from '../../state/usePetDefs';
-import { Card, SectionLabel } from './ui/Card';
-import { Field } from './ui/Field';
-import { TextInput } from './ui/TextInput';
-import { NumberInput } from './ui/NumberInput';
-import { Select } from './ui/Select';
-import { Checkbox } from './ui/Checkbox';
-import { Button } from './ui/Button';
+import { Card, SectionLabel, Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
 
 const SPECIES: Species[] = ['leaf', 'fire', 'air', 'water'];
 const STAGES: Exclude<PetStage, 'egg'>[] = ['baby', 'young', 'adult'];
