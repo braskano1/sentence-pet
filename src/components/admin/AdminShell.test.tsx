@@ -91,7 +91,7 @@ describe('AdminShell', () => {
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     // Wait for the async save to settle and error text to appear.
     await screen.findByText(/save failed/i);
-    // The live store course must be the same reference — no partial update.
+    // The live store course must be the same reference - no partial update.
     expect(useContentStore.getState().course).toBe(courseBefore);
   });
 });

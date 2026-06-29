@@ -48,6 +48,10 @@ export function AdminShell() {
     { heading: 'Creatures · global', items: [{ id: 'pets', label: 'Pets', count: getActivePetDefs().length }] },
   ];
 
+  function runAction(label: string, p: Promise<unknown>) {
+    void p.catch((e) => setStatus(`${label} failed: ${(e as Error).message}`));
+  }
+
   async function save() {
     if (!validation.ok) return;
     setStatus('saving…');
@@ -73,12 +77,10 @@ export function AdminShell() {
 
   return (
     <div className="admin-root mx-auto mt-6 flex max-w-7xl flex-col gap-4 p-4 text-base text-slate-800">
-      <div className="flex flex-wrap items-center gap-4">
-        <AdminHeader email={user?.email} onSignOut={() => signOut()} />
-      </div>
+      <AdminHeader email={user?.email} onSignOut={() => signOut()} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <CourseSwitcher courses={index} activeId={activeCourseId} onSelect={(id) => void switchTo(id)} />
+        <CourseSwitcher courses={index} activeId={activeCourseId} onSelect={(id) => runAction('switch', switchTo(id))} />
         <span className="flex-1" />
         <SaveBar
           valid={validation.ok}
@@ -101,9 +103,9 @@ export function AdminShell() {
               course={currentDraft}
               onChange={setDraft}
               index={index}
-              onCreate={(meta) => void create(meta)}
-              onDelete={(id) => void remove(id)}
-              onSwitch={(id) => void switchTo(id)}
+              onCreate={(meta) => runAction('create', create(meta))}
+              onDelete={(id) => runAction('delete', remove(id))}
+              onSwitch={(id) => runAction('switch', switchTo(id))}
               onImport={commitImport}
             />
           )}
