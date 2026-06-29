@@ -7,6 +7,7 @@ import type {
   MatchingPair,
   PosLabel,
 } from '../../data/types';
+import { Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
 
 const POS: PosLabel[] = ['Pronoun', 'Verb', 'Object'];
 const KINDS: ContentItem['kind'][] = ['flashcard', 'matching', 'dragdrop', 'fillblank'];
@@ -28,17 +29,20 @@ function blankOf(kind: ContentItem['kind'], id: string, level: number): ContentI
 
 export function ItemEditor({ item, onChange }: { item: ContentItem; onChange: (i: ContentItem) => void }) {
   return (
-    <div className="flex flex-col gap-2 rounded border p-3 text-sm">
-      <label>id <input className="border px-1" value={item.id}
-        onChange={(e) => onChange({ ...item, id: e.target.value })} /></label>
-      <label>kind
-        <select className="border px-1" value={item.kind}
+    <div className="flex flex-col gap-3">
+      <Field label="id">
+        <TextInput value={item.id} onChange={(e) => onChange({ ...item, id: e.target.value })} />
+      </Field>
+      <Field label="kind">
+        <Select value={item.kind}
           onChange={(e) => onChange(blankOf(e.target.value as ContentItem['kind'], item.id, item.level))}>
           {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-        </select>
-      </label>
-      <label>level <input type="number" className="w-16 border px-1" value={item.level}
-        onChange={(e) => { const n = Number(e.target.value); onChange({ ...item, level: Number.isNaN(n) ? item.level : n }); }} /></label>
+        </Select>
+      </Field>
+      <Field label="level">
+        <NumberInput value={item.level}
+          onValueChange={(n) => { if (n !== null) onChange({ ...item, level: n }); }} />
+      </Field>
 
       {item.kind === 'flashcard' && <FlashcardForm item={item} onChange={onChange} />}
       {item.kind === 'matching' && <MatchingForm item={item} onChange={onChange} />}
@@ -51,8 +55,9 @@ export function ItemEditor({ item, onChange }: { item: ContentItem; onChange: (i
 /** Shared optional Thai helper input (flashcard/matching/fillblank). */
 function L1Input({ value, onChange }: { value: string; onChange: (th: string) => void }) {
   return (
-    <label>th (l1) <input className="border px-1" value={value}
-      onChange={(e) => onChange(e.target.value)} /></label>
+    <Field label="th (l1)">
+      <TextInput value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
   );
 }
 
@@ -60,12 +65,12 @@ function FlashcardForm({ item, onChange }: { item: FlashcardItem; onChange: (i: 
   const set = (patch: Partial<FlashcardItem>) => onChange({ ...item, ...patch });
   return (
     <>
-      <label>front <input className="border px-1" value={item.front}
-        onChange={(e) => set({ front: e.target.value })} /></label>
-      <label>back <input className="border px-1" value={item.back}
-        onChange={(e) => set({ back: e.target.value })} /></label>
-      <label>audio <input className="border px-1" value={item.audio ?? ''}
-        onChange={(e) => set({ audio: e.target.value.trim() ? e.target.value : undefined })} /></label>
+      <Field label="front"><TextInput value={item.front} onChange={(e) => set({ front: e.target.value })} /></Field>
+      <Field label="back"><TextInput value={item.back} onChange={(e) => set({ back: e.target.value })} /></Field>
+      <Field label="audio">
+        <TextInput value={item.audio ?? ''}
+          onChange={(e) => set({ audio: e.target.value.trim() ? e.target.value : undefined })} />
+      </Field>
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => set({ l1: th.trim() ? { th } : undefined })} />
     </>
   );
@@ -79,22 +84,22 @@ function MatchingForm({ item, onChange }: { item: MatchingItem; onChange: (i: Co
   return (
     <>
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => onChange({ ...item, l1: th.trim() ? { th } : undefined })} />
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         {item.pairs.map((p, i) => (
-          <div key={i} className="flex items-center gap-1">
-            <label>left <input className="border px-1" value={p.left}
-              onChange={(e) => setPair(i, { left: e.target.value })} /></label>
-            <label>right <input className="border px-1" value={p.right}
-              onChange={(e) => setPair(i, { right: e.target.value })} /></label>
-            <label>th <input className="border px-1" value={p.l1?.th ?? ''}
-              onChange={(e) => setPair(i, { l1: e.target.value.trim() ? { th: e.target.value } : undefined })} /></label>
-            <button type="button" className="text-red-600"
-              onClick={() => setPairs(item.pairs.filter((_, idx) => idx !== i))}>×</button>
+          <div key={i} className="flex items-end gap-2">
+            <Field label="left"><TextInput value={p.left} onChange={(e) => setPair(i, { left: e.target.value })} /></Field>
+            <Field label="right"><TextInput value={p.right} onChange={(e) => setPair(i, { right: e.target.value })} /></Field>
+            <Field label="th">
+              <TextInput value={p.l1?.th ?? ''}
+                onChange={(e) => setPair(i, { l1: e.target.value.trim() ? { th: e.target.value } : undefined })} />
+            </Field>
+            <Button variant="danger" aria-label={`remove pair ${i + 1}`}
+              onClick={() => setPairs(item.pairs.filter((_, idx) => idx !== i))}>×</Button>
           </div>
         ))}
       </div>
-      <button type="button" className="self-start text-indigo-600"
-        onClick={() => setPairs([...item.pairs, { left: '', right: '' }])}>+ pair</button>
+      <Button variant="ghost" className="self-start"
+        onClick={() => setPairs([...item.pairs, { left: '', right: '' }])}>+ pair</Button>
     </>
   );
 }
@@ -103,23 +108,24 @@ function DragDropForm({ item, onChange }: { item: DragDropItem; onChange: (i: Co
   const set = (patch: Partial<DragDropItem>) => onChange({ ...item, ...patch });
   return (
     <>
-      <label>drill
-        <select className="border px-1" value={item.drill}
-          onChange={(e) => set({ drill: e.target.value as DragDropItem['drill'] })}>
+      <Field label="drill">
+        <Select value={item.drill} onChange={(e) => set({ drill: e.target.value as DragDropItem['drill'] })}>
           {['pattern', 'wordChoice', 'grammar', 'mixed'].map((d) => <option key={d}>{d}</option>)}
-        </select>
-      </label>
-      <label>thaiHint <input className="border px-1" value={item.thaiHint}
-        onChange={(e) => set({ thaiHint: e.target.value })} /></label>
-      <label>slots (csv) <input className="border px-1" value={item.slots.join(',')}
-        onChange={(e) => set({ slots: csv(e.target.value) as PosLabel[] })} /></label>
-      <label>answer (csv) <input className="border px-1" value={item.answer.join(',')}
-        onChange={(e) => set({ answer: csv(e.target.value) })} /></label>
-      <label>distractors (csv) <input className="border px-1" value={(item.distractors ?? []).join(',')}
-        onChange={(e) => set({ distractors: csv(e.target.value) })} /></label>
-      <label>hidePos <input type="checkbox" checked={!!item.hidePos}
-        onChange={(e) => set({ hidePos: e.target.checked || undefined })} /></label>
-      <p className="text-xs text-slate-400">POS options: {POS.join(', ')}. Traps edited as JSON later.</p>
+        </Select>
+      </Field>
+      <Field label="thaiHint"><TextInput value={item.thaiHint} onChange={(e) => set({ thaiHint: e.target.value })} /></Field>
+      <Field label="slots (csv)">
+        <TextInput value={item.slots.join(',')} onChange={(e) => set({ slots: csv(e.target.value) as PosLabel[] })} />
+      </Field>
+      <Field label="answer (csv)">
+        <TextInput value={item.answer.join(',')} onChange={(e) => set({ answer: csv(e.target.value) })} />
+      </Field>
+      <Field label="distractors (csv)">
+        <TextInput value={(item.distractors ?? []).join(',')} onChange={(e) => set({ distractors: csv(e.target.value) })} />
+      </Field>
+      <Checkbox label="hidePos" checked={!!item.hidePos}
+        onChange={(e) => set({ hidePos: e.target.checked || undefined })} />
+      <p className="text-xs text-slate-500">POS options: {POS.join(', ')}. Traps edited as JSON later.</p>
     </>
   );
 }
@@ -128,12 +134,11 @@ function FillBlankForm({ item, onChange }: { item: FillBlankItem; onChange: (i: 
   const set = (patch: Partial<FillBlankItem>) => onChange({ ...item, ...patch });
   return (
     <>
-      <label>template <input className="border px-1" value={item.template}
-        onChange={(e) => set({ template: e.target.value })} /></label>
-      <label>answer <input className="border px-1" value={item.answer}
-        onChange={(e) => set({ answer: e.target.value })} /></label>
-      <label>alternates (csv) <input className="border px-1" value={(item.alternates ?? []).join(',')}
-        onChange={(e) => set({ alternates: csv(e.target.value) })} /></label>
+      <Field label="template"><TextInput value={item.template} onChange={(e) => set({ template: e.target.value })} /></Field>
+      <Field label="answer"><TextInput value={item.answer} onChange={(e) => set({ answer: e.target.value })} /></Field>
+      <Field label="alternates (csv)">
+        <TextInput value={(item.alternates ?? []).join(',')} onChange={(e) => set({ alternates: csv(e.target.value) })} />
+      </Field>
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => set({ l1: th.trim() ? { th } : undefined })} />
     </>
   );
