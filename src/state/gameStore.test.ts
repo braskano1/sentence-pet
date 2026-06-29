@@ -1219,3 +1219,42 @@ describe('starter rarity override', () => {
     expect(starter.rarity).toBe('common');
   });
 });
+
+describe('finishBoss reward rarity override', () => {
+  function seedBossLesson(rewardPetDefId?: string) {
+    const bundle: ContentBundle = {
+      pool: { ...SEED.pool },
+      units: [{
+        id: 'rar-unit', title: 'Rarity Unit', emoji: '⚔️', order: 1,
+        lessons: [{
+          id: 'rar-boss', title: 'Boss', emoji: '⚔️', level: 1, isCheckpoint: true,
+          itemIds: ['mx-l1-1', 'mx-l1-2'],
+          boss: { tierId: 'tier-1', element: 'fire', name: 'Rival', rivalSprite: { species: 'fire', stage: 'young' } },
+          ...(rewardPetDefId ? { rewardPetDefId } : {}),
+        }],
+      }],
+    };
+    useContentStore.getState().setBundle(bundle, 'fallback');
+    useGameStore.setState({ currentBossLessonId: 'rar-boss' });
+  }
+
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS));
+
+  it('forces the reward pet rarity from the def override', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-leg', element: 'fire', enabled: true, rarity: 'legendary' }, ...BUILTIN_PET_DEFS]);
+    seedBossLesson('reward-leg');
+    useGameStore.getState().finishBoss(true);
+    const granted = useGameStore.getState().pets.at(-1)!;
+    expect(granted.defId).toBe('reward-leg');
+    expect(granted.rarity).toBe('legendary'); // was hardcoded 'common'
+  });
+
+  it('reward pet stays common when the def has no override', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-plain', element: 'fire', enabled: true }, ...BUILTIN_PET_DEFS]);
+    seedBossLesson('reward-plain');
+    useGameStore.getState().finishBoss(true);
+    const granted = useGameStore.getState().pets.at(-1)!;
+    expect(granted.rarity).toBe('common');
+  });
+});

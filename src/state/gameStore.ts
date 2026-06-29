@@ -309,12 +309,13 @@ export const useGameStore = create<GameState>()(
               const pool = obtainablePool();
               def = pool[Math.floor(rng() * pool.length)];
             }
+            const rarity = def.rarity ?? 'common';
             const egg = makePet({
               id: crypto.randomUUID(),
               species: def.element,
               defId: def.id,
-              stats: rollStatsFromBands(def.statBands.common, rng),
-              rarity: 'common',
+              stats: rollStatsFromBands(def.statBands[rarity], rng),
+              rarity,
             });
             pets = [...pets, egg];
             lastPull = egg;
