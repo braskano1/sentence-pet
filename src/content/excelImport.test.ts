@@ -195,4 +195,21 @@ describe('parseWorkbookSlices (tolerant)', () => {
     expect(slices.units.map((u) => u.id)).toEqual(['u1']);
     expect(slices.units[0].lessons).toEqual([]);
   });
+
+  it('reports unknown-unit only when a Units sheet is present', () => {
+    // Items reference unit "u9" which is not in the Units sheet → error
+    const withUnits = bookWith({
+      Units: [['id', 'title', 'order'], ['u1', 'Unit One', 1]],
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back'],
+        ['f1', 'flashcard', 1, 'u9', 'u9-n1', 'a', 'b']],
+    });
+    expect(parseWorkbookSlices(withUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(true);
+
+    // Same Items but NO Units sheet → tolerant, no unknown-unit error
+    const noUnits = bookWith({
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back'],
+        ['f1', 'flashcard', 1, 'u9', 'u9-n1', 'a', 'b']],
+    });
+    expect(parseWorkbookSlices(noUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(false);
+  });
 });

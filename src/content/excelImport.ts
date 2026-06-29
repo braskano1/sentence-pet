@@ -38,6 +38,7 @@ export interface WorkbookSlices {
 /** Parse every sheet present in `wb` into its slice. Sheets that are absent are skipped. */
 export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
   const errors: string[] = [];
+  const hasUnitsSheet = wb.SheetNames.includes('Units');
 
   // ── Units ────────────────────────────────────────────────────────────────
   const units: Unit[] = [];
@@ -154,9 +155,12 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
   // One Lesson per node group; last node per unit becomes the checkpoint.
   for (const [nodeId, grp] of nodeItems) {
     const unit = units.find((u) => u.id === grp.unit);
-    // Tolerant: an item that references a unit absent from this workbook just
-    // doesn't get attached as a lesson (cross-slice integrity is the validator's job).
-    if (!unit) continue;
+    // Tolerant: an Items-only workbook (no Units sheet) just doesn't attach lessons.
+    // But when a Units sheet IS present, an item referencing a missing unit is an error.
+    if (!unit) {
+      if (hasUnitsSheet) errors.push(`Items node ${nodeId}: unknown unit "${grp.unit}"`);
+      continue;
+    }
     const lesson: Lesson = {
       id: nodeId,
       kind: grp.kind,
