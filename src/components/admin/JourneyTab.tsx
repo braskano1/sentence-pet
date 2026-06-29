@@ -7,7 +7,10 @@ import { Card, Field, TextInput, NumberInput, Select, Checkbox, Button, AssignLi
 import { LessonTree } from './journeyTab/LessonTree';
 import type { TreeSelection } from './journeyTab/LessonTree';
 
-/** Pool item ids whose kind matches a node's kind — the items admins may assign to it. */
+/**
+ * Pool item ids whose kind matches a node's kind — the items admins may assign to it.
+ * Retained as module API (covered by JourneyTab.test.tsx); the lesson editor filters the pool inline.
+ */
 export function eligibleItemIds(pool: Record<string, ContentItem>, kind: ContentKind): string[] {
   return Object.values(pool).filter((i) => i.kind === kind).map((i) => i.id);
 }
@@ -21,6 +24,11 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
   );
   const [confirming, setConfirming] = useState(false);
   useEffect(() => { setConfirming(false); }, [selected]);
+
+  function selectNode(s: TreeSelection) {
+    if (selected && s.type === selected.type && s.id === selected.id) return;
+    setSelected(s);
+  }
 
   function setUnits(units: Unit[]) { onChange({ ...course, units }); }
   function patchUnit(unitId: string, patch: Partial<Unit>) {
@@ -85,7 +93,7 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
 
   return (
     <div className="flex gap-4 text-sm">
-      <LessonTree units={course.units} selected={selected} onSelect={setSelected}
+      <LessonTree units={course.units} selected={selected} onSelect={selectNode}
         onAddUnit={addUnit} onAddLesson={addLesson} />
 
       <div className="flex-1">
