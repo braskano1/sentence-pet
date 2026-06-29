@@ -69,3 +69,23 @@ describe('CoursesTab', () => {
     expect(onCreate).toHaveBeenCalledWith({ title: 'Fresh' });
   });
 });
+
+describe('CoursesTab import errors', () => {
+  it('shows an error when the whole-course file fails to read', async () => {
+    const course = { id: 'c1', title: 'C1', emoji: '', pool: {}, units: [], gates: [] } as unknown as import('../../content/course').Course;
+    render(
+      <CoursesTab
+        course={course}
+        onChange={() => {}}
+        index={[{ id: 'c1', title: 'C1' }]}
+        onCreate={() => {}}
+        onDelete={() => {}}
+        onSwitch={() => {}}
+        onImport={() => {}}
+        readWorkbook={async () => { throw new Error('not an xlsx'); }}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/new from file/i), { target: { files: [new File([''], 'bad.xlsx')] } });
+    await screen.findByText(/could not read file/i);
+  });
+});

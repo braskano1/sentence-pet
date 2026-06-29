@@ -96,7 +96,7 @@ export function AdminShell() {
         )}
       </div>
 
-      <ValidationSummary errors={validation.ok ? [] : validation.errors} />
+      {surface !== 'pets' && <ValidationSummary errors={validation.ok ? [] : validation.errors} />}
 
       <div className="flex gap-6">
         <AdminRail groups={groups} active={surface} onSelect={setSurface} />

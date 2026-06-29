@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import type { Course, CourseIndexEntry } from '../../content/course';
 import { parseWorkbookToCourse } from '../../content/excelImport';
-import { SearchableList, Field, TextInput, Button, SectionLabel } from './ui';
+import { SearchableList, Field, TextInput, Button, SectionLabel, ValidationSummary } from './ui';
 import { courseCounts } from './coursesTab/courseCounts';
 
 async function defaultReadWorkbook(file: File): Promise<XLSX.WorkBook> {
@@ -33,16 +33,18 @@ export function CoursesTab({
   const [confirming, setConfirming] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [importError, setImportError] = useState<string[]>([]);
   const counts = courseCounts(course);
 
   async function onFile(file: File) {
+    setImportError([]);
     try {
       const wb = await readWorkbook(file);
-      const { course: parsed } = parseWorkbookToCourse(wb);
+      const { course: parsed, errors } = parseWorkbookToCourse(wb);
       if (parsed) onImport(parsed);
-    } catch {
-      // P2: surfacing import parse/read errors in this surface is deferred to P5.
-      // Swallow here so a bad file does not throw an unhandled rejection.
+      else setImportError(errors.length ? errors : ['Could not parse the workbook.']);
+    } catch (err) {
+      setImportError([`Could not read file: ${err instanceof Error ? err.message : String(err)}`]);
     }
   }
 
@@ -91,6 +93,7 @@ export function CoursesTab({
               <input type="file" accept=".xlsx" className="sr-only"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); }} />
             </label>
+            <ValidationSummary errors={importError} />
           </div>
         }
       />

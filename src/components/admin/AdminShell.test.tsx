@@ -110,4 +110,15 @@ describe('AdminShell', () => {
     fireEvent.click(await screen.findByRole('tab', { name: /pets/i }));
     expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
   });
+
+  it('hides the course ValidationSummary on the Pets surface (no course SaveBar there to act on)', async () => {
+    const course = { ...bundleToDefaultCourse(SEED), units: [], finalBoss: undefined };
+    useContentStore.setState({ course, bundle: { pool: course.pool, units: [] }, status: 'fallback' });
+    render(<AdminShell />);
+    // On the Courses surface the course errors are visible.
+    expect(screen.getByText(/journey has no units/i)).toBeInTheDocument();
+    // Switching to Pets hides the course-level validation noise.
+    fireEvent.click(await screen.findByRole('tab', { name: /pets/i }));
+    expect(screen.queryByText(/journey has no units/i)).not.toBeInTheDocument();
+  });
 });
