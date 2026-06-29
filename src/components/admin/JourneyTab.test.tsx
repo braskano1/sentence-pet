@@ -89,6 +89,52 @@ describe('JourneyTab', () => {
   });
 });
 
+describe('JourneyTab unit/lesson mutations', () => {
+  const base = () => ({
+    id: 'c1', title: 'C1', pool: {},
+    units: [{ id: 'u1', title: 'U1', emoji: '📘', order: 1, lessons: [
+      { id: 'u1-l1', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: [] },
+    ] }],
+    gates: [],
+  } as unknown as import('../../content/course').Course);
+
+  it('adds a unit to course.units', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /\+ unit/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units.length).toBe(2);
+  });
+
+  it('deletes the selected unit', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /U1/ }));        // select the unit header
+    fireEvent.click(screen.getByRole('button', { name: /delete unit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units.length).toBe(0);
+  });
+
+  it('adds a lesson to the selected unit', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /add lesson/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units[0].lessons.length).toBe(2);
+  });
+
+  it('deletes the selected lesson', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    // first lesson is selected by default; open its delete confirm
+    fireEvent.click(screen.getByRole('button', { name: /delete lesson/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units[0].lessons.length).toBe(0);
+  });
+});
+
 describe('JourneyTab import wiring', () => {
   it('merges imported units additively', async () => {
     const onChange = vi.fn();
