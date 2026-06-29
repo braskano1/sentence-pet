@@ -6,9 +6,12 @@ vi.mock('../../auth/useAuth', () => ({
   useAuth: () => ({ user: { email: 'a@b.c', uid: 'admin1' }, signOut: vi.fn() }),
 }));
 const saveCourse = vi.fn().mockResolvedValue(undefined);
+const deleteCourse = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../firebase/content', () => ({
   saveCourse: (c: unknown) => saveCourse(c),
-  fetchCourse: vi.fn(),
+  fetchCourse: vi.fn().mockResolvedValue(null),
+  fetchCoursesIndex: vi.fn().mockResolvedValue([{ id: 'default', title: 'Beginner Course', emoji: '📘' }]),
+  deleteCourse: (id: string) => deleteCourse(id),
 }));
 
 /** A valid Course that passes validateCourse (1 unit, 1 checkpoint dragdrop lesson, finalBoss). */
@@ -49,17 +52,24 @@ describe('AdminShell', () => {
     expect(screen.getByText(/a@b\.c/)).toBeInTheDocument();
   });
 
-  it('shows Pool and Journey tabs and switches to Journey', () => {
+  it('renders the section rail with the global Pets entry', async () => {
     render(<AdminShell />);
-    expect(screen.getByRole('tab', { name: /^pool$/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /^journey$/i }));
-    // SEED's first lesson id is u1-pattern — it appears in the Journey tab
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /pets/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /courses/i })).toBeInTheDocument();
+  });
+
+  it('defaults to the Courses surface and can switch to Journey via the rail', () => {
+    render(<AdminShell />);
+    // Courses surface shows the active course meta editor.
+    expect(screen.getByLabelText(/course id/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /journey/i }));
     expect(screen.getAllByText(/u1-pattern/i).length).toBeGreaterThan(0);
   });
 
   it('Save calls saveCourse with the draft course when valid', async () => {
     render(<AdminShell />);
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     await waitFor(() => expect(saveCourse).toHaveBeenCalled());
   });
 
@@ -69,7 +79,7 @@ describe('AdminShell', () => {
     const course = { ...bundleToDefaultCourse(SEED), units: [], finalBoss: undefined };
     useContentStore.setState({ course, bundle: { pool: course.pool, units: [] }, status: 'fallback' });
     render(<AdminShell />);
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
     // The validation banner should list at least one error.
     expect(screen.getByText(/journey has no units/i)).toBeInTheDocument();
   });
@@ -78,39 +88,10 @@ describe('AdminShell', () => {
     saveCourse.mockRejectedValueOnce(new Error('boom'));
     const courseBefore = useContentStore.getState().course;
     render(<AdminShell />);
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
     // Wait for the async save to settle and error text to appear.
     await screen.findByText(/save failed/i);
     // The live store course must be the same reference — no partial update.
     expect(useContentStore.getState().course).toBe(courseBefore);
-  });
-
-  it('Import tab commit calls saveCourse and updates the live store course id', async () => {
-    // Stub File.prototype.arrayBuffer so defaultReadWorkbook does not throw in jsdom
-    // (parseWorkbookToCourse is mocked so the buffer content is irrelevant).
-    Object.defineProperty(File.prototype, 'arrayBuffer', {
-      value: async () => new ArrayBuffer(0),
-      configurable: true,
-    });
-
-    render(<AdminShell />);
-    fireEvent.click(screen.getByRole('tab', { name: /^import$/i }));
-
-    const fileInput = screen.getByLabelText(/excel file/i);
-    fireEvent.change(fileInput, { target: { files: [new File([''], 'c.xlsx')] } });
-
-    // Wait for the Commit button to become enabled (validateCourse passes on IMPORTED_COURSE).
-    const commitBtn = await screen.findByRole('button', { name: /commit/i });
-    await waitFor(() => expect(commitBtn).not.toBeDisabled());
-    fireEvent.click(commitBtn);
-
-    await waitFor(() => expect(saveCourse).toHaveBeenCalled());
-    expect(useContentStore.getState().course!.id).toBe('imported-1');
-  });
-
-  it('renders the tabs inside an accessible tablist', () => {
-    render(<AdminShell />);
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^pets$/i })).toBeInTheDocument();
   });
 });
