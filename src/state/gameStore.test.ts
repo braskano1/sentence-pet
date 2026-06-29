@@ -1202,14 +1202,23 @@ describe('P4d def-chain evolution in the store', () => {
   });
 });
 
+/** statBands where every stat in a tier is one fixed value, so a spawned pet's
+ *  stats uniquely identify which rarity band the spawn used. */
+function flatBands(): PetDef['statBands'] {
+  const tier = (v: number) => ({ hp: [v, v], atk: [v, v], def: [v, v], spd: [v, v], luk: [v, v] } as PetDef['statBands']['common']);
+  return { common: tier(10), rare: tier(20), epic: tier(80), legendary: tier(90) };
+}
+
 describe('starter rarity override', () => {
   afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS)); // restore registry
 
-  it('starter pet adopts the starter def rarity override', () => {
-    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], rarity: 'epic' }, ...BUILTIN_PET_DEFS.slice(1)]);
+  it('starter pet adopts the starter def rarity override and rolls stats from that band', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], rarity: 'epic', statBands: flatBands() }, ...BUILTIN_PET_DEFS.slice(1)]);
     useGameStore.getState().resetForTest(); // rebuilds the starter via freshPet()
     const starter = useGameStore.getState().pets.find((p) => p.id === STARTER_ID)!;
     expect(starter.rarity).toBe('epic');
+    // epic band = 80 for every stat; proves stats came from statBands.epic, not .common (10).
+    expect(Object.values(starter.stats).every((v) => v === 80)).toBe(true);
   });
 
   it('starter stays common when the starter def has no override', () => {
@@ -1241,13 +1250,15 @@ describe('finishBoss reward rarity override', () => {
   beforeEach(() => useGameStore.getState().resetForTest());
   afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS));
 
-  it('forces the reward pet rarity from the def override', () => {
-    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-leg', element: 'fire', enabled: true, rarity: 'legendary' }, ...BUILTIN_PET_DEFS]);
+  it('forces the reward pet rarity from the def override and rolls stats from that band', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-leg', element: 'fire', enabled: true, rarity: 'legendary', statBands: flatBands() }, ...BUILTIN_PET_DEFS]);
     seedBossLesson('reward-leg');
     useGameStore.getState().finishBoss(true);
     const granted = useGameStore.getState().pets.at(-1)!;
     expect(granted.defId).toBe('reward-leg');
     expect(granted.rarity).toBe('legendary'); // was hardcoded 'common'
+    // legendary band = 90 for every stat; proves stats came from statBands.legendary, not .common (10).
+    expect(Object.values(granted.stats).every((v) => v === 90)).toBe(true);
   });
 
   it('reward pet stays common when the def has no override', () => {
