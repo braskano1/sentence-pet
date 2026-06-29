@@ -29,13 +29,15 @@ describe('BossesTab', () => {
     expect(next.gates[0].scope).toBe('gated');
   });
 
-  it('deletes a gated boss', () => {
+  it('deletes a gated boss via confirm', () => {
     const onChange = vi.fn();
     const c = course();
     c.gates = [{ id: 'g1', title: 'G', scope: 'gated', afterUnitId: 'u1', reviewsUnitIds: ['u1'],
       boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } }];
     render(<BossesTab course={c} onChange={onChange} />);
-    fireEvent.click(screen.getByRole('button', { name: /delete gate g1/i }));
+    // g1 is the first row, selected by default → its editor is shown.
+    fireEvent.click(screen.getByRole('button', { name: /delete gate/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
     expect(onChange.mock.calls.at(-1)![0].gates).toHaveLength(0);
   });
 
