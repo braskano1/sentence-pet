@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
 
+/**
+ * Wraps a SINGLE labeled control (TextInput / NumberInput / Select) — the <label>
+ * wraps the control, so do NOT nest a self-labeling control like Checkbox inside it
+ * (that would produce invalid nested <label>s) and pass only one control as children.
+ * aria-describedby wiring for the error is deferred to consumers that own the input id.
+ */
 export function Field({
   label,
   hint,

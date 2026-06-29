@@ -10,10 +10,10 @@ describe('NumberInput', () => {
     expect(onValueChange).toHaveBeenCalledWith(4);
   });
 
-  it('does not fire onValueChange when the field is cleared (NaN)', () => {
+  it('fires onValueChange(null) when the field is cleared', () => {
     const onValueChange = vi.fn();
     render(<NumberInput aria-label="gen" value={1} onValueChange={onValueChange} />);
     fireEvent.change(screen.getByLabelText('gen'), { target: { value: '' } });
-    expect(onValueChange).not.toHaveBeenCalled();
+    expect(onValueChange).toHaveBeenCalledWith(null);
   });
 });

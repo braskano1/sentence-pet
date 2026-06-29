@@ -6,7 +6,7 @@ export function NumberInput({
   className = '',
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type'> & {
-  onValueChange: (n: number) => void;
+  onValueChange: (n: number | null) => void;
   invalid?: boolean;
 }) {
   return (
@@ -14,6 +14,10 @@ export function NumberInput({
       type="number"
       aria-invalid={invalid || undefined}
       onChange={(e) => {
+        if (e.target.value === '') {
+          onValueChange(null);
+          return;
+        }
         const n = e.target.valueAsNumber;
         if (!Number.isNaN(n)) onValueChange(n);
       }}

@@ -9,7 +9,6 @@ export function Checkbox({
     <label className="inline-flex items-center gap-2 text-sm text-slate-700">
       <input
         type="checkbox"
-        aria-label={label}
         className={`h-4 w-4 rounded border-slate-300 text-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${className}`}
         {...props}
       />
