@@ -51,11 +51,13 @@ describe('DexGrid per-line', () => {
       setActivePetDefs([...BUILTIN_PET_DEFS, baby, young, adult]);
       useGameStore.setState({ caughtDefIds: ['ln-baby', 'ln-young'] });
     });
-    render(<DexGrid />);
+    const { container } = render(<DexGrid />);
     expect(screen.getByText('Sapling')).toBeInTheDocument();
     expect(screen.queryByText('Sprig')).not.toBeInTheDocument();
     expect(screen.queryByText('Timberon')).not.toBeInTheDocument();
     expect(screen.getByText('Young')).toBeInTheDocument();
+    const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
+    expect(imgs.some((img) => img.src.includes('young'))).toBe(true);
   });
 
   it('shows the tip stage label once the line is fully caught', () => {
@@ -73,8 +75,10 @@ describe('DexGrid per-line', () => {
       setActivePetDefs([...BUILTIN_PET_DEFS, baby, young, adult]);
       useGameStore.setState({ caughtDefIds: [] });
     });
-    render(<DexGrid />);
-    expect(screen.getAllByText('???').length).toBeGreaterThanOrEqual(1);
+    const { container } = render(<DexGrid />);
+    expect(screen.getAllByText('???').length).toBe(5);
     expect(screen.queryByText('Sapling')).not.toBeInTheDocument();
+    const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
+    expect(imgs.some((img) => img.src.includes('baby'))).toBe(true);
   });
 });
