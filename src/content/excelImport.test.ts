@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { parseWorkbookToCourse } from './excelImport';
+import { parseWorkbookToCourse, parseWorkbookSlices } from './excelImport';
 
 /** Build a WorkBook from a map of sheetName → array-of-arrays (first row = headers). */
 function wb(sheets: Record<string, unknown[][]>): XLSX.WorkBook {
@@ -147,5 +147,69 @@ describe('parseWorkbookToCourse', () => {
     const { course } = parseWorkbookToCourse(book);
     expect(course!.finalBoss!.rewardPetDefId).toBe('leaf-1');
     expect(course!.gates[0].rewardPetDefId).toBeUndefined();
+  });
+});
+
+function bookWith(sheets: Record<string, unknown[][]>): XLSX.WorkBook {
+  const book = XLSX.utils.book_new();
+  for (const [name, rows] of Object.entries(sheets)) {
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), name);
+  }
+  return book;
+}
+
+describe('parseWorkbookSlices (tolerant)', () => {
+  it('parses an Items-only workbook into pool, ignoring absent sheets', () => {
+    const wb = bookWith({
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'variant', 'slots', 'answer'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Pronoun,Verb', 'I,run'],
+      ],
+    });
+    const slices = parseWorkbookSlices(wb);
+    expect(Object.keys(slices.pool)).toEqual(['d1']);
+    expect(slices.units).toEqual([]);
+    expect(slices.gates).toEqual([]);
+    expect(slices.finalBoss).toBeUndefined();
+    expect(slices.errors).toEqual([]);
+  });
+
+  it('parses a Bosses-only workbook into gates + finalBoss', () => {
+    const wb = bookWith({
+      Bosses: [
+        ['id', 'scope', 'afterUnit', 'reviewsUnits', 'reviewCount', 'pinnedItemIds'],
+        ['g1', 'gated', 'u1', 'u1', 4, ''],
+        ['f', 'final', '', 'u1', 6, ''],
+      ],
+    });
+    const slices = parseWorkbookSlices(wb);
+    expect(slices.gates.map((g) => g.id)).toEqual(['g1']);
+    expect(slices.finalBoss?.id).toBe('f');
+  });
+
+  it('parses a Units-only workbook into units (no lessons)', () => {
+    const wb = bookWith({
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'Unit One', '🐣', 1, false]],
+    });
+    const slices = parseWorkbookSlices(wb);
+    expect(slices.units.map((u) => u.id)).toEqual(['u1']);
+    expect(slices.units[0].lessons).toEqual([]);
+  });
+
+  it('reports unknown-unit only when a Units sheet is present', () => {
+    // Items reference unit "u9" which is not in the Units sheet → error
+    const withUnits = bookWith({
+      Units: [['id', 'title', 'order'], ['u1', 'Unit One', 1]],
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back'],
+        ['f1', 'flashcard', 1, 'u9', 'u9-n1', 'a', 'b']],
+    });
+    expect(parseWorkbookSlices(withUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(true);
+
+    // Same Items but NO Units sheet → tolerant, no unknown-unit error
+    const noUnits = bookWith({
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back'],
+        ['f1', 'flashcard', 1, 'u9', 'u9-n1', 'a', 'b']],
+    });
+    expect(parseWorkbookSlices(noUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(false);
   });
 });

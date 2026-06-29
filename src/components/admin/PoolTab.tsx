@@ -1,13 +1,40 @@
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import type { Course } from '../../content/course';
 import type { ContentItem, DrillItem } from '../../data/types';
 import { isDragDrop } from '../../data/types';
+import { importItems } from '../../content/surfaceImport';
 import { ItemEditor } from './ItemEditor';
-import { Button } from './ui';
+import { Button, SearchableList, FilterChips, ImportDrawer } from './ui';
+import type { FilterChip } from './ui';
+import { itemLabel, itemSearchText } from './poolTab/itemLabel';
 
-export function PoolTab({ course, onChange }: { course: Course; onChange: (c: Course) => void }) {
-  const ids = Object.keys(course.pool);
-  const [selected, setSelected] = useState<string | null>(ids[0] ?? null);
+async function defaultParseItemsFile(file: File) {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  return importItems(wb);
+}
+
+const KIND_CHIPS: readonly FilterChip<'all' | ContentItem['kind']>[] = [
+  { id: 'all', label: 'All' },
+  { id: 'flashcard', label: 'flashcard' },
+  { id: 'matching', label: 'matching' },
+  { id: 'dragdrop', label: 'dragdrop' },
+  { id: 'fillblank', label: 'fillblank' },
+];
+type KindFilter = (typeof KIND_CHIPS)[number]['id'];
+
+export function PoolTab({ course, onChange, parseItemsFile = defaultParseItemsFile }: {
+  course: Course;
+  onChange: (c: Course) => void;
+  parseItemsFile?: (file: File) => Promise<{ entities: ContentItem[]; errors: string[] }>;
+}) {
+  const all = Object.values(course.pool);
+  const [selected, setSelected] = useState<string | null>(all[0]?.id ?? null);
+  const [query, setQuery] = useState('');
+  const [kind, setKind] = useState<KindFilter>('all');
+  const [importing, setImporting] = useState(false);
+
+  const filtered = kind === 'all' ? all : all.filter((it) => it.kind === kind);
 
   function freshId(): string {
     let n = 1;
@@ -37,26 +64,43 @@ export function PoolTab({ course, onChange }: { course: Course; onChange: (c: Co
     setSelected(Object.keys(pool)[0] ?? null);
   }
 
+  function applyImport(merged: ContentItem[]) {
+    onChange({ ...course, pool: Object.fromEntries(merged.map((it) => [it.id, it])) });
+  }
+
   return (
-    <div className="flex gap-4">
-      <ul className="flex w-48 flex-col gap-1">
-        <li>
-          <Button onClick={addItem} className="w-full">+ New item</Button>
-        </li>
-        {ids.map((id) => {
-          const it = course.pool[id];
-          const meta = `${isDragDrop(it) ? it.drill : it.kind}·${it.level}`;
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={() => setImporting(true)}>⬇ Import…</Button>
+      </div>
+      <div className="flex gap-4">
+      <SearchableList
+        items={filtered}
+        total={all.length}
+        getKey={(it) => it.id}
+        selectedKey={selected}
+        onSelect={setSelected}
+        searchText={itemSearchText}
+        query={query}
+        onQuery={setQuery}
+        placeholder="Search items by content or id…"
+        filterSlot={<FilterChips chips={KIND_CHIPS} active={kind} onChange={setKind} label="Filter by kind" />}
+        footer={<Button onClick={addItem} className="w-full">+ New item</Button>}
+        renderRow={(it) => {
+          const meta = isDragDrop(it) ? it.drill : it.kind;
           return (
-            <li key={id}>
-              <button type="button" onClick={() => setSelected(id)}
-                className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm ${id === selected ? 'bg-indigo-100 text-indigo-900' : 'hover:bg-slate-50'}`}>
-                <span>{id}</span>
-                <span className="text-xs text-slate-400">{meta}</span>
-              </button>
-            </li>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium text-slate-900">{itemLabel(it)}</span>
+                <span className="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">{it.kind}</span>
+                <span className="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">L{it.level}</span>
+              </div>
+              <span className="font-mono text-xs text-slate-400">{it.id} · {meta}</span>
+            </div>
           );
-        })}
-      </ul>
+        }}
+      />
+
       <div className="flex-1">
         {selected && course.pool[selected] && (
           <div className="flex flex-col gap-3">
@@ -65,6 +109,19 @@ export function PoolTab({ course, onChange }: { course: Course; onChange: (c: Co
           </div>
         )}
       </div>
+      </div>
+
+      <ImportDrawer<ContentItem>
+        open={importing}
+        title="Import items"
+        noun="item"
+        existing={all}
+        getId={(it) => it.id}
+        parseFile={parseItemsFile}
+        onApply={applyImport}
+        onClose={() => setImporting(false)}
+        renderChange={(c) => <>{itemLabel(c.incoming)} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.kind}</span></>}
+      />
     </div>
   );
 }

@@ -9,7 +9,8 @@ import {
   setRarityBand, stripDefault, setVariant, clearVariant, reconcileEvolution,
 } from './petsTab/helpers';
 import { PetForm } from './petsTab/PetForm';
-import { Card, Field, Select, Button, SaveBar, ValidationSummary } from './ui';
+import { Card, Button, SaveBar, ValidationSummary, SearchableList, FilterChips } from './ui';
+import type { FilterChip } from './ui';
 
 // Re-exported so existing test imports (`import { … } from './PetsTab'`) keep resolving.
 export { setRarityBand, stripDefault, setVariant, clearVariant, reconcileEvolution };
@@ -31,6 +32,10 @@ export function PetsTab() {
   const [genFilter, setGenFilter] = useState<'all' | number>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [query, setQuery] = useState('');
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => { setConfirming(false); }, [editingId]);
 
   function patch(id: string, p: Partial<PetDef>) {
     setDraft((prev) => prev.map((d) => (d.id === id ? { ...d, ...p } : d)));
@@ -50,6 +55,10 @@ export function PetsTab() {
 
   const reconciled = useMemo(() => reconcileEvolution(draft), [draft]);
   const validation = useMemo(() => validatePetDefs(reconciled), [reconciled]);
+  const genChips: FilterChip<string>[] = useMemo(
+    () => [{ id: 'all', label: 'All' }, ...gens.map((g) => ({ id: String(g), label: `Gen ${g}` }))],
+    [gens],
+  );
 
   // Live-fetch the catalog on mount, re-seed the draft, then unblock. Blocking until the
   // fetch resolves means a stale draft can never be saved over the live Firestore catalog.
@@ -81,11 +90,12 @@ export function PetsTab() {
 
   function addPet() {
     const gen = genFilter === 'all' ? 1 : genFilter;
+    const id = genId(draft);
     setDraft((prev) => {
       const base = defaultDefForElement('leaf', prev);
       const newDef: PetDef = {
         ...base,
-        id: genId(prev),
+        id,
         name: 'New Pet',
         gen,
         dexNo: nextDexNo(prev, gen),
@@ -97,10 +107,13 @@ export function PetsTab() {
       };
       return [...prev, newDef];
     });
+    setEditingId(id);
   }
 
   function deletePet(id: string) {
     setDraft((prev) => prev.filter((d) => d.id !== id));
+    if (editingId === id) setEditingId(null);
+    setConfirming(false);
   }
 
   function canDelete(d: PetDef): boolean {
@@ -117,61 +130,60 @@ export function PetsTab() {
     <div className="flex flex-col gap-4 text-sm text-slate-800">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-base font-semibold">Pets</h2>
-        <Field label="filter by gen">
-          <Select value={String(genFilter)}
-            onChange={(e) => setGenFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}>
-            <option value="all">all</option>
-            {gens.map((g) => <option key={g} value={g}>{g}</option>)}
-          </Select>
-        </Field>
-        <Button onClick={addPet}>+ Add pet</Button>
         <span className="flex-1" />
-        <SaveBar
-          valid={validation.ok}
-          status={status}
-          onSave={save}
-          errorCount={validation.errors.length}
-        />
+        <SaveBar valid={validation.ok} status={status} onSave={save} errorCount={validation.errors.length} />
       </div>
 
       <ValidationSummary errors={validation.ok ? [] : validation.errors} />
 
       <div className="flex gap-4">
-        <ul className="flex w-72 shrink-0 flex-col gap-1">
-          {shown.map((d) => {
-            const isActive = d.id === editingId;
-            return (
-              <li key={d.id}
-                className={`flex items-center gap-2 rounded-md border p-2 ${isActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200'}`}>
-                <span className="font-mono text-slate-500">#{d.dexNo}</span>
-                <strong>{d.name}</strong>
-                <span className="text-slate-500">· {d.element} · [{d.types.join(', ')}]</span>
-                {d.starter && <span>· ⭐ starter</span>}
-                {!d.enabled && <span className="text-slate-400">· (disabled)</span>}
-                <span className="flex-1" />
-                <button type="button" aria-label={`edit ${d.name}`}
-                  onClick={() => setEditingId(editingId === d.id ? null : d.id)}
-                  className="text-indigo-600">Edit</button>
-                <button type="button" aria-label={`delete ${d.name}`} disabled={!canDelete(d)}
-                  onClick={() => deletePet(d.id)} className="text-red-600 disabled:opacity-40">Delete</button>
-              </li>
-            );
-          })}
-        </ul>
+        <SearchableList
+          items={shown}
+          total={draft.length}
+          countNoun="pet"
+          getKey={(d) => d.id}
+          selectedKey={editingId}
+          onSelect={setEditingId}
+          searchText={(d) => `${d.name} ${d.id} ${d.element} ${d.types.join(' ')}`}
+          query={query}
+          onQuery={setQuery}
+          placeholder="Search pets by name, id, element..."
+          filterSlot={<FilterChips chips={genChips} active={String(genFilter)}
+            onChange={(id) => setGenFilter(id === 'all' ? 'all' : Number(id))} label="Filter by gen" />}
+          footer={<Button onClick={addPet} className="w-full">+ Add pet</Button>}
+          renderRow={(d) => (
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-slate-500">#{d.dexNo}</span>
+              <strong>{d.name}</strong>
+              <span className="text-slate-500">· {d.element} · [{d.types.join(', ')}]</span>
+              {d.starter && <span>· ⭐ starter</span>}
+              {!d.enabled && <span className="text-slate-400">· (disabled)</span>}
+            </span>
+          )}
+        />
 
         <div className="flex-1">
-          {editing
-            ? <PetForm
-                def={editing}
-                allDefs={draft}
+          {editing ? (
+            <div className="flex flex-col gap-3">
+              <PetForm def={editing} allDefs={draft}
                 onPatch={(p) => patch(editing.id, p)}
                 onRename={(newId) => rename(editing.id, newId)}
-                onSetStarter={() => setStarter(editing.id)}
-              />
-            : <Card><p className="text-slate-500">Select a pet to edit, or add a new one.</p></Card>}
+                onSetStarter={() => setStarter(editing.id)} />
+              {confirming ? (
+                <div className="flex gap-2">
+                  <Button variant="danger" onClick={() => deletePet(editing.id)}>Confirm delete</Button>
+                  <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Button variant="danger" className="self-start" disabled={!canDelete(editing)}
+                  onClick={() => setConfirming(true)}>Delete pet</Button>
+              )}
+            </div>
+          ) : (
+            <Card><p className="text-slate-500">Select a pet to edit, or add a new one.</p></Card>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

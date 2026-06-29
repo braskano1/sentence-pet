@@ -29,13 +29,15 @@ describe('BossesTab', () => {
     expect(next.gates[0].scope).toBe('gated');
   });
 
-  it('deletes a gated boss', () => {
+  it('deletes a gated boss via confirm', () => {
     const onChange = vi.fn();
     const c = course();
     c.gates = [{ id: 'g1', title: 'G', scope: 'gated', afterUnitId: 'u1', reviewsUnitIds: ['u1'],
       boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } }];
     render(<BossesTab course={c} onChange={onChange} />);
-    fireEvent.click(screen.getByRole('button', { name: /delete gate g1/i }));
+    // g1 is the first row, selected by default → its editor is shown.
+    fireEvent.click(screen.getByRole('button', { name: /delete gate/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
     expect(onChange.mock.calls.at(-1)![0].gates).toHaveLength(0);
   });
 
@@ -112,5 +114,54 @@ describe('BossesTab', () => {
       expect(screen.getByText('After unit')).toBeTruthy();
       expect(screen.getByLabelText(/gate g1 afterUnit/i)).toBeTruthy();
     });
+  });
+});
+
+describe('BossesTab import wiring', () => {
+  it('merges imported bosses and splits gates vs finalBoss', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [], finalBoss: undefined,
+    } as unknown as import('../../content/course').Course;
+    const parseBossesFile = async () => ({
+      entities: [
+        { id: 'g1', title: 'g1', scope: 'gated', afterUnitId: 'u1', boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } },
+        { id: 'f', title: 'f', scope: 'final', onClear: 'completeCourse', boss: { tierId: 't', element: 'leaf', name: 'F', rivalSprite: { species: 'leaf', stage: 'adult' } } },
+      ] as unknown as import('../../content/course').BossNode[],
+      errors: [],
+    });
+    render(<BossesTab course={course} onChange={onChange} parseBossesFile={parseBossesFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 2 changes/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.gates.map((g) => g.id)).toEqual(['g1']);
+    expect(next.finalBoss?.id).toBe('f');
+  });
+
+  it('lets an imported final boss replace a pre-existing differently-id\'d final', async () => {
+    const onChange = vi.fn();
+    const existingFinal = { id: 'c1-final', title: 'Old', scope: 'final', onClear: 'completeCourse',
+      boss: { tierId: 't', element: 'leaf', name: 'OldFinal', rivalSprite: { species: 'leaf', stage: 'adult' } } };
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [], finalBoss: existingFinal,
+    } as unknown as import('../../content/course').Course;
+    const parseBossesFile = async () => ({
+      entities: [
+        { id: 'other-final', title: 'New', scope: 'final', onClear: 'completeCourse',
+          boss: { tierId: 't', element: 'fire', name: 'NewFinal', rivalSprite: { species: 'fire', stage: 'adult' } } },
+      ] as unknown as import('../../content/course').BossNode[],
+      errors: [],
+    });
+    render(<BossesTab course={course} onChange={onChange} parseBossesFile={parseBossesFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 1 change/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.finalBoss?.id).toBe('other-final'); // imported final wins, not silently dropped
   });
 });

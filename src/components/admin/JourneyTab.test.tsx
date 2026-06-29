@@ -33,8 +33,8 @@ describe('eligibleItemIds', () => {
 describe('JourneyTab', () => {
   it('renders units and their lessons', () => {
     render(<JourneyTab course={course()} onChange={() => {}} />);
-    expect(screen.getByDisplayValue('One')).toBeInTheDocument();
-    expect(screen.getByText('u1-l1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /One/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'u1-l1' })).toBeInTheDocument();
   });
 
   it('toggling an item id in the selected lesson calls onChange', () => {
@@ -82,9 +82,103 @@ describe('JourneyTab', () => {
   it('toggling unit l1Enabled writes unit.l1Enabled', () => {
     const onChange = vi.fn();
     render(<JourneyTab course={course()} onChange={onChange} />);
-    fireEvent.click(screen.getByText('u1-l1'));
+    fireEvent.click(screen.getByRole('button', { name: /One/ }));      // select the unit
     fireEvent.click(screen.getByRole('checkbox', { name: /l1 enabled/i }));
     const next = onChange.mock.calls.at(-1)![0] as Course;
     expect(next.units[0].l1Enabled).toBe(true);
+  });
+});
+
+describe('JourneyTab unit/lesson mutations', () => {
+  const base = () => ({
+    id: 'c1', title: 'C1', pool: {},
+    units: [{ id: 'u1', title: 'U1', emoji: '📘', order: 1, lessons: [
+      { id: 'u1-l1', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: [] },
+    ] }],
+    gates: [],
+  } as unknown as import('../../content/course').Course);
+
+  it('adds a unit to course.units', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /\+ unit/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units.length).toBe(2);
+  });
+
+  it('deletes the selected unit', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /U1/ }));        // select the unit header
+    fireEvent.click(screen.getByRole('button', { name: /delete unit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units.length).toBe(0);
+  });
+
+  it('adds a lesson to the selected unit', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /add lesson/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units[0].lessons.length).toBe(2);
+  });
+
+  it('deletes the selected lesson', () => {
+    const onChange = vi.fn();
+    render(<JourneyTab course={base()} onChange={onChange} />);
+    // first lesson is selected by default; open its delete confirm
+    fireEvent.click(screen.getByRole('button', { name: /delete lesson/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+    const next = onChange.mock.calls.at(-1)![0] as import('../../content/course').Course;
+    expect(next.units[0].lessons.length).toBe(0);
+  });
+});
+
+describe('JourneyTab import wiring', () => {
+  it('merges imported units additively', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [],
+    } as unknown as import('../../content/course').Course;
+    const parseUnitsFile = async () => ({
+      entities: [{ id: 'u2', title: 'U2', emoji: '', order: 2, lessons: [] }] as import('../../content/model').Unit[],
+      errors: [],
+    });
+    render(<JourneyTab course={course} onChange={onChange} parseUnitsFile={parseUnitsFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 1 change/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.units.map((u) => u.id)).toEqual(['u1', 'u2']);
+  });
+
+  it('preserves existing lessons when an imported unit carries none', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '📘', order: 1, lessons: [
+        { id: 'u1-l1', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: [] },
+      ] }],
+      gates: [],
+    } as unknown as import('../../content/course').Course;
+    const parseUnitsFile = async () => ({
+      entities: [
+        { id: 'u1', title: 'U1 renamed', emoji: '📗', order: 1, lessons: [] }, // meta update, no lessons
+        { id: 'u2', title: 'U2', emoji: '', order: 2, lessons: [] },           // genuinely new
+      ] as import('../../content/model').Unit[],
+      errors: [],
+    });
+    render(<JourneyTab course={course} onChange={onChange} parseUnitsFile={parseUnitsFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply/i }));  // some changes
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    const u1 = next.units.find((u) => u.id === 'u1')!;
+    expect(u1.title).toBe('U1 renamed');     // meta updated
+    expect(u1.lessons.map((l: { id: string }) => l.id)).toEqual(['u1-l1']); // lessons PRESERVED, not wiped
+    expect(next.units.map((u) => u.id)).toEqual(['u1', 'u2']);              // new unit added
   });
 });
