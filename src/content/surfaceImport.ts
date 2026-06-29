@@ -21,18 +21,18 @@ function surface<T>(entities: T[], allErrors: string[], prefix: string, emptyMsg
 /** Pool items from an Items sheet (other sheets ignored). */
 export function importItems(wb: XLSX.WorkBook): SurfaceImport<ContentItem> {
   const slices = parseWorkbookSlices(wb);
-  return surface(Object.values(slices.pool), slices.errors, 'Items', 'No item rows found — the file needs an "Items" sheet.');
+  return surface(Object.values(slices.pool), slices.errors, 'Items', 'No item rows found. The file needs an "Items" sheet.');
 }
 
 /** Boss nodes (gates then finalBoss) from a Bosses sheet. */
 export function importBosses(wb: XLSX.WorkBook): SurfaceImport<BossNode> {
   const slices = parseWorkbookSlices(wb);
   const entities = [...slices.gates, ...(slices.finalBoss ? [slices.finalBoss] : [])];
-  return surface(entities, slices.errors, 'Bosses', 'No boss rows found — the file needs a "Bosses" sheet.');
+  return surface(entities, slices.errors, 'Bosses', 'No boss rows found. The file needs a "Bosses" sheet.');
 }
 
 /** Units (with lessons derived from any Items sheet) from a Units sheet. */
 export function importUnits(wb: XLSX.WorkBook): SurfaceImport<Unit> {
   const slices = parseWorkbookSlices(wb);
-  return surface(slices.units, slices.errors, 'Units', 'No unit rows found — the file needs a "Units" sheet.');
+  return surface(slices.units, slices.errors, 'Units', 'No unit rows found. The file needs a "Units" sheet.');
 }

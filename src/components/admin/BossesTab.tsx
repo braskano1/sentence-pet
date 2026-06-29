@@ -90,7 +90,7 @@ function BossFields({ node, units, pool, onPatch }: {
 
         <Card>
           <SectionLabel>Reward</SectionLabel>
-          <Field label="Reward pet" hint="Lists all pet defs — an authored reward may grant a non-gacha def.">
+          <Field label="Reward pet" hint="Lists all pet defs. An authored reward may grant a non-gacha def.">
             <Select aria-label={`${labelPrefix} reward`} value={node.rewardPetDefId ?? ''}
               onChange={(e) => onPatch({ rewardPetDefId: e.target.value || undefined })}>
               <option value="">— none (random) —</option>
