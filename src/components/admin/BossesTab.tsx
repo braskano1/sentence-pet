@@ -1,6 +1,7 @@
 import type { Course, BossNode } from '../../content/course';
 import type { Species, PetStage } from '../../data/types';
 import { usePetDefs } from '../../state/usePetDefs';
+import { Card, SectionLabel, Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
 
 const SPECIES: Species[] = ['leaf', 'fire', 'air', 'water'];
 const STAGES: Exclude<PetStage, 'egg'>[] = ['baby', 'young', 'adult'];
@@ -21,61 +22,83 @@ function BossFields({ node, units, poolIds, onPatch }: {
   const reviews = node.reviewsUnitIds ?? [];
   const pinned = node.pinnedItemIds ?? [];
   return (
-    <div className="flex flex-col gap-1">
-      <label>{`${labelPrefix} name`}
-        <input className="border px-1" value={node.boss.name}
-          onChange={(e) => onPatch({ boss: { ...node.boss, name: e.target.value } })} />
-      </label>
-      <label>{`${labelPrefix} tierId`}
-        <input className="border px-1" value={node.boss.tierId}
-          onChange={(e) => onPatch({ boss: { ...node.boss, tierId: e.target.value } })} />
-      </label>
-      <label>{`${labelPrefix} element`}
-        <select className="border px-1" value={node.boss.element}
-          onChange={(e) => onPatch({ boss: { ...node.boss, element: e.target.value as Species } })}>
-          {SPECIES.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>{`${labelPrefix} sprite species`}
-        <select className="border px-1" value={node.boss.rivalSprite.species}
-          onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, species: e.target.value as Species } } })}>
-          {SPECIES.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>{`${labelPrefix} sprite stage`}
-        <select className="border px-1" value={node.boss.rivalSprite.stage}
-          onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, stage: e.target.value as Exclude<PetStage, 'egg'> } } })}>
-          {STAGES.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </label>
-      <label>{`${labelPrefix} reward`}
-        <select className="border px-1" value={node.rewardPetDefId ?? ''}
-          onChange={(e) => onPatch({ rewardPetDefId: e.target.value || undefined })}>
-          <option value="">— none (random) —</option>
-          {/* lists ALL defs (not just obtainable): an authored reward may intentionally grant a non-gacha def */}
-          {petDefs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-      </label>
-      <label>{`${labelPrefix} reviewCount`}
-        <input type="number" className="w-16 border px-1" value={node.reviewCount ?? 0}
-          onChange={(e) => { const n = e.target.valueAsNumber; if (!Number.isNaN(n)) onPatch({ reviewCount: n }); }} />
-      </label>
-      <fieldset className="border p-1"><legend>reviews units</legend>
-        {units.map((u) => (
-          <label key={u.id} className="mr-2">
-            <input type="checkbox" checked={reviews.includes(u.id)}
-              onChange={() => onPatch({ reviewsUnitIds: reviews.includes(u.id) ? reviews.filter((x) => x !== u.id) : [...reviews, u.id] })} /> {`${labelPrefix} reviews ${u.id}`}
-          </label>
-        ))}
-      </fieldset>
-      <fieldset className="border p-1"><legend>pinned items</legend>
-        {poolIds.map((id) => (
-          <label key={id} className="mr-2">
-            <input type="checkbox" checked={pinned.includes(id)}
-              onChange={() => onPatch({ pinnedItemIds: pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id] })} /> {`${labelPrefix} pins ${id}`}
-          </label>
-        ))}
-      </fieldset>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Card>
+        <SectionLabel>Boss</SectionLabel>
+        <div className="flex flex-col gap-3">
+          <Field label="Name">
+            <TextInput aria-label={`${labelPrefix} name`} value={node.boss.name}
+              onChange={(e) => onPatch({ boss: { ...node.boss, name: e.target.value } })} />
+          </Field>
+          <Field label="Tier">
+            <TextInput aria-label={`${labelPrefix} tierId`} value={node.boss.tierId}
+              onChange={(e) => onPatch({ boss: { ...node.boss, tierId: e.target.value } })} />
+          </Field>
+          <Field label="Element">
+            <Select aria-label={`${labelPrefix} element`} value={node.boss.element}
+              onChange={(e) => onPatch({ boss: { ...node.boss, element: e.target.value as Species } })}>
+              {SPECIES.map((s) => <option key={s}>{s}</option>)}
+            </Select>
+          </Field>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionLabel>Sprite</SectionLabel>
+        <div className="flex flex-col gap-3">
+          <Field label="Sprite species">
+            <Select aria-label={`${labelPrefix} sprite species`} value={node.boss.rivalSprite.species}
+              onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, species: e.target.value as Species } } })}>
+              {SPECIES.map((s) => <option key={s}>{s}</option>)}
+            </Select>
+          </Field>
+          <Field label="Sprite stage">
+            <Select aria-label={`${labelPrefix} sprite stage`} value={node.boss.rivalSprite.stage}
+              onChange={(e) => onPatch({ boss: { ...node.boss, rivalSprite: { ...node.boss.rivalSprite, stage: e.target.value as Exclude<PetStage, 'egg'> } } })}>
+              {STAGES.map((s) => <option key={s}>{s}</option>)}
+            </Select>
+          </Field>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionLabel>Reward</SectionLabel>
+        <Field label="Reward pet" hint="Lists all pet defs — an authored reward may grant a non-gacha def.">
+          <Select aria-label={`${labelPrefix} reward`} value={node.rewardPetDefId ?? ''}
+            onChange={(e) => onPatch({ rewardPetDefId: e.target.value || undefined })}>
+            <option value="">— none (random) —</option>
+            {petDefs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </Select>
+        </Field>
+      </Card>
+
+      <Card>
+        <SectionLabel>Reviews</SectionLabel>
+        <div className="flex flex-col gap-3">
+          <Field label="Review count">
+            <NumberInput aria-label={`${labelPrefix} reviewCount`} value={node.reviewCount ?? 0}
+              onValueChange={(n) => { if (n !== null) onPatch({ reviewCount: n }); }} />
+          </Field>
+          <div className="flex flex-wrap gap-3">
+            {units.map((u) => (
+              <Checkbox key={u.id} label={u.title ?? u.id} aria-label={`${labelPrefix} reviews ${u.id}`}
+                checked={reviews.includes(u.id)}
+                onChange={() => onPatch({ reviewsUnitIds: reviews.includes(u.id) ? reviews.filter((x) => x !== u.id) : [...reviews, u.id] })} />
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionLabel>Pins</SectionLabel>
+        <div className="flex flex-wrap gap-3">
+          {poolIds.map((id) => (
+            <Checkbox key={id} label={id} aria-label={`${labelPrefix} pins ${id}`}
+              checked={pinned.includes(id)}
+              onChange={() => onPatch({ pinnedItemIds: pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id] })} />
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
@@ -107,37 +130,37 @@ export function BossesTab({ course, onChange }: { course: Course; onChange: (c: 
   }
 
   return (
-    <div className="flex flex-col gap-4 text-sm">
+    <div className="flex flex-col gap-6 text-sm">
       <section>
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold">Gated bosses</h2>
-          <button type="button" onClick={addGate} className="rounded bg-slate-800 px-2 py-0.5 text-white">+ Add gate</button>
+        <div className="mb-3 flex items-center gap-3">
+          <h2 className="text-base font-semibold text-slate-800">Gated bosses</h2>
+          <Button onClick={addGate}>+ Add gate</Button>
         </div>
-        {course.gates.map((g) => (
-          <div key={g.id} className="mt-2 rounded border p-2">
-            <div className="flex items-center gap-2">
-              <strong>{g.id}</strong>
-              <label>{`gate ${g.id} afterUnit`}
-                <select className="border px-1" value={g.afterUnitId ?? ''}
-                  onChange={(e) => patchGate(g.id, { afterUnitId: e.target.value })}>
-                  {course.units.map((u) => <option key={u.id} value={u.id}>{u.title} ({u.id})</option>)}
-                </select>
-              </label>
-              <button type="button" aria-label={`delete gate ${g.id}`} onClick={() => deleteGate(g.id)}
-                className="text-red-600">Delete</button>
+        <div className="flex flex-col gap-4">
+          {course.gates.map((g) => (
+            <div key={g.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-3 flex items-center gap-3">
+                <strong className="text-slate-800">{g.id}</strong>
+                <Field label="After unit">
+                  <Select aria-label={`gate ${g.id} afterUnit`} value={g.afterUnitId ?? ''}
+                    onChange={(e) => patchGate(g.id, { afterUnitId: e.target.value })}>
+                    {course.units.map((u) => <option key={u.id} value={u.id}>{u.title} ({u.id})</option>)}
+                  </Select>
+                </Field>
+                <Button variant="danger" aria-label={`delete gate ${g.id}`} onClick={() => deleteGate(g.id)}
+                  className="ml-auto">Delete</Button>
+              </div>
+              <BossFields node={g} units={course.units} poolIds={poolIds} onPatch={(p) => patchGate(g.id, p)} />
             </div>
-            <BossFields node={g} units={course.units} poolIds={poolIds} onPatch={(p) => patchGate(g.id, p)} />
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
 
       <section>
-        <h2 className="font-semibold">Final boss</h2>
-        <div className="mt-2 rounded border p-2">
-          {course.finalBoss
-            ? <BossFields node={course.finalBoss} units={course.units} poolIds={poolIds} onPatch={patchFinal} />
-            : <button type="button" onClick={() => patchFinal({})} className="rounded bg-slate-800 px-2 py-0.5 text-white">+ Add final boss</button>}
-        </div>
+        <h2 className="mb-3 text-base font-semibold text-slate-800">Final boss</h2>
+        {course.finalBoss
+          ? <BossFields node={course.finalBoss} units={course.units} poolIds={poolIds} onPatch={patchFinal} />
+          : <Button onClick={() => patchFinal({})}>+ Add final boss</Button>}
       </section>
     </div>
   );

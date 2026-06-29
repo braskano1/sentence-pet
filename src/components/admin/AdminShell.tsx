@@ -5,6 +5,8 @@ import { validateCourse } from '../../content/validate';
 import { getActivePetDefs } from '../../domain/petDef';
 import { saveCourse } from '../../firebase/content';
 import type { Course } from '../../content/course';
+import { AdminHeader, Tabs, SaveBar, ValidationSummary, Card } from './ui';
+import type { TabItem } from './ui';
 import { PoolTab } from './PoolTab';
 import { JourneyTab } from './JourneyTab';
 import { BossesTab } from './BossesTab';
@@ -12,6 +14,14 @@ import { ImportTab } from './ImportTab';
 import { PetsTab } from './PetsTab';
 
 type Tab = 'pool' | 'journey' | 'bosses' | 'import' | 'pets';
+
+const TABS: readonly TabItem<Tab>[] = [
+  { id: 'pool', label: 'Pool' },
+  { id: 'journey', label: 'Journey' },
+  { id: 'bosses', label: 'Bosses' },
+  { id: 'import', label: 'Import' },
+  { id: 'pets', label: 'Pets' },
+];
 
 export function AdminShell() {
   const { user, signOut } = useAuth();
@@ -49,44 +59,30 @@ export function AdminShell() {
     }
   }
 
-  const tabBtn = (id: Tab, label: string) => (
-    <button type="button" onClick={() => setTab(id)}
-      className={`rounded px-3 py-1 ${tab === id ? 'bg-indigo-600 text-white' : 'border'}`}>{label}</button>
-  );
-
   return (
-    <div className="mx-auto mt-6 flex max-w-4xl flex-col gap-3 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold">Sentence Pet — Content</h1>
-        <div className="flex items-center gap-2 text-sm">
-          <span>{user?.email} · admin ✓</span>
-          <button type="button" onClick={() => signOut()} className="rounded border px-2 py-1">Sign out</button>
-        </div>
-      </div>
+    <div className="admin-root mx-auto mt-6 flex max-w-4xl flex-col gap-4 p-4 text-base text-slate-800">
+      <AdminHeader email={user?.email} onSignOut={() => signOut()} />
 
-      <div className="flex items-center gap-2">
-        {tabBtn('pool', 'Pool')}
-        {tabBtn('journey', 'Journey')}
-        {tabBtn('bosses', 'Bosses')}
-        {tabBtn('import', 'Import')}
-        {tabBtn('pets', 'Pets')}
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs tabs={TABS} active={tab} onChange={setTab} />
         <span className="flex-1" />
-        <button type="button" onClick={save} disabled={!validation.ok}
-          className="rounded bg-emerald-600 px-3 py-1 text-white disabled:opacity-40">Save</button>
-        {status && <span className="font-mono text-sm">{status}</span>}
+        <SaveBar
+          valid={validation.ok}
+          status={status}
+          onSave={save}
+          errorCount={validation.errors.length}
+        />
       </div>
 
-      {!validation.ok && (
-        <ul aria-live="polite" className="rounded bg-red-50 p-2 text-sm text-red-700">
-          {validation.errors.map((e) => <li key={e}>• {e}</li>)}
-        </ul>
-      )}
+      <ValidationSummary errors={validation.ok ? [] : validation.errors} />
 
-      {tab === 'pool' && <PoolTab course={draft} onChange={setDraft} />}
-      {tab === 'journey' && <JourneyTab course={draft} onChange={setDraft} />}
-      {tab === 'bosses' && <BossesTab course={draft} onChange={setDraft} />}
-      {tab === 'import' && <ImportTab onCommit={commitImport} />}
-      {tab === 'pets' && <PetsTab />}
+      <Card>
+        {tab === 'pool' && <PoolTab course={draft} onChange={setDraft} />}
+        {tab === 'journey' && <JourneyTab course={draft} onChange={setDraft} />}
+        {tab === 'bosses' && <BossesTab course={draft} onChange={setDraft} />}
+        {tab === 'import' && <ImportTab onCommit={commitImport} />}
+        {tab === 'pets' && <PetsTab />}
+      </Card>
     </div>
   );
 }

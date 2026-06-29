@@ -82,4 +82,35 @@ describe('BossesTab', () => {
       expect(next.gates[0].rewardPetDefId).toBe(BUILTIN_PET_DEFS[1].id);
     });
   });
+
+  describe('label contract (P3)', () => {
+    it('renders friendly visible labels, not raw selector strings', () => {
+      render(<BossesTab course={course()} onChange={vi.fn()} />);
+      // friendly visible text present
+      expect(screen.getByText('Name')).toBeTruthy();
+      expect(screen.getByText('Tier')).toBeTruthy();
+      expect(screen.getByText('Reward pet')).toBeTruthy();
+      expect(screen.getByText('Review count')).toBeTruthy();
+      // leaky raw strings no longer rendered as visible text
+      expect(screen.queryByText('final boss name')).toBeNull();
+      expect(screen.queryByText('final boss reward')).toBeNull();
+      expect(screen.queryByText('final boss reviewCount')).toBeNull();
+    });
+
+    it('keeps selector strings reachable as accessible names', () => {
+      render(<BossesTab course={course()} onChange={vi.fn()} />);
+      expect(screen.getByLabelText(/final boss name/i)).toBeTruthy();
+      expect(screen.getByLabelText(/final boss reward/i)).toBeTruthy();
+      expect(screen.getByLabelText(/final boss tierId/i)).toBeTruthy();
+    });
+
+    it('shows the gate-row After unit with friendly label', () => {
+      const c = course();
+      c.gates = [{ id: 'g1', title: 'G', scope: 'gated', afterUnitId: 'u1', reviewsUnitIds: ['u1'],
+        boss: { tierId: 't', element: 'leaf', name: 'G', rivalSprite: { species: 'leaf', stage: 'adult' } } }];
+      render(<BossesTab course={c} onChange={vi.fn()} />);
+      expect(screen.getByText('After unit')).toBeTruthy();
+      expect(screen.getByLabelText(/gate g1 afterUnit/i)).toBeTruthy();
+    });
+  });
 });

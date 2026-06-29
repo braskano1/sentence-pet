@@ -64,3 +64,15 @@
   25% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* --- Admin console (scoped; NEVER touches the game palette — no @theme) --- */
+.admin-root {
+  --admin-title-from: #f59e0b; /* amber-500 */
+  --admin-title-to: #ec4899;   /* pink-500 */
+}
+.admin-title {
+  background-image: linear-gradient(90deg, var(--admin-title-from), var(--admin-title-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
