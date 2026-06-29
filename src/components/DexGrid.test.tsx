@@ -81,4 +81,17 @@ describe('DexGrid per-line', () => {
     const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
     expect(imgs.some((img) => img.src.includes('baby'))).toBe(true);
   });
+
+  it('does not count creatures from a hidden (disabled-root) line in the counter', () => {
+    const hiddenRoot = { id: 'hr-baby', name: 'Hidden', gen: 4, dexNo: 1, types: ['fire'], element: 'fire' as const, statBands: bands, enabled: false, evolvesToId: 'hr-adult' };
+    const enabledChild = { id: 'hr-adult', name: 'Shown', gen: 4, dexNo: 2, types: ['fire'], element: 'fire' as const, statBands: bands, enabled: true, evolvesFromId: 'hr-baby' };
+    act(() => {
+      setActivePetDefs([...BUILTIN_PET_DEFS, hiddenRoot, enabledChild]);
+      useGameStore.setState({ caughtDefIds: [] });
+    });
+    render(<DexGrid />);
+    // 4 builtin lines are visible; the disabled-root line is hidden, so its
+    // enabled child must NOT appear in the denominator. Y must be 4, not 5.
+    expect(screen.getByText(/caught\s*0\s*\/\s*4/i)).toBeInTheDocument();
+  });
 });

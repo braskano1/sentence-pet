@@ -25,14 +25,19 @@ export function DexGrid() {
     () => dexLines(allDefs).filter((line) => line[0].enabled),
     [allDefs],
   );
-  // Collection count stays per-creature: enabled defs caught / total enabled.
-  const enabledDefs = useMemo(() => allDefs.filter((d) => d.enabled), [allDefs]);
-  const caughtCount = enabledDefs.filter((d) => caught.has(d.id)).length;
+  // Collection count stays per-creature, but only counts creatures in a visible
+  // line, so a hidden (disabled-root) line can't inflate the denominator past
+  // what the grid actually shows.
+  const countableDefs = useMemo(
+    () => lines.flat().filter((d) => d.enabled),
+    [lines],
+  );
+  const caughtCount = countableDefs.filter((d) => caught.has(d.id)).length;
 
   return (
     <div className="relative">
       <p className="mb-3 text-xs font-bold uppercase tracking-wide text-amber-900/60">
-        Caught {caughtCount} / {enabledDefs.length}
+        Caught {caughtCount} / {countableDefs.length}
       </p>
       <div className="grid grid-cols-3 gap-2">
         {lines.map((chain) => {
