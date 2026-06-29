@@ -3,6 +3,7 @@ import type { Course } from '../../content/course';
 import type { ContentItem, DrillItem } from '../../data/types';
 import { isDragDrop } from '../../data/types';
 import { ItemEditor } from './ItemEditor';
+import { Button } from './ui';
 
 export function PoolTab({ course, onChange }: { course: Course; onChange: (c: Course) => void }) {
   const ids = Object.keys(course.pool);
@@ -38,22 +39,30 @@ export function PoolTab({ course, onChange }: { course: Course; onChange: (c: Co
 
   return (
     <div className="flex gap-4">
-      <div className="flex w-48 flex-col gap-1">
-        <button type="button" onClick={addItem} className="rounded bg-slate-800 px-2 py-1 text-white">+ New item</button>
-        {ids.map((id) => (
-          <button key={id} type="button" onClick={() => setSelected(id)}
-            className={`flex justify-between rounded px-2 py-1 text-left text-sm ${id === selected ? 'bg-indigo-100' : ''}`}>
-            <span>{id}</span>
-            <span className="text-xs text-slate-400">{(() => { const it = course.pool[id]; return isDragDrop(it) ? it.drill : it.kind; })()}·{course.pool[id].level}</span>
-          </button>
-        ))}
-      </div>
+      <ul className="flex w-48 flex-col gap-1">
+        <li>
+          <Button onClick={addItem} className="w-full">+ New item</Button>
+        </li>
+        {ids.map((id) => {
+          const it = course.pool[id];
+          const meta = `${isDragDrop(it) ? it.drill : it.kind}·${it.level}`;
+          return (
+            <li key={id}>
+              <button type="button" onClick={() => setSelected(id)}
+                className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm ${id === selected ? 'bg-indigo-100 text-indigo-900' : 'hover:bg-slate-50'}`}>
+                <span>{id}</span>
+                <span className="text-xs text-slate-400">{meta}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
       <div className="flex-1">
         {selected && course.pool[selected] && (
-          <>
+          <div className="flex flex-col gap-3">
             <ItemEditor item={course.pool[selected]} onChange={updateItem} />
-            <button type="button" onClick={() => removeItem(selected)} className="mt-2 text-sm text-red-600">Delete item</button>
-          </>
+            <Button variant="danger" className="self-start" onClick={() => removeItem(selected)}>Delete item</Button>
+          </div>
         )}
       </div>
     </div>
