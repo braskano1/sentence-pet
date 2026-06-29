@@ -13,3 +13,4 @@ export { Tabs } from './Tabs';
 export type { TabItem } from './Tabs';
 export { FilterChips } from './FilterChips';
 export type { FilterChip } from './FilterChips';
+export { SearchableList } from './SearchableList';
