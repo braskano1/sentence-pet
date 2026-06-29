@@ -3,9 +3,16 @@ import type { Course } from '../../content/course';
 import type { Lesson, Unit } from '../../content/model';
 import type { ContentItem, ContentKind } from '../../data/types';
 import { isDragDrop } from '../../data/types';
-import { Card, Field, TextInput, NumberInput, Select, Checkbox, Button, AssignList } from './ui';
+import { Card, Field, TextInput, NumberInput, Select, Checkbox, Button, AssignList, ImportDrawer } from './ui';
 import { LessonTree } from './journeyTab/LessonTree';
 import type { TreeSelection } from './journeyTab/LessonTree';
+import * as XLSX from 'xlsx';
+import { importUnits } from '../../content/surfaceImport';
+
+async function defaultParseUnitsFile(file: File) {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  return importUnits(wb);
+}
 
 /**
  * Pool item ids whose kind matches a node's kind — the items admins may assign to it.
@@ -15,7 +22,11 @@ export function eligibleItemIds(pool: Record<string, ContentItem>, kind: Content
   return Object.values(pool).filter((i) => i.kind === kind).map((i) => i.id);
 }
 
-export function JourneyTab({ course, onChange }: { course: Course; onChange: (c: Course) => void }) {
+export function JourneyTab({ course, onChange, parseUnitsFile = defaultParseUnitsFile }: {
+  course: Course;
+  onChange: (c: Course) => void;
+  parseUnitsFile?: (file: File) => Promise<{ entities: Unit[]; errors: string[] }>;
+}) {
   const firstUnit = course.units[0];
   const [selected, setSelected] = useState<TreeSelection | null>(
     firstUnit?.lessons[0] ? { type: 'lesson', id: firstUnit.lessons[0].id }
@@ -23,7 +34,10 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
     : null,
   );
   const [confirming, setConfirming] = useState(false);
+  const [importing, setImporting] = useState(false);
   useEffect(() => { setConfirming(false); }, [selected]);
+
+  function applyImport(merged: Unit[]) { onChange({ ...course, units: merged }); }
 
   function selectNode(s: TreeSelection) {
     if (selected && s.type === selected.type && s.id === selected.id) return;
@@ -92,7 +106,11 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
     : null;
 
   return (
-    <div className="flex gap-4 text-sm">
+    <div className="flex flex-col gap-3 text-sm">
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={() => setImporting(true)}>⬇ Import…</Button>
+      </div>
+      <div className="flex gap-4">
       <LessonTree units={course.units} selected={selected} onSelect={selectNode}
         onAddUnit={addUnit} onAddLesson={addLesson} />
 
@@ -168,9 +186,7 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
               <Checkbox label="Checkpoint ★" checked={!!l.isCheckpoint}
                 onChange={(e) => patchLesson(u.id, l.id, { isCheckpoint: e.target.checked })} />
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Items in lesson · {l.itemIds.length} assigned · {kind} only
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Items in lesson · {kind} only</p>
                 <AssignList
                   items={eligible}
                   getKey={(it) => it.id}
@@ -181,6 +197,7 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
                   renderLabel={(it) => `${it.id} (${isDragDrop(it) ? it.drill : it.kind}·${it.level})`}
                   placeholder={`Search ${kind} items…`}
                   emptyHint="No matching items in the pool."
+                  headerNote={`${l.itemIds.length} assigned`}
                 />
               </div>
               {confirming ? (
@@ -199,6 +216,19 @@ export function JourneyTab({ course, onChange }: { course: Course; onChange: (c:
           <Card><p className="text-slate-500">Select a unit or lesson, or add one.</p></Card>
         )}
       </div>
+      </div>
+
+      <ImportDrawer<Unit>
+        open={importing}
+        title="Import units"
+        noun="unit"
+        existing={course.units}
+        getId={(u) => u.id}
+        parseFile={parseUnitsFile}
+        onApply={applyImport}
+        onClose={() => setImporting(false)}
+        renderChange={(c) => <>{c.incoming.title} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.lessons.length} lessons</span></>}
+      />
     </div>
   );
 }

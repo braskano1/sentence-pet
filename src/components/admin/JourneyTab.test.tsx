@@ -88,3 +88,24 @@ describe('JourneyTab', () => {
     expect(next.units[0].l1Enabled).toBe(true);
   });
 });
+
+describe('JourneyTab import wiring', () => {
+  it('merges imported units additively', async () => {
+    const onChange = vi.fn();
+    const course = {
+      id: 'c1', title: 'C1', pool: {},
+      units: [{ id: 'u1', title: 'U1', emoji: '', order: 1, lessons: [] }],
+      gates: [],
+    } as unknown as import('../../content/course').Course;
+    const parseUnitsFile = async () => ({
+      entities: [{ id: 'u2', title: 'U2', emoji: '', order: 2, lessons: [] }] as import('../../content/model').Unit[],
+      errors: [],
+    });
+    render(<JourneyTab course={course} onChange={onChange} parseUnitsFile={parseUnitsFile} />);
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+    fireEvent.change(screen.getByLabelText(/choose a file/i), { target: { files: [new File([''], 'x.xlsx')] } });
+    fireEvent.click(await screen.findByRole('button', { name: /apply 1 change/i }));
+    const next = onChange.mock.calls[0][0] as import('../../content/course').Course;
+    expect(next.units.map((u) => u.id)).toEqual(['u1', 'u2']);
+  });
+});
