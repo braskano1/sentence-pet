@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { uploadSprite, deleteSpriteByUrl, type SpriteSlot } from '../../../firebase/storage';
 import { downscaleSprite } from '../../../firebase/imageTranscode';
+import { Button } from '../ui';
 
 export function SpriteUpload({ label, slot, defId, value, onUpload, onClear }: {
   label: string;
@@ -41,15 +42,16 @@ export function SpriteUpload({ label, slot, defId, value, onUpload, onClear }: {
   }
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs">{label}
-        <input type="file" accept="image/*" className="ml-1 w-40" aria-invalid={!!err}
+      <label className="flex items-center gap-1 text-xs text-slate-700">
+        <span>{label}</span>
+        <input type="file" accept="image/*" className="w-40 text-xs" aria-invalid={!!err || undefined}
           onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ''; if (f) pick(f); }} />
       </label>
       {value && (
         <>
-          <img src={value} alt={`${label} preview`} className="h-10 w-10 object-contain border"
+          <img src={value} alt={`${label} preview`} className="h-10 w-10 rounded border border-slate-200 object-contain"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
-          <button type="button" aria-label={`clear ${label}`} onClick={clear} className="text-red-600 text-xs">Clear</button>
+          <Button variant="danger" aria-label={`clear ${label}`} onClick={clear} className="px-2 py-0.5 text-xs">Clear</Button>
         </>
       )}
       <span aria-live="polite" className="text-xs text-slate-600">{busy ? 'uploading…' : err ? `⚠ ${err}` : ''}</span>
