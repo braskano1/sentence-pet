@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { stubFirebaseAuth, enterGameViaMenu } from './support/hermetic-auth';
 
 // P4c reward-pet grant browser tests (hermetic, no auth / no emulators).
 //
@@ -21,10 +22,11 @@ const REWARD_DEF_ID = 'e2e-reward-fire';
 const REWARD_ELEMENT = 'fire';
 const BOSS_LESSON_ID = 'e2e-p4c-boss';
 
-type PetInstance = { id: string; defId: string; species: string; stats: Record<string, number> };
+type PetInstance = { id: string; defId: string; species: string; stats: Record<string, number>; hatched?: boolean };
 type StoreState = {
   screen: string;
   currentBossLessonId: string | null;
+  activePetId: string;
   pets: PetInstance[];
   caughtDefIds: string[];
   lastPull: PetInstance | null;
@@ -188,43 +190,108 @@ test.describe('P4c reward pets', () => {
     expect(second.caughtDefIds.filter((id) => id === REWARD_DEF_ID).length, 'caught set stays deduped').toBe(1);
   });
 
-  // Full-UI render of the hatch cinematic. The game UI mounts only once
-  // non-anonymous (Firebase anon sign-in), so this signs in via the dev panel's
-  // test account and SKIPS gracefully when Firebase auth is unavailable in this
-  // environment (mirrors boss.spec.ts test B). The store-level proof above is the
-  // hermetic guarantee; this is the visual confirmation when auth is reachable.
-  test('D: the hatch cinematic renders the reward pet (full UI, skips without Firebase)', async ({ page }) => {
+  // Full-UI render of the hatch cinematic. Mounts hermetically via the shared
+  // Firebase-auth stub (stubFirebaseAuth + enterGameViaMenu) — no emulator, no
+  // network, no dev-panel test account — then drives the UI to the hatch cinematic.
+  //
+  // This does NOT reuse the store-only setup() (which wipes pets to []) because it
+  // renders the LIVE UI, where two store invariants the store-only tests never hit
+  // must hold:
+  //   1. The screen router short-circuits to <EggHatch /> when the ACTIVE pet is
+  //      unhatched (App.tsx: `if (!hatched) return EggHatch`). In the real game the
+  //      reward lands while a hatched starter is active, so the router falls through
+  //      to 'rewardHatch'. We seed a full HATCHED anchor pet to reproduce that.
+  //   2. selectActivePet returns pets[0]; an empty pets[] makes it undefined and the
+  //      live render throws on `.hatched` — so pets must never be observed empty.
+  // Mutations are split into ordered, separately-awaited steps (rather than one
+  // atomic evaluate) because gameStore + contentStore are read via useSyncExternalStore,
+  // which re-renders SYNCHRONOUSLY per store write: batching petDefs/bundle/pet writes
+  // in one evaluate lets an intermediate render see a half-applied state (e.g. the
+  // unhatched starter against the minimal bundle) and crash EggHatch, which tears the
+  // React root down permanently. Letting petRoom commit between the catalog and the
+  // bundle write keeps every committed render renderable.
+  test('D: the hatch cinematic renders the reward pet (full UI, hermetic)', async ({ page }) => {
+    await stubFirebaseAuth(page); // register routes BEFORE goto
     await waitForHarness(page);
+    await enterGameViaMenu(page); // Tap to start → Play as guest → Skip → mounts game
 
-    // Sign in via the dev panel test account so App renders past the auth gate.
-    await page.getByRole('button', { name: 'dev', exact: true }).click().catch(() => {});
-    await page.getByRole('button', { name: '🧪 test acct' }).click().catch(() => {});
+    // 1. Seed a full hatched anchor pet + park on petRoom (leaves the egg screen, so
+    //    EggHatch unmounts and pets[] is never empty under a render).
+    await page.evaluate(() => {
+      const w = window as unknown as Win;
+      w.store.setState({
+        pets: [{
+          id: 'anchor', defId: 'e2e-distractor', species: 'leaf', hatched: true, xp: 0, happiness: 50,
+          bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+          stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+          growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+        }],
+        activePetId: 'anchor',
+        screen: 'petRoom',
+        caughtDefIds: [], lastPull: null, lastHatch: null,
+      });
+    });
 
-    // Poll for the app to render past auth (Continue/reward chrome appears once signed in).
-    let signedIn = false;
-    for (let i = 0; i < 15 && !signedIn; i++) {
-      signedIn = await page
-        .evaluate(() => {
-          // App is mounted iff a game screen is reachable; probe via a known hub button.
-          return document.querySelector('[data-testid], button') !== null && !document.body.textContent?.includes('🥚');
-        })
-        .catch(() => false);
-      // Re-assert: only proceed once the menu/auth surface is gone.
-      const menuGone = await page.getByRole('button', { name: /sign in|play as guest|new game/i }).first().isVisible().catch(() => true);
-      signedIn = signedIn && !menuGone;
-      if (!signedIn) await page.waitForTimeout(1000);
-    }
-    test.skip(!signedIn, 'App never rendered past auth — Firebase test-account sign-in unavailable in this environment');
+    // 2. Inject the reward catalog (distractor + reward def so the reward isn't the
+    //    trivial defs[0] fallback).
+    await page.evaluate(
+      ({ defId, element }) => {
+        const w = window as unknown as Win;
+        const mk = (id: string, el: string, dexNo: number, band: [number, number]) => {
+          const bands = { hp: band, atk: band, def: band, spd: band, luk: band };
+          return { id, name: id, gen: 1, dexNo, types: [el], element: el, statBands: { common: bands, rare: bands, epic: bands, legendary: bands }, enabled: true };
+        };
+        w.petDefs.set([mk('e2e-distractor', 'leaf', 1, [40, 60]), mk(defId, element, 2, [11, 13])]);
+      },
+      { defId: REWARD_DEF_ID, element: REWARD_ELEMENT },
+    );
 
-    // Seed the reward grant, then drive the UI to the hatch cinematic.
-    await setup(page);
+    // 3. Wait for petRoom to actually COMMIT before mutating the bundle, so no
+    //    intermediate useSyncExternalStore render straddles the catalog + bundle writes.
+    await page.waitForFunction(
+      () => (window as unknown as Win).store.getState().screen === 'petRoom' && document.body.innerText.length > 100,
+      null,
+      { timeout: 10_000 },
+    );
+
+    // 4. Inject the one-checkpoint reward bundle + clear the boss lesson's stars (so
+    //    the clear is a genuine first-clear that grants).
+    await page.evaluate(
+      ({ element, lessonId, defId }) => {
+        const w = window as unknown as Win;
+        const bundle = {
+          pool: {},
+          units: [{
+            id: 'e2e-p4c-unit', title: 'P4c', emoji: '⚔️', order: 1,
+            lessons: [{
+              id: lessonId, kind: 'dragdrop', drill: 'mixed', level: 1, itemIds: [],
+              isCheckpoint: true, title: 'P4c Boss',
+              boss: { tierId: 'tier-1', element, name: 'P4c Rival', rivalSprite: { species: element, stage: 'baby' } },
+              rewardPetDefId: defId,
+            }],
+          }],
+        };
+        w.contentStore.getState().setBundle(bundle, 'live');
+        const s = w.store.getState();
+        const lessonStars = { ...s.journey.lessonStars };
+        delete lessonStars[lessonId];
+        w.store.setState({ journey: { ...s.journey, lessonStars } });
+      },
+      { element: REWARD_ELEMENT, lessonId: BOSS_LESSON_ID, defId: REWARD_DEF_ID },
+    );
+
+    // 5. Clear the boss (grants the reward + sets lastHatch), then route to the cinematic.
     await clearBoss(page);
     await page.evaluate(() => {
       (window as unknown as Win).store.getState().setScreen('rewardHatch');
     });
 
     // EvolutionCinematic exposes data-testid="evolution-stage"; RewardHatchScreen
-    // renders it for the freshly-granted reward pet.
-    await expect(page.getByTestId('evolution-stage')).toBeVisible({ timeout: 10_000 });
+    // renders it for the freshly-granted reward pet. The cinematic img alt follows
+    // `pet-<species>-<stage>` (see EvolutionCinematic.tsx); the reward pet's
+    // species = REWARD_ELEMENT ('fire'), so the alt starts `pet-fire-`.
+    const sprite = page.getByTestId('evolution-stage');
+    await expect(sprite).toBeVisible({ timeout: 10_000 });
+    await expect(sprite).toHaveAttribute('alt', /^pet-fire-/);
   });
 });
