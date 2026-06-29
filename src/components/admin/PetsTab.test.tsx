@@ -87,15 +87,17 @@ describe('PetsTab — add / delete / filter', () => {
   it('Delete removes a def', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    // delete the last builtin (Dewdrop / water) — not the starter, not the last enabled
-    fireEvent.click(screen.getByRole('button', { name: /delete .*dewdrop/i }));
+    fireEvent.click(screen.getByRole('button', { name: /dewdrop/i }));        // select the row
+    fireEvent.click(screen.getByRole('button', { name: /^delete pet$/i }));   // arm confirm
+    fireEvent.click(screen.getByRole('button', { name: /^confirm delete$/i })); // confirm
     expect(screen.queryByText(/Dewdrop/)).not.toBeInTheDocument();
   });
 
   it('Delete is disabled for the sole starter', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    expect(screen.getByRole('button', { name: /delete .*leaflet/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
+    expect(screen.getByRole('button', { name: /^delete pet$/i })).toBeDisabled();
   });
 
   it('Delete is disabled for the last enabled def', async () => {
@@ -107,14 +109,15 @@ describe('PetsTab — add / delete / filter', () => {
     ]);
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    expect(screen.getByRole('button', { name: /delete .*embers/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /embers/i }));
+    expect(screen.getByRole('button', { name: /^delete pet$/i })).toBeDisabled();
   });
 
   it('gen filter narrows the list (no defs shown for an empty gen)', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // adds gen-1 def #5
-    fireEvent.change(screen.getByLabelText(/filter by gen/i), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: /^gen 1$/i }));  // FilterChips chip
     expect(screen.getAllByRole('listitem').length).toBe(5);
   });
 });
@@ -122,8 +125,8 @@ describe('PetsTab — add / delete / filter', () => {
 describe('PetsTab — edit form', () => {
   async function openFirstEditor() {
     render(<PetsTab />);
-    await screen.findByRole('button', { name: /add pet/i }); // wait past the loading gate
-    fireEvent.click(screen.getAllByRole('button', { name: /^edit /i })[0]); // edit Leaflet (starter)
+    await screen.findByRole('button', { name: /add pet/i });
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i })); // row button = pet name
   }
 
   it('edits the name', async () => {
@@ -143,14 +146,14 @@ describe('PetsTab — edit form', () => {
   it('starter checkbox is disabled unless the def is gen 1 / dexNo 1', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i })); // gen1 dexNo4
+    fireEvent.click(screen.getByRole('button', { name: /dewdrop/i })); // gen1 dexNo4
     expect(screen.getByLabelText(/^starter$/i)).toBeDisabled();
   });
 
   it('editing the id keeps the form open and renames the def', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*dewdrop/i }));
+    fireEvent.click(screen.getByRole('button', { name: /dewdrop/i }));
     const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
     fireEvent.change(idInput, { target: { value: 'def-renamed' } });
     // form is still open (id input still present) and shows the new id
@@ -160,7 +163,7 @@ describe('PetsTab — edit form', () => {
   it('keeps exactly one starter after saving the gen1/dex1 def', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     const cb = screen.getByLabelText(/^starter$/i) as HTMLInputElement;
     expect(cb.checked).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -172,7 +175,7 @@ describe('PetsTab — edit form', () => {
   it('editing a rarity band applies [min,max] to all 5 stats of that rarity on save', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     fireEvent.change(screen.getByLabelText(/common min/i), { target: { value: '3' } });
     fireEvent.change(screen.getByLabelText(/common max/i), { target: { value: '9' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -191,7 +194,7 @@ describe('PetsTab — evolution UI + validate gate', () => {
   it('setting evolvesToId in the form persists reciprocal links on save', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i })); // def-leaf, gen1 dex1
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i })); // def-leaf, gen1 dex1
     fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => {
@@ -203,8 +206,7 @@ describe('PetsTab — evolution UI + validate gate', () => {
   it('Save is disabled + error shown when a duplicate (gen,dexNo) exists', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // gen1 dex5
-    fireEvent.click(screen.getByRole('button', { name: /edit .*new pet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /add pet/i })); // gen1 dex5 — auto-selects new pet
     fireEvent.change(screen.getByLabelText(/^dexNo$/i), { target: { value: '1' } }); // collide with starter
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
     expect(screen.getByText(/duplicate \(gen 1, dexNo 1\)/i)).toBeInTheDocument();
@@ -213,7 +215,7 @@ describe('PetsTab — evolution UI + validate gate', () => {
   it('Save is disabled + cycle error shown when evolves-from and evolves-to point to the same def', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     fireEvent.change(screen.getByLabelText(/evolves from/i), { target: { value: 'def-fire' } });
     fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
@@ -225,7 +227,7 @@ describe('PetsTab — sprite upload', () => {
   async function openLeaflet() {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
   }
   const webp = () => new File(['x'], 'leaf.webp', { type: 'image/webp' });
 
@@ -326,7 +328,7 @@ describe('PetsTab — orphan-sprite cleanup on clear/replace', () => {
   async function openLeaflet() {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
   }
   const webp = () => new File(['x'], 'leaf.webp', { type: 'image/webp' });
 
@@ -403,7 +405,7 @@ describe('PetsTab — gacha obtainable toggle', () => {
   it('toggling the obtainable checkbox patches gachaObtainable', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     const cb = screen.getByRole('checkbox', { name: /gacha obtainable/i }) as HTMLInputElement;
     // builtins default to obtainable (gachaObtainable !== false), so the box starts checked
     expect(cb.checked).toBe(true);
@@ -530,7 +532,7 @@ describe('PetsTab — master-detail layout', () => {
   it('renders the editor in a detail panel beside the list when a pet is selected', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /edit .*leaflet/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Leaflet/).length).toBeGreaterThan(0);
   });
