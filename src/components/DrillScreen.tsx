@@ -173,7 +173,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
       <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
         <DrillHeader streak={streak} index={index} total={items.length} onExit={() => setConfirmExit(true)} />
 
-        <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} />
+        <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} defId={pet.defId} />
 
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
           <div className="flex items-center gap-2">
@@ -192,7 +192,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
             feedback === 'correct' ? 'flash-correct' : feedback === 'wrong' ? 'shake-wrong' : ''
           }`}
         >
-          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} />
+          <SentenceSlots slots={item.slots} placed={placed} onClearSlot={handleClear} hidePos={item.hidePos} />
           {why && <WhyTip text={why} />}
           {feedback && (
             <div

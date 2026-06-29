@@ -5,7 +5,9 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import { useCountUp } from '../effects/useCountUp';
 import { PressButton } from './PressButton';
 import { SettingsButton } from './SettingsButton';
-import { EGG_SPRITE, SPRITES } from '../config/sprites';
+import { EGG_SPRITE, spriteSrc } from '../config/sprites';
+import { resolvePetDef } from '../domain/petDef';
+import { usePetDefs } from '../state/usePetDefs';
 import { PET_NAME, RARITY_BADGE, BATTLE_STAT_LABELS, petDisplayName } from '../config/petDisplay';
 import { MAX_PET_NAME } from '../domain/petName';
 import { EvolutionCinematic } from './EvolutionCinematic';
@@ -23,6 +25,8 @@ export function Gacha() {
   const [nameDraft, setNameDraft] = useState('');
   const [hatching, setHatching] = useState(false);
   const { play } = useAudio();
+  const defs = usePetDefs();
+  const pulledDef = lastPull ? resolvePetDef(lastPull.defId, defs) : undefined;
 
   const onPull = () => {
     pullEgg();
@@ -39,6 +43,7 @@ export function Gacha() {
         from="egg"
         to="baby"
         species={lastPull.species}
+        def={pulledDef}
         onDone={() => setHatching(false)}
       />
     );
@@ -74,7 +79,7 @@ export function Gacha() {
       ) : (
         <div className="flex flex-col items-center gap-3">
           <img
-            src={SPRITES[pulled.species].baby.happy}
+            src={spriteSrc(pulled.species, 'baby', 'happy', pulledDef)}
             alt={PET_NAME[pulled.species]}
             className="h-40 w-auto object-contain drop-shadow-[0_14px_26px_rgba(0,0,0,0.3)]"
           />

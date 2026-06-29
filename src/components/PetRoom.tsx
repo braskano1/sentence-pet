@@ -106,7 +106,7 @@ export function PetRoom() {
         <div className="relative z-10 flex flex-1 flex-col items-center justify-end px-6 pb-14">
           <div className="mb-2"><SpeechBubble name={petDisplayName(activePet)} line={line} /></div>
           <div className="relative drop-shadow-[0_14px_26px_rgba(0,0,0,0.4)]">
-            <PetSprite stage={stage} species={activePet.species} happiness={activePet.happiness} feedTrigger={feedTrigger} />
+            <PetSprite stage={stage} species={activePet.species} happiness={activePet.happiness} feedTrigger={feedTrigger} defId={activePet.defId} />
           </div>
         </div>
 
@@ -181,7 +181,7 @@ export function PetRoom() {
         <div className="mt-4 flex gap-2">
           <PressButton onClick={() => setScreen('gacha')} aria-label="Eggs" className="min-h-12 flex-1 rounded-2xl border-b-4 border-violet-800 bg-violet-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Eggs 🥚</PressButton>
           <PressButton onClick={() => setScreen('shop')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-amber-900/50 bg-amber-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Shop 🛒</PressButton>
-          <PressButton onClick={() => setScreen('pickDrill')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Play ▶</PressButton>
+          <PressButton onClick={() => setScreen('pickCourse')} className="min-h-12 flex-1 rounded-2xl border-b-4 border-emerald-800 bg-emerald-500 px-3 py-3 text-base font-extrabold text-white shadow active:translate-y-0.5 active:border-b-2">Play ▶</PressButton>
         </div>
       </div>
     </div>

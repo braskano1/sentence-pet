@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from '../config/gameConfig';
-import type { BattleStats, NutritionBars, PetInstance, Rarity, Species } from '../data/types';
+import type { BattleStats, NutritionBars, PetInstance, Rarity, Species, StatRange } from '../data/types';
+import { defaultDefForElement } from './petDef';
 
 const STAT_MIN = 40;
 const STAT_MAX = 90;
@@ -45,6 +46,20 @@ export function rollStatsForRarity(rarity: Rarity, rng: () => number, table: rea
   };
 }
 
+/** Roll each of the five stats inclusively within its own per-stat band. P4b gacha (per-def). */
+export function rollStatsFromBands(
+  bands: Record<keyof BattleStats, StatRange>,
+  rng: () => number,
+): BattleStats {
+  return {
+    hp: rollInBand(rng, bands.hp[0], bands.hp[1]),
+    atk: rollInBand(rng, bands.atk[0], bands.atk[1]),
+    def: rollInBand(rng, bands.def[0], bands.def[1]),
+    spd: rollInBand(rng, bands.spd[0], bands.spd[1]),
+    luk: rollInBand(rng, bands.luk[0], bands.luk[1]),
+  };
+}
+
 export function rollStats(rng: () => number): BattleStats {
   return { hp: roll(rng), atk: roll(rng), def: roll(rng), spd: roll(rng), luk: roll(rng) };
 }
@@ -79,9 +94,11 @@ export function makePet(args: {
   rarity: Rarity;
   name?: string;
   hatched?: boolean;
+  defId?: string;
 }): PetInstance {
   return {
     id: args.id,
+    defId: args.defId ?? defaultDefForElement(args.species).id,
     species: args.species,
     hatched: args.hatched ?? false,
     xp: 0,

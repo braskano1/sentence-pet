@@ -7,7 +7,7 @@ import type { PetInstance } from '../data/types';
 
 function pet(id: string): PetInstance {
   return {
-    id, species: 'leaf', hatched: true, xp: 0, happiness: 50,
+    id, defId: 'def-leaf', species: 'leaf', hatched: true, xp: 0, happiness: 50,
     bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
     growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
@@ -16,9 +16,11 @@ function pet(id: string): PetInstance {
 }
 const cloudState: PersistedState = {
   screen: 'petRoom', pets: [pet('cloud')], activePetId: 'cloud', coins: 42,
+  courseComplete: {},
   inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
   selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
   owned: [], activeBackground: null, activeTrack: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
+  l1Mode: 'TH', caughtDefIds: ['def-leaf'],
 };
 
 describe('reconcileFromCloud', () => {

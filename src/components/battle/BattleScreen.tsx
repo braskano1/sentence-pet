@@ -7,6 +7,7 @@ import { useGameStore } from '../../state/gameStore';
 import { useBattleStore } from '../../state/battleStore';
 import { useContentStore } from '../../content/store';
 import { findLesson, itemsForLesson, trayWords } from '../../content/model';
+import { isDragDrop } from '../../data/types';
 import { shuffle, isPlacementCorrect } from '../../domain/check';
 import { parseDndId, placeTile, tapPlace } from '../../domain/placement';
 import { SentenceSlots } from '../SentenceSlots';
@@ -28,7 +29,8 @@ export function BattleScreen() {
   const setScreen = useGameStore((s) => s.setScreen);
   const bundle = useContentStore((s) => s.bundle);
   const lesson = lessonId ? findLesson(bundle, lessonId)?.lesson : undefined;
-  const items = lesson ? itemsForLesson(bundle, lesson) : [];
+  // The battle engine is dragdrop-only; narrow the widened pool to dragdrop items.
+  const items = lesson ? itemsForLesson(bundle, lesson).filter(isDragDrop) : [];
 
   const snapshot = useBattleStore((s) => s.snapshot);
   const boss = useBattleStore((s) => s.boss);

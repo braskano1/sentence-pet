@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DRILL_FOOD, FOOD_META, FOOD_GROUPS } from './food';
+import { DRILL_FOOD, FOOD_META, FOOD_GROUPS, KIND_FOOD } from './food';
 
 describe('food mapping', () => {
   it('maps each drill to its food group', () => {
@@ -15,6 +15,14 @@ describe('food mapping', () => {
       expect(FOOD_META[g].emoji).toBeTruthy();
       expect(FOOD_META[g].label).toBeTruthy();
       expect(FOOD_META[g].color).toMatch(/^bg-/);
+    }
+  });
+});
+
+describe('KIND_FOOD', () => {
+  it('maps every player content kind to a known food group', () => {
+    for (const kind of ['flashcard', 'matching', 'dragdrop', 'fillblank'] as const) {
+      expect(FOOD_META[KIND_FOOD[kind]]).toBeDefined();
     }
   });
 });

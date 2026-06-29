@@ -6,7 +6,7 @@ import type { PetInstance } from '../data/types';
 
 function pet(id: string, xp = 0): PetInstance {
   return {
-    id, species: 'leaf', hatched: true, xp, happiness: 50,
+    id, defId: 'def-leaf', species: 'leaf', hatched: true, xp, happiness: 50,
     bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
     growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
@@ -16,9 +16,11 @@ function pet(id: string, xp = 0): PetInstance {
 function state(coins: number, pets: PetInstance[]): PersistedState {
   return {
     screen: 'petRoom', pets, activePetId: pets[0].id, coins,
+    courseComplete: {},
     inventory: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
     selectedDrill: 'pattern', selectedLevel: 1, lastReward: null, lastPull: null,
     owned: [], activeBackground: null, activeTrack: null, journey: { lessonStars: {} }, audio: defaultAudioSettings(),
+    l1Mode: 'TH', caughtDefIds: ['def-leaf'],
   };
 }
 

@@ -3,6 +3,7 @@ import { useGameStore } from '../../state/gameStore';
 import { useBattleStore } from '../../state/battleStore';
 import { useContentStore } from '../../content/store';
 import { findLesson, itemsForLesson } from '../../content/model';
+import { isDragDrop } from '../../data/types';
 import { findTier, recommendedPower } from '../../domain/bossTiers';
 import { petPower, petDisplayName, ELEMENT_EMOJI, petStageSprite } from '../../config/petDisplay';
 import { PressButton } from '../PressButton';
@@ -16,7 +17,8 @@ export function BossPrepScreen() {
 
   const lessonObj = lessonId ? findLesson(bundle, lessonId)?.lesson : undefined;
   const boss = lessonObj?.boss;
-  const items = lessonObj ? itemsForLesson(bundle, lessonObj) : [];
+  // Battles use the dragdrop engine; narrow the widened pool to dragdrop items.
+  const items = lessonObj ? itemsForLesson(bundle, lessonObj).filter(isDragDrop) : [];
   const tier = boss ? findTier(boss.tierId) : undefined;
   const hatched = useMemo(() => pets.filter((p) => p.hatched), [pets]);
   const [picked, setPicked] = useState(hatched[0]?.id ?? '');

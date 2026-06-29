@@ -69,3 +69,18 @@ describe('Collection', () => {
     expect(screen.getAllByText('57').length).toBeGreaterThan(0);
   });
 });
+
+describe('Collection dex tab', () => {
+  it('switches to the Dex tab and shows the caught count', () => {
+    useGameStore.getState().hatch();
+    render(<Collection />);
+    fireEvent.click(screen.getByRole('tab', { name: /^dex$/i }));
+    expect(screen.getByText(/caught\s*\d+\s*\/\s*\d+/i)).toBeInTheDocument();
+  });
+
+  it('keeps the My Pets roster on the default tab', () => {
+    useGameStore.getState().hatch();
+    render(<Collection />);
+    expect(screen.getAllByText(/my pets/i).length).toBeGreaterThan(0);
+  });
+});

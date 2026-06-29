@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import type { ContentBundle } from './model';
 import type { DrillItem } from '../data/types';
 
 const item = (id: string): DrillItem =>
-  ({ id, drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
 
 const liveBundle: ContentBundle = {
   pool: { a: item('a') },
@@ -14,10 +14,16 @@ const liveBundle: ContentBundle = {
 };
 
 const fetchContent = vi.fn();
-vi.mock('../firebase/content', () => ({ fetchContent: () => fetchContent() }));
+const fetchPetDefs = vi.fn();
+vi.mock('../firebase/content', () => ({
+  fetchContent: () => fetchContent(),
+  fetchPetDefs: () => fetchPetDefs(),
+}));
 
-import { cachedBundle, writeCache, hydrateContent, CACHE_KEY } from './load';
+import { cachedBundle, writeCache, hydrateContent, hydratePetDefs, cachedPetDefs, CACHE_KEY } from './load';
 import { useContentStore } from './store';
+import { getActivePetDefs, setActivePetDefs, BUILTIN_PET_DEFS } from '../domain/petDef';
+import type { PetDef } from '../data/types';
 
 describe('content load', () => {
   beforeEach(() => {
@@ -57,5 +63,46 @@ describe('content load', () => {
     fetchContent.mockRejectedValue(new Error('offline'));
     await hydrateContent();
     expect(useContentStore.getState().status).toBe('fallback');
+  });
+});
+
+describe('hydratePetDefs', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    fetchPetDefs.mockReset();
+    setActivePetDefs(BUILTIN_PET_DEFS);
+  });
+
+  afterAll(() => {
+    setActivePetDefs(BUILTIN_PET_DEFS);
+  });
+
+  it('swaps to a valid live catalog and caches it', async () => {
+    const live: PetDef[] = JSON.parse(JSON.stringify(BUILTIN_PET_DEFS));
+    live[0].name = 'Sprout';
+    fetchPetDefs.mockResolvedValueOnce(live);
+    await hydratePetDefs();
+    expect(getActivePetDefs()[0].name).toBe('Sprout');
+    expect(cachedPetDefs()?.[0].name).toBe('Sprout');
+  });
+
+  it('keeps built-ins when the live catalog is invalid', async () => {
+    const bad: PetDef[] = JSON.parse(JSON.stringify(BUILTIN_PET_DEFS));
+    bad.forEach((d) => { delete d.starter; }); // zero starters → invalid
+    fetchPetDefs.mockResolvedValueOnce(bad);
+    await hydratePetDefs();
+    expect(getActivePetDefs()).toEqual(BUILTIN_PET_DEFS);
+  });
+
+  it('swallows fetch errors and keeps the current registry', async () => {
+    fetchPetDefs.mockRejectedValueOnce(new Error('offline'));
+    await hydratePetDefs();
+    expect(getActivePetDefs()).toEqual(BUILTIN_PET_DEFS);
+  });
+
+  it('does nothing destructive when the doc is absent (null)', async () => {
+    fetchPetDefs.mockResolvedValueOnce(null);
+    await hydratePetDefs();
+    expect(getActivePetDefs()).toEqual(BUILTIN_PET_DEFS);
   });
 });

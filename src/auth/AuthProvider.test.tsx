@@ -120,6 +120,17 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByTestId('anon')).toHaveTextContent('false'));
   });
 
+  it('resolves loading (non-admin) when the ID-token refresh fails (stale/deleted session)', async () => {
+    const rejectingUser = {
+      uid: 'u1', email: 'a@b.com', isAnonymous: false,
+      getIdTokenResult: async () => { throw new Error('user-not-found'); },
+    } as unknown as User;
+    render(<AuthProvider><Probe /></AuthProvider>);
+    emit(rejectingUser);
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+    expect(screen.getByTestId('admin')).toHaveTextContent('false');
+  });
+
   it('signing in reconciles from cloud for the signed-in uid (cloud wins)', async () => {
     function SignInProbe() {
       const { signIn } = useAuth();

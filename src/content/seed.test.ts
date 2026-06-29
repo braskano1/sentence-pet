@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { SEED } from './seed';
-import { validateContent } from './validate';
+import { SEED, SEED_COURSE } from './seed';
+import { validateContent, validateCourse } from './validate';
 import { findLesson, itemsForLesson } from './model';
+import { isDragDrop } from '../data/types';
+import { resolveCourseBundle } from './journey';
 
 describe('SEED content bundle', () => {
   it('passes validation', () => {
@@ -24,6 +26,7 @@ describe('SEED content bundle', () => {
   it('L2 grammar sentences differ from L1 grammar sentences', () => {
     const sentences = (level: number) =>
       Object.values(SEED.pool)
+        .filter(isDragDrop)
         .filter((i) => i.drill === 'grammar' && i.level === level)
         .map((i) => i.answer.join(' '))
         .sort();
@@ -48,7 +51,7 @@ describe('SEED content bundle', () => {
 
 describe('SEED.pool content invariants', () => {
   it('tokens are lowercase except "I" and all-caps acronyms like "TV"', () => {
-    const allWords = Object.values(SEED.pool).flatMap((item) => [
+    const allWords = Object.values(SEED.pool).filter(isDragDrop).flatMap((item) => [
       ...item.answer,
       ...(item.distractors ?? []),
       ...(item.traps ?? []).map((t) => t.word),
@@ -66,7 +69,7 @@ describe('SEED.pool content invariants', () => {
   });
 
   it('every grammar item has at least one trap and each trap.word differs from every answer word', () => {
-    const grammarItems = Object.values(SEED.pool).filter((i) => i.drill === 'grammar' || i.drill === 'mixed');
+    const grammarItems = Object.values(SEED.pool).filter(isDragDrop).filter((i) => i.drill === 'grammar' || i.drill === 'mixed');
     for (const item of grammarItems) {
       expect(item.traps?.length).toBeGreaterThan(0);
       for (const trap of item.traps ?? []) {
@@ -77,9 +80,33 @@ describe('SEED.pool content invariants', () => {
   });
 
   it('wordChoice items have distractors', () => {
-    const wcItems = Object.values(SEED.pool).filter((i) => i.drill === 'wordChoice');
+    const wcItems = Object.values(SEED.pool).filter(isDragDrop).filter((i) => i.drill === 'wordChoice');
     for (const item of wcItems) {
       expect(item.distractors?.length).toBeGreaterThan(0);
     }
+  });
+});
+
+const zero = () => 0;
+
+describe('SEED_COURSE', () => {
+  it('is a valid course', () => {
+    expect(validateCourse(SEED_COURSE)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('has one gated boss and a final boss', () => {
+    expect(SEED_COURSE.gates).toHaveLength(1);
+    expect(SEED_COURSE.gates[0].scope).toBe('gated');
+    expect(SEED_COURSE.finalBoss?.scope).toBe('final');
+    expect(SEED_COURSE.finalBoss?.onClear).toBe('completeCourse');
+  });
+
+  it('resolves to extra playable boss units with non-empty sampled items', () => {
+    const b = resolveCourseBundle(SEED_COURSE, zero);
+    const gate = findLesson(b, SEED_COURSE.gates[0].id);
+    const final = findLesson(b, SEED_COURSE.finalBoss!.id);
+    expect(gate?.lesson.itemIds.length).toBeGreaterThan(0);
+    expect(final?.lesson.itemIds.length).toBeGreaterThan(0);
+    expect(final?.lesson.onClear).toBe('completeCourse');
   });
 });

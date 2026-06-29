@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, selectActivePet, STARTER_ID } from './gameStore';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
+import type { PetDef } from '../data/types';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { makePet, rollStats } from '../domain/pets';
 import { levelForXp, totalXpForLevel, xpPerCorrect } from '../domain/xp';
-import { SEED } from '../content/seed';
+import { SEED, SEED_COURSE } from '../content/seed';
+import { useContentStore } from '../content/store';
+import { defaultDefForElement, obtainablePool, starterDef, setActivePetDefs, BUILTIN_PET_DEFS } from '../domain/petDef';
+import type { ContentBundle } from '../content/model';
 
 function reset() {
   useGameStore.getState().resetForTest();
@@ -72,6 +76,31 @@ describe('gameStore', () => {
     expect(s.inventory.veggie).toBe(5);
     expect(s.inventory.protein).toBe(0);
     expect(s.lastReward?.group).toBe('veggie');
+  });
+
+  it('finishRound with kind:flashcard awards KIND_FOOD protein (overriding drill:mixed)', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'mixed', kind: 'flashcard', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.protein).toBe(5);
+    expect(s.inventory.treat).toBe(0); // would be treat if drill:mixed still drove food
+    expect(s.lastReward?.group).toBe('protein');
+  });
+
+  it('finishRound with kind:fillblank awards KIND_FOOD treat', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'mixed', kind: 'fillblank', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.treat).toBe(5);
+    expect(s.lastReward?.group).toBe('treat');
+  });
+
+  it('finishRound WITHOUT kind (dragdrop path) still uses DRILL_FOOD[pattern] = protein', () => {
+    useGameStore.getState().hatch();
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 5 });
+    const s = useGameStore.getState();
+    expect(s.inventory.protein).toBe(5);
+    expect(s.lastReward?.group).toBe('protein');
   });
 
   it('feed(group) moves that food into the active pet bar and clears only that group', () => {
@@ -863,5 +892,312 @@ describe('boss flow', () => {
     expect(r).not.toBeNull();
     expect(r!.stars).toBeGreaterThanOrEqual(1);
     expect(r!.coins).toBeGreaterThan(0);
+  });
+});
+
+
+describe('finishBoss course completion', () => {
+  beforeEach(() => {
+    useGameStore.getState().resetForTest();
+    useContentStore.getState().setCourse(SEED_COURSE, 'fallback');
+  });
+
+  it('marks the active course complete when clearing a final boss', () => {
+    useGameStore.setState({ currentCourseId: 'default', currentBossLessonId: 'final-course' });
+    useGameStore.getState().finishBoss(true);
+    expect(useGameStore.getState().courseComplete['default']).toBe(true);
+  });
+
+  it('does not complete the course when clearing a non-final boss', () => {
+    useGameStore.setState({ currentCourseId: 'default', currentBossLessonId: 'gate-midcourse' });
+    useGameStore.getState().finishBoss(true);
+    expect(useGameStore.getState().courseComplete['default']).toBeUndefined();
+  });
+
+  it('does not complete on a loss', () => {
+    useGameStore.setState({ currentCourseId: 'default', currentBossLessonId: 'final-course' });
+    useGameStore.getState().finishBoss(false);
+    expect(useGameStore.getState().courseComplete['default']).toBeUndefined();
+  });
+});
+
+describe('persist migrate v15->16 (defId backfill)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  it('backfills defId on a legacy pet from its species', () => {
+    const legacyPet = {
+      id: 'p1', species: 'fire', hatched: true, xp: 0, happiness: 50,
+      bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+      rarity: 'common', name: '',
+    };
+    const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
+    expect(migrated.pets[0].defId).toBe(defaultDefForElement('fire').id);
+  });
+
+  it('already-set defId is not overwritten (idempotent)', () => {
+    const legacyPet = {
+      id: 'p1', species: 'water', hatched: true, xp: 0, happiness: 50,
+      bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+      stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+      growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+      rarity: 'common', name: '', defId: 'def-water',
+    };
+    const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
+    expect(migrated.pets[0].defId).toBe('def-water');
+  });
+});
+
+describe('persist migrate v16->17 (caughtDefIds backfill)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  const makePetV16 = (id: string, defId: string) => ({
+    id, defId, species: 'leaf', hatched: true, xp: 0, happiness: 50,
+    bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+    growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+    rarity: 'common', name: '',
+  });
+
+  it('seeds caughtDefIds from the unique set of pets[].defId on a v16 save', () => {
+    const v16 = {
+      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-fire')],
+      activePetId: 'p1',
+    };
+    const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toContain('def-leaf');
+    expect(out.caughtDefIds).toContain('def-fire');
+    expect(out.caughtDefIds).toHaveLength(2);
+  });
+
+  it('deduplicates when multiple pets share the same defId', () => {
+    const v16 = {
+      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-leaf')],
+      activePetId: 'p1',
+    };
+    const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toEqual(['def-leaf']);
+  });
+
+  it('leaves an already-present caughtDefIds untouched (idempotent)', () => {
+    const v17 = {
+      pets: [makePetV16('p1', 'def-leaf')],
+      activePetId: 'p1',
+      caughtDefIds: ['def-leaf', 'def-water'],
+    };
+    const out = getMigrate()(v17, 17) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toEqual(['def-leaf', 'def-water']);
+  });
+});
+
+describe('caught dex set', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+
+  it('freshState seeds the starter as caught', () => {
+    const s = useGameStore.getState();
+    // starter pet defId is def-leaf
+    expect(selectCaughtSet(s).has('def-leaf')).toBe(true);
+  });
+
+  it('a gacha pull unions the pulled defId into caughtDefIds', () => {
+    useGameStore.getState().addCoinsForTest(1000);
+    const before = useGameStore.getState().caughtDefIds.length;
+    useGameStore.getState().pullEgg();
+    const after = useGameStore.getState();
+    expect(after.caughtDefIds).toContain(after.lastPull!.defId);
+    expect(after.caughtDefIds.length).toBeGreaterThanOrEqual(before);
+  });
+
+  it('a boss first-clear reward egg unions the egg defId into caughtDefIds', () => {
+    // Mirror the setup from the 'boss flow' suite: startBoss then finishBoss(true).
+    // The content store is already seeded with SEED_COURSE (which contains u1-checkpoint)
+    // so no extra setup is required.
+    useGameStore.getState().startBoss('u1-checkpoint');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    // finishBoss on a first-clear appends exactly one egg and records it in lastPull.
+    const egg = s.lastPull;
+    expect(egg).not.toBeNull();
+    expect(s.caughtDefIds).toContain(egg!.defId);
+  });
+
+  it('PERSIST_VERSION is 17', () => {
+    expect(PERSIST_VERSION).toBe(17);
+  });
+});
+
+describe('finishBoss data-driven reward grant (P4c)', () => {
+  // Seed a single-unit bundle with one checkpoint boss lesson. `rewardPetDefId`
+  // is optional; setBundle round-trips arbitrary lesson fields through
+  // bundleToDefaultCourse -> resolveCourseBundle so findLesson(bundle, id) finds it.
+  function seedBossLesson(rewardPetDefId?: string) {
+    const bundle: ContentBundle = {
+      pool: { ...SEED.pool },
+      units: [
+        {
+          id: 'reward-unit',
+          title: 'Reward Unit',
+          emoji: '⚔️',
+          order: 1,
+          lessons: [
+            {
+              id: 'reward-boss',
+              kind: 'dragdrop',
+              drill: 'mixed',
+              level: 1,
+              isCheckpoint: true,
+              itemIds: ['mx-l1-1', 'mx-l1-2'],
+              boss: { tierId: 'tier-1', element: 'fire', name: 'Test Rival', rivalSprite: { species: 'fire', stage: 'young' } },
+              ...(rewardPetDefId ? { rewardPetDefId } : {}),
+            },
+          ],
+        },
+      ],
+    };
+    useContentStore.getState().setBundle(bundle, 'fallback');
+    useGameStore.setState({ currentBossLessonId: 'reward-boss' });
+  }
+
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS)); // restore registry after any mutation
+
+  it('grants the exact reward def on first boss clear', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], id: 'reward-1', element: 'fire', enabled: true }, ...BUILTIN_PET_DEFS]);
+    seedBossLesson('reward-1');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(granted.defId).toBe('reward-1');
+    expect(granted.species).toBe('fire'); // = def.element
+    expect(s.lastHatch?.id).toBe(granted.id);
+    expect(s.caughtDefIds).toContain('reward-1');
+  });
+
+  it('pool-picks an obtainable def when the boss has no rewardPetDefId', () => {
+    seedBossLesson(); // no rewardPetDefId
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(obtainablePool().some((d) => d.id === granted.defId)).toBe(true);
+    expect(s.lastHatch?.id).toBe(granted.id);
+  });
+
+  it('falls back to the starter def for a dangling rewardPetDefId', () => {
+    seedBossLesson('does-not-exist');
+    useGameStore.getState().finishBoss(true);
+    const s = useGameStore.getState();
+    const granted = s.pets[s.pets.length - 1];
+    expect(granted.defId).toBe(starterDef().id);
+    expect(s.lastHatch).not.toBeNull();
+  });
+
+  it('clearHatch resets lastHatch to null', () => {
+    seedBossLesson();
+    useGameStore.getState().finishBoss(true);
+    expect(useGameStore.getState().lastHatch).not.toBeNull();
+    useGameStore.getState().clearHatch();
+    expect(useGameStore.getState().lastHatch).toBeNull();
+  });
+});
+
+describe('P4d def-chain evolution in the store', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS.slice()));
+
+  it('advances defId to evolvesToId on the baby->young stage-change and records the dex', () => {
+    const base: PetDef = {
+      id: 'p4d-base', name: 'Base', gen: 9, dexNo: 90, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, evolvesToId: 'p4d-mid',
+    };
+    const mid: PetDef = {
+      id: 'p4d-mid', name: 'Mid', gen: 9, dexNo: 91, types: ['fire'], element: 'fire',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, evolvesFromId: 'p4d-base',
+    };
+    setActivePetDefs([base, mid]);
+
+    // Park a hatched baby just below L16 so one finishRound round tips it into young.
+    const gain = xpPerCorrect(1);
+    useGameStore.setState({
+      pets: [{
+        id: 'a', defId: 'p4d-base', species: 'leaf', hatched: true, xp: totalXpForLevel(16) - gain, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'a',
+      caughtDefIds: ['p4d-base'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+
+    const p = selectActivePet(useGameStore.getState());
+    expect(p.defId).toBe('p4d-mid');
+    expect(p.species).toBe('fire');
+    expect(useGameStore.getState().caughtDefIds).toContain('p4d-mid');
+  });
+
+  it('hatch() (egg->baby) does not def-hop', () => {
+    // hatch() only flips hatched:true — it never runs applyXp/evolvePetDef, so the
+    // store's `from !== 'egg'` guard is belt-and-suspenders (the egg-stage no-op is
+    // pinned at the unit level in evolution.test.ts).
+    const base: PetDef = {
+      id: 'p4d-h', name: 'H', gen: 9, dexNo: 92, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, evolvesToId: 'p4d-h2',
+    };
+    const h2: PetDef = {
+      id: 'p4d-h2', name: 'H2', gen: 9, dexNo: 93, types: ['fire'], element: 'fire',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, evolvesFromId: 'p4d-h',
+    };
+    setActivePetDefs([base, h2]);
+    useGameStore.setState({
+      pets: [{
+        id: 'b', defId: 'p4d-h', species: 'leaf', hatched: false, xp: 0, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'b', caughtDefIds: ['p4d-h'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().hatch();
+    const p = selectActivePet(useGameStore.getState());
+    expect(p.defId).toBe('p4d-h');
+  });
+
+  it('end-of-chain def (no evolvesToId) keeps its defId and adds nothing to the dex on baby->young', () => {
+    const solo: PetDef = {
+      id: 'p4d-solo', name: 'Solo', gen: 9, dexNo: 94, types: ['leaf'], element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands, enabled: true, starter: true, // no evolvesToId -> end of chain
+    };
+    setActivePetDefs([solo]);
+
+    // Park a hatched baby just below L16 so one finishRound round tips it into young.
+    const gain = xpPerCorrect(1);
+    useGameStore.setState({
+      pets: [{
+        id: 'c', defId: 'p4d-solo', species: 'leaf', hatched: true, xp: totalXpForLevel(16) - gain, happiness: 50,
+        bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+        stats: { hp: 30, atk: 30, def: 30, spd: 30, luk: 30 },
+        growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 }, rarity: 'common', name: '',
+      }],
+      activePetId: 'c',
+      caughtDefIds: ['p4d-solo'],
+    } as Partial<GameState>);
+
+    useGameStore.getState().finishRound({ drill: 'pattern', level: 1, stars: 3, correctCount: 1 });
+
+    // Crossed L16 (baby->young) but the def has no next hop: defId is unchanged and
+    // nothing new is recorded in the dex.
+    const p = selectActivePet(useGameStore.getState());
+    expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
+    expect(p.defId).toBe('p4d-solo');
+    expect(useGameStore.getState().caughtDefIds).toEqual(['p4d-solo']);
   });
 });

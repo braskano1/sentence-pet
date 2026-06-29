@@ -1,4 +1,6 @@
 import type { ContentBundle } from './model';
+import type { Course } from './course';
+import { bundleToDefaultCourse } from './migrate';
 
 /** The migrated static content (snapshot). Bundled fallback for first paint AND the
  *  seed-script source. Generated from the legacy data/ modules; now standalone.
@@ -8,6 +10,7 @@ export const SEED: ContentBundle = {
   pool: {
     "l1-1": {
       "id": "l1-1",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 1,
       "thaiHint": "ฉันวิ่ง",
@@ -16,6 +19,7 @@ export const SEED: ContentBundle = {
     },
     "l1-2": {
       "id": "l1-2",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 1,
       "thaiHint": "เขากิน",
@@ -24,6 +28,7 @@ export const SEED: ContentBundle = {
     },
     "l1-3": {
       "id": "l1-3",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 1,
       "thaiHint": "พวกเรานอน",
@@ -32,6 +37,7 @@ export const SEED: ContentBundle = {
     },
     "l1-4": {
       "id": "l1-4",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 1,
       "thaiHint": "เธอเดิน",
@@ -40,6 +46,7 @@ export const SEED: ContentBundle = {
     },
     "l1-5": {
       "id": "l1-5",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 1,
       "thaiHint": "พวกเขาเล่น",
@@ -48,6 +55,7 @@ export const SEED: ContentBundle = {
     },
     "l2-1": {
       "id": "l2-1",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 2,
       "thaiHint": "ฉันกินข้าว",
@@ -56,6 +64,7 @@ export const SEED: ContentBundle = {
     },
     "l2-2": {
       "id": "l2-2",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 2,
       "thaiHint": "เขาดื่มน้ำ",
@@ -64,6 +73,7 @@ export const SEED: ContentBundle = {
     },
     "l2-3": {
       "id": "l2-3",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 2,
       "thaiHint": "เธออ่านหนังสือ",
@@ -72,6 +82,7 @@ export const SEED: ContentBundle = {
     },
     "l2-4": {
       "id": "l2-4",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 2,
       "thaiHint": "พวกเราเล่นฟุตบอล",
@@ -80,6 +91,7 @@ export const SEED: ContentBundle = {
     },
     "l2-5": {
       "id": "l2-5",
+      "kind": "dragdrop",
       "drill": "pattern",
       "level": 2,
       "thaiHint": "พวกเขาดูทีวี",
@@ -88,6 +100,7 @@ export const SEED: ContentBundle = {
     },
     "wc-l1-1": {
       "id": "wc-l1-1",
+      "kind": "dragdrop",
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "ฉันวิ่ง",
@@ -97,6 +110,7 @@ export const SEED: ContentBundle = {
     },
     "wc-l1-2": {
       "id": "wc-l1-2",
+      "kind": "dragdrop",
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "เขากิน",
@@ -106,6 +120,7 @@ export const SEED: ContentBundle = {
     },
     "wc-l1-3": {
       "id": "wc-l1-3",
+      "kind": "dragdrop",
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "พวกเรานอน",
@@ -115,6 +130,7 @@ export const SEED: ContentBundle = {
     },
     "wc-l1-4": {
       "id": "wc-l1-4",
+      "kind": "dragdrop",
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "เธอเดิน",
@@ -124,6 +140,7 @@ export const SEED: ContentBundle = {
     },
     "wc-l1-5": {
       "id": "wc-l1-5",
+      "kind": "dragdrop",
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "พวกเขาเล่น",
@@ -133,6 +150,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l1-1": {
       "id": "gr-l1-1",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เขากิน",
@@ -142,6 +160,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l1-2": {
       "id": "gr-l1-2",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เธอเดิน",
@@ -151,6 +170,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l1-3": {
       "id": "gr-l1-3",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 1,
       "thaiHint": "แมววิ่ง",
@@ -160,6 +180,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l1-4": {
       "id": "gr-l1-4",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เขานอน",
@@ -169,6 +190,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l1-5": {
       "id": "gr-l1-5",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เธอเล่น",
@@ -178,6 +200,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l2-1": {
       "id": "gr-l2-1",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธอกินข้าว",
@@ -187,6 +210,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l2-2": {
       "id": "gr-l2-2",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เขาดื่มน้ำ",
@@ -196,6 +220,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l2-3": {
       "id": "gr-l2-3",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธออ่านหนังสือ",
@@ -205,6 +230,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l2-4": {
       "id": "gr-l2-4",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เขาเล่นฟุตบอล",
@@ -214,6 +240,7 @@ export const SEED: ContentBundle = {
     },
     "gr-l2-5": {
       "id": "gr-l2-5",
+      "kind": "dragdrop",
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธอชอบแมว",
@@ -223,6 +250,7 @@ export const SEED: ContentBundle = {
     },
     "mx-l1-1": {
       "id": "mx-l1-1",
+      "kind": "dragdrop",
       "drill": "mixed",
       "level": 1,
       "thaiHint": "ฉันกินข้าว",
@@ -233,6 +261,7 @@ export const SEED: ContentBundle = {
     },
     "mx-l1-2": {
       "id": "mx-l1-2",
+      "kind": "dragdrop",
       "drill": "mixed",
       "level": 1,
       "thaiHint": "เขาดื่มน้ำ",
@@ -243,6 +272,7 @@ export const SEED: ContentBundle = {
     },
     "mx-l1-3": {
       "id": "mx-l1-3",
+      "kind": "dragdrop",
       "drill": "mixed",
       "level": 1,
       "thaiHint": "เธออ่านหนังสือ",
@@ -253,6 +283,7 @@ export const SEED: ContentBundle = {
     },
     "mx-l1-4": {
       "id": "mx-l1-4",
+      "kind": "dragdrop",
       "drill": "mixed",
       "level": 1,
       "thaiHint": "พวกเราเล่นฟุตบอล",
@@ -263,6 +294,7 @@ export const SEED: ContentBundle = {
     },
     "mx-l1-5": {
       "id": "mx-l1-5",
+      "kind": "dragdrop",
       "drill": "mixed",
       "level": 1,
       "thaiHint": "พวกเขาดูทีวี",
@@ -338,3 +370,36 @@ export const SEED: ContentBundle = {
     }
   ]
 };
+
+/** Seed course: migrated default course with hand-authored example gated + final bosses.
+ *  Offline/first-paint fallback and the source for `npm run seed:export`.
+ *  Gate and finalBoss literals here are intentionally hand-edited until P3b ships
+ *  admin-UI authoring + seed regen. All referenced itemIds live in SEED.pool above. */
+export const SEED_COURSE: Course = (() => {
+  const base = bundleToDefaultCourse(SEED);
+  return {
+    ...base,
+    gates: [
+      {
+        id: 'gate-midcourse',
+        title: 'Midway Review',
+        scope: 'gated',
+        afterUnitId: 'u2-next-steps',
+        reviewsUnitIds: ['u1-basics', 'u2-next-steps'],
+        reviewCount: 5,
+        pinnedItemIds: ['mx-l1-1'],
+        boss: { tierId: 'tier-2', element: 'water', name: 'Riptide Reviewer', rivalSprite: { species: 'water', stage: 'adult' } },
+      },
+    ],
+    finalBoss: {
+      id: 'final-course',
+      title: 'Grand Finale',
+      scope: 'final',
+      onClear: 'completeCourse',
+      reviewsUnitIds: ['u1-basics', 'u2-next-steps', 'u3-challenge'],
+      reviewCount: 6,
+      pinnedItemIds: ['gr-l1-1'],
+      boss: { tierId: 'tier-3', element: 'leaf', name: 'Course Champion', rivalSprite: { species: 'leaf', stage: 'adult' } },
+    },
+  };
+})();

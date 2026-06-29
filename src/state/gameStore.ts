@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { defaultAudioSettings, clampLevel, type AudioSettings, type ChannelName } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
-import { DRILL_FOOD } from '../data/food';
-import type { BattleStats, DrillType, FoodGroup, NutritionBars, PetInstance, PetStage, Screen, StageChange } from '../data/types';
+import { DRILL_FOOD, KIND_FOOD } from '../data/food';
+import type { BattleStats, ContentKind, DrillType, FoodGroup, NutritionBars, PetDef, PetInstance, PetStage, Screen, StageChange } from '../data/types';
 import { decayBars, decayHappiness, feedBar } from '../domain/pet';
 import { sanitizePetName } from '../domain/petName';
 import { levelForXp, stageForXp, stageUp, xpPerCorrect } from '../domain/xp';
@@ -11,10 +11,15 @@ import { purchase } from '../domain/shop';
 import type { TreatItem, DecorItem, MusicTrackItem } from '../domain/shop';
 import { buyDecor } from '../domain/decor';
 import { buyMusic } from '../domain/music';
-import { allocateStatPoints, makePet, rollStats, rarityForStats } from '../domain/pets';
+import { allocateStatPoints, makePet, rollStats, rollStatsFromBands, rarityForStats } from '../domain/pets';
+import { defaultDefForElement, starterDef, obtainablePool, resolvePetDef, getActivePetDefs } from '../domain/petDef';
+import { evolvePetDef } from '../domain/evolution';
+import { addCaught } from '../domain/dex';
 import { pullEgg as pullEggDomain } from '../domain/gacha';
+import { hydrateCourse } from '../content/load';
 import { findLesson } from '../content/model';
 import { useContentStore } from '../content/store';
+import type { L1Mode } from '../content/l1';
 import type { StingerKind } from '../effects/music';
 
 export const STARTER_ID = 'starter-leaf';
@@ -34,16 +39,22 @@ interface RewardSummary {
 
 interface RoundResult {
   drill: DrillType;
+  /** Activity kind (flashcard/matching/fillblank/dragdrop). When present and not
+   * 'boss', it drives the awarded food group via KIND_FOOD; otherwise the
+   * per-variant DRILL_FOOD[drill] is used (dragdrop/DrillScreen pass no kind). */
+  kind?: ContentKind;
   level: number;
   stars: number;
   correctCount: number;
 }
 
-interface GameState {
+export interface GameState {
   screen: Screen;
   pets: PetInstance[];
   activePetId: string;
   coins: number; // account-level wallet
+  /** Def-chain dex: defIds the player has ever obtained. Accumulates; never shrinks. */
+  caughtDefIds: string[];
   inventory: Record<FoodGroup, number>;
   selectedDrill: DrillType;
   selectedLevel: number;
@@ -52,14 +63,18 @@ interface GameState {
   // state, so this is intentionally NOT cleared on navigation; persisting it is harmless
   // (the pet is already in pets[]). Only freshState/resetForTest reset it.
   lastPull: PetInstance | null;
+  lastHatch: PetInstance | null;   // P4c: transient — the freshly-granted reward pet awaiting its hatch cinematic
   owned: string[];
   activeBackground: string | null;
   activeTrack: string | null; // equipped overworld music track id; null = free default
   lastLevelUp: { toLevel: number; gained: (keyof BattleStats)[] } | null;
   lastStageChange: StageChange | null;
   audio: AudioSettings;
+  l1Mode: L1Mode; // per-user TH/ENG language-helper toggle (Spec §4)
   journey: { lessonStars: Record<string, number> };
+  courseComplete: Record<string, boolean>; // per-player completed courses (v15); unlocks the next course
   currentLessonId: string | null;
+  currentCourseId: string | null;
   // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
   // mount effect in RewardScreen. NOT persisted (excluded from PersistedState).
   pendingStinger: StingerKind | null;
@@ -79,10 +94,13 @@ interface GameState {
   renamePet: (id: string, name: string) => void;
   clearLevelUp: () => void;
   clearStageChange: () => void;
+  clearHatch: () => void;
   clearPendingStinger: () => void;
   setChannelLevel: (ch: 'master' | ChannelName, v: number) => void;
   toggleChannelMute: (ch: 'master' | ChannelName) => void;
+  setL1Mode: (m: L1Mode) => void;
   startLesson: (lessonId: string) => void;
+  selectCourse: (courseId: string) => void;
   currentBossLessonId: string | null;
   startBoss: (lessonId: string) => void;
   finishBoss: (won: boolean) => void;
@@ -94,13 +112,14 @@ interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 13;
+export const PERSIST_VERSION = 17;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
-  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'inventory' | 'selectedDrill'
-  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio'
+  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
+  | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
+  | 'caughtDefIds'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -110,6 +129,7 @@ export function selectPersisted(s: GameState): PersistedState {
     pets: s.pets,
     activePetId: s.activePetId,
     coins: s.coins,
+    courseComplete: s.courseComplete,
     inventory: s.inventory,
     selectedDrill: s.selectedDrill,
     selectedLevel: s.selectedLevel,
@@ -120,12 +140,24 @@ export function selectPersisted(s: GameState): PersistedState {
     activeTrack: s.activeTrack,
     journey: s.journey,
     audio: s.audio,
+    l1Mode: s.l1Mode,
+    caughtDefIds: s.caughtDefIds,
   };
 }
 
 /** Active pet. Invariant: activePetId always resolves; fall back to pets[0] defensively. */
 export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string }): PetInstance =>
   s.pets.find((p) => p.id === s.activePetId) ?? s.pets[0];
+
+/**
+ * The caught-dex as a Set for O(1) membership. NOTE: returns a new Set each call —
+ * do NOT pass directly to `useGameStore(selectCaughtSet)` as a reactive selector
+ * (new reference every render → infinite loop). Subscribe to `caughtDefIds` with
+ * `useShallow` and derive the Set via `useMemo` instead (see DexGrid). Safe for
+ * one-off reads: `selectCaughtSet(useGameStore.getState())`.
+ */
+export const selectCaughtSet = (s: { caughtDefIds: string[] }): Set<string> =>
+  new Set(s.caughtDefIds);
 
 /** Immutably replace the active pet via a transform. */
 function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetInstance[] {
@@ -153,7 +185,7 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
 }
 
 function freshPet(): PetInstance {
-  return makePet({ id: STARTER_ID, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
+  return makePet({ id: STARTER_ID, defId: starterDef().id, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {
@@ -171,14 +203,19 @@ function freshState() {
     selectedLevel: 1,
     lastReward: null,
     lastPull: null as PetInstance | null,
+    lastHatch: null as PetInstance | null,
     owned: [] as string[],
+    caughtDefIds: [starterDef().id],
     activeBackground: null as string | null,
     activeTrack: null as string | null,
     lastLevelUp: null as { toLevel: number; gained: (keyof BattleStats)[] } | null,
     lastStageChange: null as StageChange | null,
     audio: defaultAudioSettings(),
+    l1Mode: 'TH' as L1Mode,
     journey: { lessonStars: {} as Record<string, number> },
+    courseComplete: {} as Record<string, boolean>,
     currentLessonId: null as string | null,
+    currentCourseId: null as string | null,
     currentBossLessonId: null as string | null,
     pendingStinger: null as StingerKind | null,
   };
@@ -208,6 +245,12 @@ export const useGameStore = create<GameState>()(
         set({ currentLessonId: lessonId });
       },
 
+      selectCourse: (courseId) => {
+        // Optimistic: route now; hydrateCourse swaps content in when it resolves (mirrors startLesson).
+        void hydrateCourse(courseId);
+        set({ currentCourseId: courseId, currentLessonId: null, screen: 'pickDrill' });
+      },
+
       startBoss: (lessonId) => {
         const found = findLesson(useContentStore.getState().bundle, lessonId);
         if (!found?.lesson.boss) return; // not a boss checkpoint — defensive no-op
@@ -227,47 +270,74 @@ export const useGameStore = create<GameState>()(
               lastReward: { level: 1, stars: 0, food: 0, coins: 0, group: 'protein' as FoodGroup },
             };
           }
-          const lvl = findLesson(useContentStore.getState().bundle, lessonId)?.lesson.level ?? 1;
+          const cleared = findLesson(useContentStore.getState().bundle, lessonId)?.lesson;
+          const lvl = cleared?.level ?? 1;
+          const completesCourse = cleared?.onClear === 'completeCourse' && !!s.currentCourseId;
+          const courseComplete = completesCourse
+            ? { ...s.courseComplete, [s.currentCourseId as string]: true }
+            : s.courseComplete;
           const firstClear = !(lessonId in s.journey.lessonStars);
           const r = GAME_CONFIG.battle.reward;
           const coinsGain = firstClear ? r.firstClearCoins : r.replayCoins;
           let pets = s.pets;
           let lastPull = s.lastPull;
+          let lastHatch: PetInstance | null = s.lastHatch;
           let lastLevelUp: GameState['lastLevelUp'] = null;
           let lastStageChange: StageChange | null = null;
+          let caughtDefIds = s.caughtDefIds;
           if (firstClear) {
             pets = updateActive(s, (p) => {
               const withXp = applyXp(p, r.firstClearXp, rng);
               lastLevelUp = withXp.levelUp;
               lastStageChange = withXp.stageChange;
-              return withXp.pet;
+              let next = withXp.pet;
+              if (withXp.stageChange && withXp.stageChange.from !== 'egg') {
+                const before = next.defId;
+                next = evolvePetDef(next, getActivePetDefs(), withXp.stageChange.to, rng);
+                if (next.defId !== before) caughtDefIds = addCaught(caughtDefIds, next.defId);
+              }
+              return next;
             });
+            const rewardId = cleared?.rewardPetDefId;
+            let def: PetDef;
+            if (rewardId) {
+              def = resolvePetDef(rewardId); // starter-fallback if dangling — never blank
+            } else {
+              const pool = obtainablePool();
+              def = pool[Math.floor(rng() * pool.length)];
+            }
             const egg = makePet({
               id: crypto.randomUUID(),
-              species: (['leaf', 'fire', 'air', 'water'] as const)[Math.floor(rng() * 4)],
-              stats: rollStats(rng),
+              species: def.element,
+              defId: def.id,
+              stats: rollStatsFromBands(def.statBands.common, rng),
               rarity: 'common',
             });
             pets = [...pets, egg];
             lastPull = egg;
+            lastHatch = egg;
+            caughtDefIds = addCaught(caughtDefIds, egg.defId);
           }
           return {
             pets,
             coins: s.coins + coinsGain,
             lastPull,
+            lastHatch,
             lastLevelUp,
             lastStageChange,
+            caughtDefIds,
             lastReward: { level: lvl, stars: 3, food: 0, coins: coinsGain, group: 'protein' as FoodGroup },
             journey: { ...s.journey, lessonStars: { ...s.journey.lessonStars, [lessonId]: Math.max(s.journey.lessonStars[lessonId] ?? 0, 3) } },
+            courseComplete,
             currentBossLessonId: null,
             pendingStinger: 'win' as StingerKind,
             screen: 'reward' as Screen,
           };
         }),
 
-      finishRound: ({ drill, level, stars, correctCount }) =>
+      finishRound: ({ drill, kind, level, stars, correctCount }) =>
         set((s) => {
-          const group = DRILL_FOOD[drill];
+          const group = kind && kind !== 'boss' ? KIND_FOOD[kind] : DRILL_FOOD[drill];
           const lessonId = s.currentLessonId;
           // Resolve whether the finished lesson was a boss (checkpoint) BEFORE we
           // clear currentLessonId; if so, queue a win/lose stinger for RewardScreen.
@@ -289,6 +359,7 @@ export const useGameStore = create<GameState>()(
           const coinsGain = GAME_CONFIG.coins.base + GAME_CONFIG.coins.perStar * stars;
           let levelUp: GameState['lastLevelUp'] = null;
           let stageChange: StageChange | null = null;
+          let evolvedDefId: string | null = null;
           const pets = updateActive(s, (p) => {
             const happiness =
               decayHappiness(p.happiness) +
@@ -297,8 +368,14 @@ export const useGameStore = create<GameState>()(
             const withXp = applyXp(p, xpGain, rng);
             levelUp = withXp.levelUp;
             stageChange = withXp.stageChange;
+            let next = withXp.pet;
+            if (withXp.stageChange && withXp.stageChange.from !== 'egg') {
+              const before = next.defId;
+              next = evolvePetDef(next, getActivePetDefs(), withXp.stageChange.to, rng);
+              if (next.defId !== before) evolvedDefId = next.defId;
+            }
             return {
-              ...withXp.pet,
+              ...next,
               happiness: Math.min(GAME_CONFIG.happiness.max, happiness),
               bars: decayBars(p.bars),
             };
@@ -310,6 +387,7 @@ export const useGameStore = create<GameState>()(
             lastReward: { level, stars, food: correctCount, coins: coinsGain, group },
             lastLevelUp: levelUp,
             lastStageChange: stageChange,
+            caughtDefIds: evolvedDefId ? addCaught(s.caughtDefIds, evolvedDefId) : s.caughtDefIds,
             journey,
             currentLessonId: null,
             pendingStinger,
@@ -347,12 +425,18 @@ export const useGameStore = create<GameState>()(
 
       pullEgg: () =>
         set((s) => {
+          const defs = obtainablePool();
           const res = pullEggDomain(
             { coins: s.coins },
-            { price: GAME_CONFIG.gacha.eggPrice, id: crypto.randomUUID(), rng, table: GAME_CONFIG.gacha.rarities },
+            { price: GAME_CONFIG.gacha.eggPrice, id: crypto.randomUUID(), rng, table: GAME_CONFIG.gacha.rarities, defs },
           );
           if (!res.ok) return s; // no-op; UI disables Pull when too poor
-          return { pets: [...s.pets, res.pet], coins: res.coins, lastPull: res.pet };
+          return {
+            pets: [...s.pets, res.pet],
+            coins: res.coins,
+            lastPull: res.pet,
+            caughtDefIds: addCaught(s.caughtDefIds, res.pet.defId),
+          };
         }),
 
       equipBackground: (id) => set({ activeBackground: id }),
@@ -365,6 +449,8 @@ export const useGameStore = create<GameState>()(
 
       clearStageChange: () => set({ lastStageChange: null }),
 
+      clearHatch: () => set({ lastHatch: null }),
+
       clearPendingStinger: () => set({ pendingStinger: null }),
 
       setChannelLevel: (ch, v) =>
@@ -372,6 +458,8 @@ export const useGameStore = create<GameState>()(
 
       toggleChannelMute: (ch) =>
         set((s) => ({ audio: { ...s.audio, [ch]: { ...s.audio[ch], muted: !s.audio[ch].muted } } })),
+
+      setL1Mode: (l1Mode) => set({ l1Mode }),
 
       renamePet: (id, name) =>
         set((s) => {
@@ -407,13 +495,15 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, currentLessonId, currentBossLessonId, pendingStinger, ...rest } = s;
+        const { lastLevelUp, lastStageChange, lastHatch, currentLessonId, currentCourseId, currentBossLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
+        void lastHatch; // transient — not persisted
         void currentLessonId; // transient — not persisted
+        void currentCourseId; // transient — not persisted
         void currentBossLessonId; // transient — not persisted
         void pendingStinger; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'currentLessonId' | 'currentBossLessonId' | 'pendingStinger'>;
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'lastHatch' | 'currentLessonId' | 'currentCourseId' | 'currentBossLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.
@@ -425,6 +515,10 @@ export const useGameStore = create<GameState>()(
       // v11->v12 backfills activeTrack (default null = free overworld loop).
       // v12->v13 drops audio.allMuted (Master mute IS the global mute): a save with
       //   allMuted:true lands as master.muted:true; the allMuted field is removed.
+      // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
+      // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
+      // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>'.
+      // v16->v17: seed caughtDefIds (the def-chain dex) from owned pets' defIds.
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -442,6 +536,8 @@ export const useGameStore = create<GameState>()(
               activeBackground?: string | null;
               activeTrack?: string | null;
               journey?: { lessonStars?: Record<string, number> };
+              l1Mode?: L1Mode;
+              courseComplete?: Record<string, boolean>;
             }
           | null;
         // Zustand treats a null migrate return as "reset to initial state".
@@ -457,6 +553,10 @@ export const useGameStore = create<GameState>()(
           // v11->v12: backfill the equipped overworld track (null = free default loop).
           activeTrack: st.activeTrack ?? null,
           journey: { lessonStars: (st as { journey?: { lessonStars?: Record<string, number> } }).journey?.lessonStars ?? {} },
+          // v13->v14: backfill the per-user TH/ENG language-helper toggle (default 'TH').
+          l1Mode: (st as { l1Mode?: L1Mode }).l1Mode ?? 'TH',
+          // v14->v15: backfill per-player course-completion map (default {}).
+          courseComplete: (st as { courseComplete?: Record<string, boolean> }).courseComplete ?? {},
           audio: (() => {
             const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
             const a = saved ? { ...saved } : defaultAudioSettings();
@@ -520,6 +620,23 @@ export const useGameStore = create<GameState>()(
               ? p
               : { ...(p as PetInstance), growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 } },
           );
+        }
+
+        // v15->v16: backfill defId on any pet that predates the field (key off species/element).
+        if (Array.isArray(base.pets)) {
+          base.pets = base.pets.map((p) =>
+            (p as PetInstance).defId
+              ? p
+              : { ...(p as PetInstance), defId: defaultDefForElement((p as PetInstance).species).id },
+          );
+        }
+
+        // v16->v17: seed the caught-dex from owned pets (key off each pet's defId).
+        if (!(base as { caughtDefIds?: string[] }).caughtDefIds) {
+          const ids = Array.isArray(base.pets)
+            ? (base.pets as PetInstance[]).map((p) => p.defId)
+            : [];
+          (base as { caughtDefIds?: string[] }).caughtDefIds = Array.from(new Set(ids));
         }
 
         // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).

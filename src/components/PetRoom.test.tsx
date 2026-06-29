@@ -11,12 +11,12 @@ vi.mock('../hooks/useAudio', () => ({ useAudio: () => ({ play }) }));
 beforeEach(() => useGameStore.getState().resetForTest());
 
 describe('PetRoom', () => {
-  it('Play opens the drill picker', async () => {
+  it('Play routes to course select', async () => {
     useGameStore.getState().hatch();
     render(<PetRoom />);
     expect(screen.getByRole('img', { name: /^pet-/ })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: /play/i }));
-    expect(useGameStore.getState().screen).toBe('pickDrill');
+    expect(useGameStore.getState().screen).toBe('pickCourse');
   });
 
   it('Shop button navigates to shop', async () => {

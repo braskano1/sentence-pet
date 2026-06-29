@@ -50,7 +50,7 @@ describe('battleStore', () => {
 // ---------------------------------------------------------------------------
 
 const PET: PetInstance = {
-  id: 'p1', species: 'water', hatched: true, xp: 0, happiness: 60,
+  id: 'p1', defId: 'def-water', species: 'water', hatched: true, xp: 0, happiness: 60,
   bars: { protein: 60, veggie: 60, vitamin: 60, treat: 60 },
   stats: { hp: 100, atk: 60, def: 50, spd: 90, luk: 0 },
   growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
@@ -230,7 +230,7 @@ describe('multi-phase ramp', () => {
 // ---------------------------------------------------------------------------
 
 const SPELL_ITEM: DrillItem = {
-  id: 'gr-spell', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
+  id: 'gr-spell', kind: 'dragdrop', drill: 'grammar', level: 1, thaiHint: 'เขากิน',
   slots: ['Pronoun', 'Verb'], answer: ['he', 'eats'],
   traps: [{ slot: 1, word: 'eat', tip: 'เขา → he eats 👍' }],
 };

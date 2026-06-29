@@ -52,6 +52,9 @@ export const STAGE_NAME: Record<PetStage, string> = {
   adult: 'Adult',
 };
 
+/** Zero-padded dex number badge, e.g. 3 -> "#003". */
+export const formatDexNo = (n: number) => `#${String(n).padStart(3, '0')}`;
+
 /** Displayed battle stats = creation roll + level-up growth. */
 export function displayStats(pet: PetInstance): BattleStats {
   const g = pet.growth;

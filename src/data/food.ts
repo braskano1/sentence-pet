@@ -1,4 +1,4 @@
-import type { DrillType, FoodGroup } from './types';
+import type { ContentKind, DrillType, FoodGroup } from './types';
 
 /** Which nutrition bar each drill's food feeds. */
 export const DRILL_FOOD: Record<DrillType, FoodGroup> = {
@@ -6,6 +6,14 @@ export const DRILL_FOOD: Record<DrillType, FoodGroup> = {
   wordChoice: 'veggie',
   grammar: 'vitamin',
   mixed: 'treat',
+};
+
+/** Each player-facing content kind feeds a food group (boss reuses boss rewards). */
+export const KIND_FOOD: Record<Exclude<ContentKind, 'boss'>, FoodGroup> = {
+  flashcard: 'protein',
+  matching: 'veggie',
+  dragdrop: 'vitamin',
+  fillblank: 'treat',
 };
 
 export interface FoodMeta {

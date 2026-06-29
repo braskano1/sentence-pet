@@ -11,9 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "emulators": "firebase emulators:start --only auth,firestore",
+    "emulators": "firebase emulators:start --only auth,firestore,storage",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run src/firebase/rules.test.ts\"",
+    "test:rules-storage": "firebase emulators:exec --only storage \"vitest run src/firebase/storage.rules.test.ts\"",
     "set-admin": "node scripts/set-admin-claim.mjs",
+    "dev:admin": "node scripts/seed-dev-admin.mjs",
     "seed:export": "vite-node scripts/export-seed.ts",
     "seed:push": "node scripts/seed-content.mjs"
   },
@@ -26,6 +28,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.1",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
