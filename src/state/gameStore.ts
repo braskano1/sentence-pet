@@ -185,7 +185,10 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
 }
 
 function freshPet(): PetInstance {
-  return makePet({ id: STARTER_ID, defId: starterDef().id, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
+  const sdef = starterDef();
+  const rarity = sdef.rarity ?? 'common';
+  const stats = sdef.rarity ? rollStatsFromBands(sdef.statBands[rarity], rng) : rollStats(rng);
+  return makePet({ id: STARTER_ID, defId: sdef.id, species: 'leaf', stats, rarity, hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {

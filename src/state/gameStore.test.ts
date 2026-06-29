@@ -1201,3 +1201,21 @@ describe('P4d def-chain evolution in the store', () => {
     expect(useGameStore.getState().caughtDefIds).toEqual(['p4d-solo']);
   });
 });
+
+describe('starter rarity override', () => {
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS)); // restore registry
+
+  it('starter pet adopts the starter def rarity override', () => {
+    setActivePetDefs([{ ...BUILTIN_PET_DEFS[0], rarity: 'epic' }, ...BUILTIN_PET_DEFS.slice(1)]);
+    useGameStore.getState().resetForTest(); // rebuilds the starter via freshPet()
+    const starter = useGameStore.getState().pets.find((p) => p.id === STARTER_ID)!;
+    expect(starter.rarity).toBe('epic');
+  });
+
+  it('starter stays common when the starter def has no override', () => {
+    setActivePetDefs(BUILTIN_PET_DEFS);
+    useGameStore.getState().resetForTest();
+    const starter = useGameStore.getState().pets.find((p) => p.id === STARTER_ID)!;
+    expect(starter.rarity).toBe('common');
+  });
+});
