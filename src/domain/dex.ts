@@ -72,3 +72,22 @@ export function latestUnlockedInChain(
   }
   return null;
 }
+
+/**
+ * Group defs into one ordered evolution chain per line, deduped by root and
+ * sorted by the root's (gen, dexNo). Chains are walked over the full `defs`
+ * list, so a disabled mid/late stage does not truncate a line; callers gate
+ * line *visibility* (e.g. by `root.enabled`) themselves.
+ */
+export function dexLines(defs: readonly PetDef[]): PetDef[][] {
+  const seenRoots = new Set<string>();
+  const lines: PetDef[][] = [];
+  for (const d of defs) {
+    const chain = evolutionChain(d, defs);
+    const root = chain[0];
+    if (seenRoots.has(root.id)) continue;
+    seenRoots.add(root.id);
+    lines.push(chain);
+  }
+  return lines.sort((a, b) => a[0].gen - b[0].gen || a[0].dexNo - b[0].dexNo);
+}

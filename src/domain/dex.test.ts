@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addCaught, evolutionChain, stageForChainPosition, latestUnlockedInChain } from './dex';
+import { addCaught, evolutionChain, stageForChainPosition, latestUnlockedInChain, dexLines } from './dex';
 import type { PetDef } from '../data/types';
 
 /** Minimal PetDef factory for chain tests. */
@@ -106,5 +106,39 @@ describe('latestUnlockedInChain', () => {
     const r = latestUnlockedInChain(chain, new Set(['c']));
     expect(r!.def.id).toBe('c');
     expect(r!.index).toBe(2);
+  });
+});
+
+describe('dexLines', () => {
+  it('collapses a 3-stage chain into a single line', () => {
+    const a = def('a', { evolvesToId: 'b' });
+    const b = def('b', { evolvesFromId: 'a', evolvesToId: 'c' });
+    const c = def('c', { evolvesFromId: 'b' });
+    const lines = dexLines([a, b, c]);
+    expect(lines.length).toBe(1);
+    expect(lines[0].map((d) => d.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('returns one line per lone def', () => {
+    const a = def('a', { dexNo: 1 });
+    const b = def('b', { dexNo: 2 });
+    expect(dexLines([a, b]).length).toBe(2);
+  });
+
+  it('dedupes a line regardless of which stage appears first in the input', () => {
+    const a = def('a', { dexNo: 1, evolvesToId: 'b' });
+    const b = def('b', { dexNo: 2, evolvesFromId: 'a' });
+    // mid-stage listed first
+    const lines = dexLines([b, a]);
+    expect(lines.length).toBe(1);
+    expect(lines[0].map((d) => d.id)).toEqual(['a', 'b']);
+  });
+
+  it('sorts lines by the root gen then dexNo', () => {
+    const g2 = def('g2', { gen: 2, dexNo: 1 });
+    const g1b = def('g1b', { gen: 1, dexNo: 2 });
+    const g1a = def('g1a', { gen: 1, dexNo: 1 });
+    const lines = dexLines([g2, g1b, g1a]);
+    expect(lines.map((l) => l[0].id)).toEqual(['g1a', 'g1b', 'g2']);
   });
 });
