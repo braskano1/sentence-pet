@@ -8,3 +8,6 @@ export { Checkbox } from './Checkbox';
 export { Card, SectionLabel } from './Card';
 export { ValidationSummary } from './ValidationSummary';
 export { SaveBar } from './SaveBar';
+export { AdminHeader } from './AdminHeader';
+export { Tabs } from './Tabs';
+export type { TabItem } from './Tabs';

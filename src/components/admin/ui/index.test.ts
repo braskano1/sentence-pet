@@ -6,6 +6,7 @@ describe('admin ui barrel', () => {
     for (const name of [
       'Button', 'Field', 'TextInput', 'NumberInput', 'Select',
       'Checkbox', 'Card', 'SectionLabel', 'ValidationSummary', 'SaveBar',
+      'AdminHeader', 'Tabs',
     ]) {
       expect(ui[name as keyof typeof ui], `missing export: ${name}`).toBeTypeOf('function');
     }
