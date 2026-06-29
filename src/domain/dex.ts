@@ -1,4 +1,4 @@
-import type { PetDef } from '../data/types';
+import type { PetDef, PetStage } from '../data/types';
 
 /** Union `defId` into the caught set, preserving order and avoiding duplicates. */
 export function addCaught(caught: readonly string[], defId: string): string[] {
@@ -35,4 +35,20 @@ export function evolutionChain(def: PetDef, defs: readonly PetDef[]): PetDef[] {
     cur = next;
   }
   return chain;
+}
+
+/** Sprite stages that have per-species art (egg is generic). */
+export type SpriteStage = Exclude<PetStage, 'egg'>; // 'baby' | 'young' | 'adult'
+
+/**
+ * The sprite stage for a node at `index` in a chain of `length`. The tip always
+ * reads as the mature `adult` form and a lone creature is `adult`; the root is
+ * `baby`; any interior node is `young`. Pure; the source of truth for dex art
+ * stage (more reliable than the optional, author-supplied `evolutionStage`).
+ */
+export function stageForChainPosition(index: number, length: number): SpriteStage {
+  if (length <= 1) return 'adult';
+  if (index <= 0) return 'baby';
+  if (index >= length - 1) return 'adult';
+  return 'young';
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addCaught, evolutionChain } from './dex';
+import { addCaught, evolutionChain, stageForChainPosition } from './dex';
 import type { PetDef } from '../data/types';
 
 /** Minimal PetDef factory for chain tests. */
@@ -59,5 +59,25 @@ describe('evolutionChain', () => {
   it('stops at a dangling forward ref', () => {
     const a = def('a', { evolvesToId: 'missing' });
     expect(evolutionChain(a, [a]).map((d) => d.id)).toEqual(['a']);
+  });
+});
+
+describe('stageForChainPosition', () => {
+  it('maps a lone creature to its mature adult form', () => {
+    expect(stageForChainPosition(0, 1)).toBe('adult');
+  });
+  it('maps a 2-stage line to baby then adult', () => {
+    expect(stageForChainPosition(0, 2)).toBe('baby');
+    expect(stageForChainPosition(1, 2)).toBe('adult');
+  });
+  it('maps a 3-stage line to baby, young, adult', () => {
+    expect(stageForChainPosition(0, 3)).toBe('baby');
+    expect(stageForChainPosition(1, 3)).toBe('young');
+    expect(stageForChainPosition(2, 3)).toBe('adult');
+  });
+  it('clamps interior stages of a long chain to young and the tip to adult', () => {
+    expect(stageForChainPosition(1, 4)).toBe('young');
+    expect(stageForChainPosition(2, 4)).toBe('young');
+    expect(stageForChainPosition(3, 4)).toBe('adult');
   });
 });
