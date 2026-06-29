@@ -30,7 +30,7 @@ export function AdminRail<T extends string>({
   }
 
   return (
-    <nav
+    <div
       role="tablist"
       aria-orientation="vertical"
       aria-label="Admin sections"
@@ -66,6 +66,6 @@ export function AdminRail<T extends string>({
           })}
         </div>
       ))}
-    </nav>
+    </div>
   );
 }

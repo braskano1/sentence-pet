@@ -35,4 +35,11 @@ describe('AdminRail', () => {
     fireEvent.keyDown(screen.getByRole('tab', { name: /courses/i }), { key: 'ArrowDown' });
     expect(onSelect).toHaveBeenCalledWith('pool');
   });
+
+  it('wraps with ArrowUp from the first item to the last', () => {
+    const onSelect = vi.fn();
+    render(<AdminRail groups={GROUPS} active="courses" onSelect={onSelect} />);
+    fireEvent.keyDown(screen.getByRole('tab', { name: /courses/i }), { key: 'ArrowUp' });
+    expect(onSelect).toHaveBeenCalledWith('pets');
+  });
 });
