@@ -80,8 +80,22 @@ describe('downscaleSprite', () => {
     expect(out).not.toBe(file);
     expect(out.type).toBe('image/png');
     expect(out.name).toBe('big.png');
-    expect(drawImage).toHaveBeenCalled();
     expect(toBlob).toHaveBeenCalled();
+    // fitWithin(1024, 1024, 512) = { w: 512, h: 512 } — verify the canvas was
+    // actually sized to the downscaled target (drawImage is called with the
+    // target dims), not just that *some* draw happened.
+    expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 512, 512);
+  });
+
+  it('returns the ORIGINAL file when toBlob yields null', async () => {
+    (globalThis as { createImageBitmap?: unknown }).createImageBitmap = vi
+      .fn()
+      .mockResolvedValue({ width: 1024, height: 1024, close: vi.fn() });
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({ drawImage: vi.fn() }) as never;
+    HTMLCanvasElement.prototype.toBlob = vi.fn((cb: (b: Blob | null) => void) => cb(null)) as never;
+
+    const file = new File(['x'], 'big.webp', { type: 'image/webp' });
+    await expect(downscaleSprite(file)).resolves.toBe(file);
   });
 
   it('returns the ORIGINAL file untouched when the image already fits (no toBlob call)', async () => {
