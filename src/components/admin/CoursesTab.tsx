@@ -36,9 +36,14 @@ export function CoursesTab({
   const counts = courseCounts(course);
 
   async function onFile(file: File) {
-    const wb = await readWorkbook(file);
-    const { course: parsed } = parseWorkbookToCourse(wb);
-    if (parsed) onImport(parsed);
+    try {
+      const wb = await readWorkbook(file);
+      const { course: parsed } = parseWorkbookToCourse(wb);
+      if (parsed) onImport(parsed);
+    } catch {
+      // P2: surfacing import parse/read errors in this surface is deferred to P5.
+      // Swallow here so a bad file does not throw an unhandled rejection.
+    }
   }
 
   return (
