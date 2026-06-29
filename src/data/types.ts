@@ -129,6 +129,10 @@ export interface PetDef {
   starter?: boolean;        // exactly one def true; must be the gen 1, dexNo 1 def
   enabled: boolean;         // gacha-pool gate; P4 reads it
   gachaObtainable?: boolean; // P4b gacha eligibility; absent = obtainable (read as `!== false`)
+  /** Admin rarity override. Absent → roll (gacha) / common (reward + starter).
+   *  When set, every spawn of this def is forced to this rarity and stats roll
+   *  from `statBands[rarity]`. Rarity remains an instance trait (preserved on evolve). */
+  rarity?: Rarity;
   /**
    * Optional custom-art override (P3a). `default` covers ALL stage×mood; `variants`
    * (P3b) overrides per stage×mood, each falling back to `default` then element art.
