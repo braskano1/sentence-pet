@@ -1,4 +1,4 @@
-import type { PetDef, Species } from '../../../data/types';
+import type { PetDef, Species, Rarity } from '../../../data/types';
 import { SPECIES } from '../../../domain/species';
 import { PET_TYPES } from '../../../domain/petType';
 import { RARITIES, VARIANT_STAGES, MOODS, setRarityBand, stripDefault, setVariant, clearVariant } from './helpers';
@@ -32,6 +32,15 @@ export function PetForm({ def, allDefs, onPatch, onRename, onSetStarter }: {
             <Select multiple value={def.types}
               onChange={(e) => onPatch({ types: Array.from(e.target.selectedOptions, (o) => o.value) })}>
               {PET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Select>
+          </Field>
+          <Field label="rarity override">
+            <Select
+              value={def.rarity ?? ''}
+              onChange={(e) => onPatch({ rarity: (e.target.value || undefined) as Rarity | undefined })}
+            >
+              <option value="">Default (roll)</option>
+              {RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
             </Select>
           </Field>
           <Checkbox label="enabled" checked={def.enabled} onChange={(e) => onPatch({ enabled: e.target.checked })} />

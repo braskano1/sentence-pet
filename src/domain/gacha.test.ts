@@ -73,4 +73,21 @@ describe('pullEgg', () => {
     pullEgg(state, args(seq([0, 0, 0.5, 0.5, 0.5, 0.5, 0.5])));
     expect(state).toEqual({ coins: 200 });
   });
+
+  it('forces rarity from def.rarity, ignoring the rolled rarity, and rolls stats from that band', () => {
+    const forced: PetDef = {
+      id: 'forced-leg', name: 'Forced', gen: 1, dexNo: 5, types: ['fire'], element: 'fire',
+      statBands: { common: mkBands([10, 20]), rare: mkBands([55, 75]), epic: mkBands([72, 88]), legendary: mkBands([85, 90]) },
+      enabled: true, rarity: 'legendary',
+    };
+    // rng[0]=0 would roll COMMON; [1]=0 picks index 0; [2..6] mid-band stats.
+    const res = pullEgg({ coins: 200 }, args(seq([0, 0, 0.5, 0.5, 0.5, 0.5, 0.5]), [forced]));
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.pet.rarity).toBe('legendary'); // forced override wins over the rolled common
+    for (const v of Object.values(res.pet.stats)) {
+      expect(v).toBeGreaterThanOrEqual(85); // legendary band, NOT common 10-20
+      expect(v).toBeLessThanOrEqual(90);
+    }
+  });
 });

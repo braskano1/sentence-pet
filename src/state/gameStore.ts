@@ -185,7 +185,10 @@ function applyXp(pet: PetInstance, xpGain: number, rng: () => number): { pet: Pe
 }
 
 function freshPet(): PetInstance {
-  return makePet({ id: STARTER_ID, defId: starterDef().id, species: 'leaf', stats: rollStats(rng), rarity: 'common', hatched: false });
+  const sdef = starterDef();
+  const rarity = sdef.rarity ?? 'common';
+  const stats = sdef.rarity ? rollStatsFromBands(sdef.statBands[rarity], rng) : rollStats(rng);
+  return makePet({ id: STARTER_ID, defId: sdef.id, species: 'leaf', stats, rarity, hatched: false });
 }
 
 function freshInventory(): Record<FoodGroup, number> {
@@ -306,12 +309,13 @@ export const useGameStore = create<GameState>()(
               const pool = obtainablePool();
               def = pool[Math.floor(rng() * pool.length)];
             }
+            const rarity = def.rarity ?? 'common';
             const egg = makePet({
               id: crypto.randomUUID(),
               species: def.element,
               defId: def.id,
-              stats: rollStatsFromBands(def.statBands.common, rng),
-              rarity: 'common',
+              stats: rollStatsFromBands(def.statBands[rarity], rng),
+              rarity,
             });
             pets = [...pets, egg];
             lastPull = egg;

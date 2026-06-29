@@ -16,8 +16,9 @@ export function pullEgg(
   args: { price: number; id: string; rng: () => number; table: readonly RarityTier[]; defs: readonly PetDef[] },
 ): PullEggResult {
   if (state.coins < args.price) return { ok: false, reason: 'insufficient-coins' };
-  const rarity = rollRarity(args.rng, args.table);
+  const rolledRarity = rollRarity(args.rng, args.table);
   const def = args.defs[Math.floor(args.rng() * args.defs.length)];
+  const rarity = def.rarity ?? rolledRarity; // forced def wins; rolled value discarded
   const stats = rollStatsFromBands(def.statBands[rarity], args.rng);
   const pet = makePet({ id: args.id, defId: def.id, species: def.element, stats, rarity, hatched: true });
   return { ok: true, coins: state.coins - args.price, pet };

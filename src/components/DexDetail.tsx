@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import type { PetDef } from '../data/types';
-import { evolutionChain } from '../domain/dex';
+import { evolutionChain, stageForChainPosition, type SpriteStage } from '../domain/dex';
 import { spriteSrc } from '../config/sprites';
 import { ELEMENT_EMOJI, formatDexNo, PET_NAME } from '../config/petDisplay';
 import { PressButton } from './PressButton';
 
-/** One chain node: full art + name if caught, silhouette + ??? if not. */
-function ChainNode({ def, caught }: { def: PetDef; caught: boolean }) {
+/** One chain node at its own stage: full art + name if caught, silhouette + ??? if not. */
+function ChainNode({ def, caught, stage }: { def: PetDef; caught: boolean; stage: SpriteStage }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <img
-        src={spriteSrc(def.element, 'adult', 'happy', def)}
+        src={spriteSrc(def.element, stage, 'happy', def)}
         alt={caught ? def.name : 'Undiscovered'}
         className="h-16 w-16 object-contain"
         style={caught ? undefined : { filter: 'brightness(0)' }}
@@ -61,7 +61,7 @@ export function DexDetail({
           {chain.map((d, i) => (
             <div key={d.id} className="flex items-center gap-1">
               {i > 0 && <span aria-hidden="true" className="text-amber-900/40">→</span>}
-              <ChainNode def={d} caught={caught.has(d.id)} />
+              <ChainNode def={d} caught={caught.has(d.id)} stage={stageForChainPosition(i, chain.length)} />
             </div>
           ))}
         </div>
