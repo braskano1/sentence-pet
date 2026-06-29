@@ -38,3 +38,43 @@ describe('DexGrid', () => {
     expect(screen.getAllByText('???').length).toBe(4); // 4 undiscovered (3 builtins + new)
   });
 });
+
+describe('DexGrid per-line', () => {
+  // A 3-stage authored line (clone builtin stat bands so the defs are valid).
+  const bands = BUILTIN_PET_DEFS[0].statBands;
+  const baby = { id: 'ln-baby', name: 'Sprig', gen: 3, dexNo: 1, types: ['leaf'], element: 'leaf' as const, statBands: bands, enabled: true, evolvesToId: 'ln-young' };
+  const young = { id: 'ln-young', name: 'Sapling', gen: 3, dexNo: 2, types: ['leaf'], element: 'leaf' as const, statBands: bands, enabled: true, evolvesFromId: 'ln-baby', evolvesToId: 'ln-adult' };
+  const adult = { id: 'ln-adult', name: 'Timberon', gen: 3, dexNo: 3, types: ['leaf'], element: 'leaf' as const, statBands: bands, enabled: true, evolvesFromId: 'ln-young' };
+
+  it('collapses a 3-stage line into ONE card showing the latest caught stage', () => {
+    act(() => {
+      setActivePetDefs([...BUILTIN_PET_DEFS, baby, young, adult]);
+      useGameStore.setState({ caughtDefIds: ['ln-baby', 'ln-young'] });
+    });
+    render(<DexGrid />);
+    expect(screen.getByText('Sapling')).toBeInTheDocument();
+    expect(screen.queryByText('Sprig')).not.toBeInTheDocument();
+    expect(screen.queryByText('Timberon')).not.toBeInTheDocument();
+    expect(screen.getByText('Young')).toBeInTheDocument();
+  });
+
+  it('shows the tip stage label once the line is fully caught', () => {
+    act(() => {
+      setActivePetDefs([...BUILTIN_PET_DEFS, baby, young, adult]);
+      useGameStore.setState({ caughtDefIds: ['ln-baby', 'ln-young', 'ln-adult'] });
+    });
+    render(<DexGrid />);
+    expect(screen.getByText('Timberon')).toBeInTheDocument();
+    expect(screen.getByText('Adult')).toBeInTheDocument();
+  });
+
+  it('shows ??? with no stage label for an undiscovered line', () => {
+    act(() => {
+      setActivePetDefs([...BUILTIN_PET_DEFS, baby, young, adult]);
+      useGameStore.setState({ caughtDefIds: [] });
+    });
+    render(<DexGrid />);
+    expect(screen.getAllByText('???').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Sapling')).not.toBeInTheDocument();
+  });
+});
