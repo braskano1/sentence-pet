@@ -52,3 +52,23 @@ export function stageForChainPosition(index: number, length: number): SpriteStag
   if (index >= length - 1) return 'adult';
   return 'young';
 }
+
+/** A node's resolved position within its chain. */
+export interface ChainUnlock {
+  def: PetDef;
+  index: number;
+}
+
+/**
+ * The highest-index node in `chain` present in `unlocked`, or null if none.
+ * Drives the grid card's "latest stage seen/caught" art.
+ */
+export function latestUnlockedInChain(
+  chain: readonly PetDef[],
+  unlocked: ReadonlySet<string>,
+): ChainUnlock | null {
+  for (let i = chain.length - 1; i >= 0; i -= 1) {
+    if (unlocked.has(chain[i].id)) return { def: chain[i], index: i };
+  }
+  return null;
+}

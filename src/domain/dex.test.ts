@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addCaught, evolutionChain, stageForChainPosition } from './dex';
+import { addCaught, evolutionChain, stageForChainPosition, latestUnlockedInChain } from './dex';
 import type { PetDef } from '../data/types';
 
 /** Minimal PetDef factory for chain tests. */
@@ -79,5 +79,32 @@ describe('stageForChainPosition', () => {
     expect(stageForChainPosition(1, 4)).toBe('young');
     expect(stageForChainPosition(2, 4)).toBe('young');
     expect(stageForChainPosition(3, 4)).toBe('adult');
+  });
+});
+
+describe('latestUnlockedInChain', () => {
+  const a = def('a', { evolvesToId: 'b' });
+  const b = def('b', { evolvesFromId: 'a', evolvesToId: 'c' });
+  const c = def('c', { evolvesFromId: 'b' });
+  const chain = [a, b, c];
+
+  it('returns null when nothing is unlocked', () => {
+    expect(latestUnlockedInChain(chain, new Set())).toBeNull();
+  });
+  it('returns the highest-index unlocked node', () => {
+    const r = latestUnlockedInChain(chain, new Set(['a', 'b']));
+    expect(r).not.toBeNull();
+    expect(r!.def.id).toBe('b');
+    expect(r!.index).toBe(1);
+  });
+  it('returns the tip when the whole chain is unlocked', () => {
+    const r = latestUnlockedInChain(chain, new Set(['a', 'b', 'c']));
+    expect(r!.def.id).toBe('c');
+    expect(r!.index).toBe(2);
+  });
+  it('handles an unlock that skips earlier stages', () => {
+    const r = latestUnlockedInChain(chain, new Set(['c']));
+    expect(r!.def.id).toBe('c');
+    expect(r!.index).toBe(2);
   });
 });
