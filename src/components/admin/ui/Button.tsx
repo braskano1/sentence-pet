@@ -17,7 +17,7 @@ export function Button({
   return (
     <button
       type={type ?? 'button'}
-      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-indigo-500 ${VARIANT[variant]} ${className}`}
+      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${VARIANT[variant]} ${className}`}
       {...props}
     />
   );

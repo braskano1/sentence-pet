@@ -24,4 +24,9 @@ describe('Button', () => {
     render(<Button disabled>Nope</Button>);
     expect(screen.getByRole('button', { name: 'Nope' })).toBeDisabled();
   });
+
+  it('applies the ghost variant class', () => {
+    render(<Button variant="ghost">Cancel</Button>);
+    expect(screen.getByRole('button', { name: 'Cancel' }).className).toMatch(/border/);
+  });
 });
