@@ -14,3 +14,5 @@ export type { TabItem } from './Tabs';
 export { FilterChips } from './FilterChips';
 export type { FilterChip } from './FilterChips';
 export { SearchableList } from './SearchableList';
+export { AdminRail } from './AdminRail';
+export type { RailGroup, RailItem } from './AdminRail';
