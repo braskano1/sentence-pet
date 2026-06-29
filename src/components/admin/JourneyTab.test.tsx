@@ -33,8 +33,8 @@ describe('eligibleItemIds', () => {
 describe('JourneyTab', () => {
   it('renders units and their lessons', () => {
     render(<JourneyTab course={course()} onChange={() => {}} />);
-    expect(screen.getByDisplayValue('One')).toBeInTheDocument();
-    expect(screen.getByText('u1-l1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /One/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'u1-l1' })).toBeInTheDocument();
   });
 
   it('toggling an item id in the selected lesson calls onChange', () => {
@@ -82,7 +82,7 @@ describe('JourneyTab', () => {
   it('toggling unit l1Enabled writes unit.l1Enabled', () => {
     const onChange = vi.fn();
     render(<JourneyTab course={course()} onChange={onChange} />);
-    fireEvent.click(screen.getByText('u1-l1'));
+    fireEvent.click(screen.getByRole('button', { name: /One/ }));      // select the unit
     fireEvent.click(screen.getByRole('checkbox', { name: /l1 enabled/i }));
     const next = onChange.mock.calls.at(-1)![0] as Course;
     expect(next.units[0].l1Enabled).toBe(true);
