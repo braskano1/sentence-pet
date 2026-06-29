@@ -19,15 +19,15 @@ export function FilterChips<T extends string>({
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
       {chips.map((c) => {
-        const on = c.id === active;
+        const isActive = c.id === active;
         return (
           <button
             key={c.id}
             type="button"
-            aria-pressed={on}
+            aria-pressed={isActive}
             onClick={() => onChange(c.id)}
             className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
-              on
+              isActive
                 ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
                 : 'border-slate-300 text-slate-500 hover:text-slate-800'
             }`}
