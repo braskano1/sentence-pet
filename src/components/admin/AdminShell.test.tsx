@@ -51,8 +51,8 @@ describe('AdminShell', () => {
 
   it('shows Pool and Journey tabs and switches to Journey', () => {
     render(<AdminShell />);
-    expect(screen.getByRole('button', { name: /^pool$/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /^journey$/i }));
+    expect(screen.getByRole('tab', { name: /^pool$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /^journey$/i }));
     // SEED's first lesson id is u1-pattern — it appears in the Journey tab
     expect(screen.getAllByText(/u1-pattern/i).length).toBeGreaterThan(0);
   });
@@ -94,7 +94,7 @@ describe('AdminShell', () => {
     });
 
     render(<AdminShell />);
-    fireEvent.click(screen.getByRole('button', { name: /^import$/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /^import$/i }));
 
     const fileInput = screen.getByLabelText(/excel file/i);
     fireEvent.change(fileInput, { target: { files: [new File([''], 'c.xlsx')] } });
@@ -106,5 +106,11 @@ describe('AdminShell', () => {
 
     await waitFor(() => expect(saveCourse).toHaveBeenCalled());
     expect(useContentStore.getState().course!.id).toBe('imported-1');
+  });
+
+  it('renders the tabs inside an accessible tablist', () => {
+    render(<AdminShell />);
+    expect(screen.getByRole('tablist')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^pets$/i })).toBeInTheDocument();
   });
 });
