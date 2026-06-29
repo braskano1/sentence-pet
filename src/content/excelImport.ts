@@ -4,7 +4,7 @@ import type { Unit, Lesson, CheckpointBoss } from './model';
 import type { ContentItem, ContentKind, DragDropItem, PosLabel, Species, PetStage } from '../data/types';
 
 // xlsx@0.18.5 has published prototype-pollution + ReDoS advisories that apply only to
-// untrusted input. This parser runs admin-only, post-auth (see ImportTab call site), so
+// untrusted input. This parser runs admin-only, post-auth (see ImportDrawer call sites), so
 // neither is reachable here. Revisit if the import surface ever accepts pre-auth files.
 
 type Row = Record<string, unknown>;
@@ -25,22 +25,19 @@ const csv = (v: unknown): string[] =>
     .map((s) => s.trim())
     .filter(Boolean);
 
-/** Parse a SheetJS workbook into a Course. Pure: no IO, no validation side effects.
- *  Returns { course: null } when a required sheet is missing or a row is fatal. */
-export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | null; errors: string[] } {
+/** Raw course slices parsed from whatever sheets a workbook contains. Tolerant:
+ *  a missing sheet yields an empty slice, not an error. Pure: no IO, no validation. */
+export interface WorkbookSlices {
+  pool: Record<string, ContentItem>;
+  units: Unit[];
+  gates: BossNode[];
+  finalBoss?: BossNode;
+  errors: string[];
+}
+
+/** Parse every sheet present in `wb` into its slice. Sheets that are absent are skipped. */
+export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
   const errors: string[] = [];
-
-  for (const s of REQUIRED_SHEETS) {
-    if (!wb.SheetNames.includes(s)) errors.push(`missing required sheet "${s}"`);
-  }
-  if (errors.length) return { course: null, errors };
-
-  // ── Course (single row) ──────────────────────────────────────────────────
-  const courseRow = sheetRows(wb, 'Course')[0];
-  if (!courseRow || !str(courseRow.id)) {
-    errors.push('Course row 2: id is required');
-    return { course: null, errors };
-  }
 
   // ── Units ────────────────────────────────────────────────────────────────
   const units: Unit[] = [];
@@ -121,7 +118,6 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
         break;
       }
       case 'matching': {
-        // pairs encoded as pair1/pair2/... cells "left|right|th"
         const pairs = Object.keys(r)
           .filter((k) => /^pair\d+$/.test(k))
           .map((k) => str(r[k]))
@@ -158,10 +154,9 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
   // One Lesson per node group; last node per unit becomes the checkpoint.
   for (const [nodeId, grp] of nodeItems) {
     const unit = units.find((u) => u.id === grp.unit);
-    if (!unit) {
-      errors.push(`Items node ${nodeId}: unknown unit "${grp.unit}"`);
-      continue;
-    }
+    // Tolerant: an item that references a unit absent from this workbook just
+    // doesn't get attached as a lesson (cross-slice integrity is the validator's job).
+    if (!unit) continue;
     const lesson: Lesson = {
       id: nodeId,
       kind: grp.kind,
@@ -201,7 +196,6 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
       id,
       title: id,
       ...(reviewsUnits.length ? { reviewsUnitIds: reviewsUnits } : {}),
-      // falsy 0/NaN both omit reviewCount; a literal 0 in the sheet is treated as absent (validateCourse rejects <1)
       ...(reviewCountVal ? { reviewCount: reviewCountVal } : {}),
       ...(pinnedItemIds.length ? { pinnedItemIds } : {}),
       ...(str(r.rewardPetDefId) ? { rewardPetDefId: str(r.rewardPetDefId) } : {}),
@@ -219,16 +213,37 @@ export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | nul
     }
   });
 
+  return { pool, units, gates, finalBoss, errors };
+}
+
+/** Parse a SheetJS workbook into a Course. Pure: no IO, no validation side effects.
+ *  Returns { course: null } when a required sheet is missing or the Course row is fatal. */
+export function parseWorkbookToCourse(wb: XLSX.WorkBook): { course: Course | null; errors: string[] } {
+  const errors: string[] = [];
+
+  for (const s of REQUIRED_SHEETS) {
+    if (!wb.SheetNames.includes(s)) errors.push(`missing required sheet "${s}"`);
+  }
+  if (errors.length) return { course: null, errors };
+
+  const courseRow = sheetRows(wb, 'Course')[0];
+  if (!courseRow || !str(courseRow.id)) {
+    errors.push('Course row 2: id is required');
+    return { course: null, errors };
+  }
+
+  const slices = parseWorkbookSlices(wb);
+
   const course: Course = {
     id: str(courseRow.id),
     title: str(courseRow.title),
     ...(str(courseRow.emoji) ? { emoji: str(courseRow.emoji) } : {}),
     ...(courseRow.l1Ready !== '' ? { l1Ready: bool(courseRow.l1Ready) } : {}),
-    pool,
-    units,
-    gates,
-    ...(finalBoss ? { finalBoss } : {}),
+    pool: slices.pool,
+    units: slices.units,
+    gates: slices.gates,
+    ...(slices.finalBoss ? { finalBoss: slices.finalBoss } : {}),
   };
 
-  return { course, errors };
+  return { course, errors: [...errors, ...slices.errors] };
 }
