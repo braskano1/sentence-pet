@@ -16,3 +16,4 @@ export type { FilterChip } from './FilterChips';
 export { SearchableList } from './SearchableList';
 export { AdminRail } from './AdminRail';
 export type { RailGroup, RailItem } from './AdminRail';
+export { CourseSwitcher } from './CourseSwitcher';
