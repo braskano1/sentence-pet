@@ -25,6 +25,7 @@ vi.mock('../../firebase/imageTranscode', () => ({
 import { PetsTab, reconcileEvolution, stripDefault, setVariant, clearVariant } from './PetsTab';
 import type { PetDef } from '../../data/types';
 import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '../../domain/petDef';
+import { deriveStatBands } from '../../content/petImport';
 
 beforeEach(() => {
   savePetDefs.mockClear();
@@ -535,5 +536,29 @@ describe('PetsTab — master-detail layout', () => {
     fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
     expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Leaflet/).length).toBeGreaterThan(0);
+  });
+});
+
+function makeImportedDef(): PetDef {
+  return { id: 'def-imp', name: 'Imported', gen: 3, dexNo: 1, types: ['leaf'], element: 'leaf',
+    statBands: deriveStatBands([40, 60]), enabled: true };
+}
+
+describe('PetsTab import wiring', () => {
+  it('applies an imported pet additively into the draft', async () => {
+    const parsePetsFile = vi.fn(async () => ({ entities: [makeImportedDef()], errors: [] }));
+    render(<PetsTab parsePetsFile={parsePetsFile} />);
+
+    await screen.findByText('Pets');                                  // past the mount hydrate
+    fireEvent.click(await screen.findByRole('button', { name: /import/i }));
+
+    const file = new File(['x'], 'pets.xlsx');
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const apply = await screen.findByRole('button', { name: /apply/i });
+    fireEvent.click(apply);
+    await waitFor(() => expect(screen.getByText('Imported')).toBeInTheDocument());
+    expect(parsePetsFile).toHaveBeenCalled();
   });
 });
