@@ -5,7 +5,9 @@ import { parseWorkbookToCourse } from '../../content/excelImport';
 import { SearchableList, Field, TextInput, Button, SectionLabel, ValidationSummary } from './ui';
 import { courseCounts } from './coursesTab/courseCounts';
 import { buildWorkbook, COURSE_WORKBOOK_SURFACES } from '../../content/importTemplates';
+import { COURSE_GUIDE } from '../../content/importGuides';
 import { downloadWorkbook } from '../../content/downloadWorkbook';
+import { downloadText } from '../../content/downloadText';
 
 async function defaultReadWorkbook(file: File): Promise<XLSX.WorkBook> {
   const buf = await file.arrayBuffer();
@@ -101,6 +103,13 @@ export function CoursesTab({
               className="self-start text-sm text-indigo-600 hover:underline"
             >
               <span aria-hidden="true">⬇ </span>Download course template
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadText(COURSE_GUIDE.content, COURSE_GUIDE.filename)}
+              className="self-start text-sm text-indigo-600 hover:underline"
+            >
+              <span aria-hidden="true">⬇ </span>Download AI authoring guide (.md)
             </button>
             <ValidationSummary errors={importError} />
           </div>

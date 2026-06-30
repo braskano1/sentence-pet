@@ -5,6 +5,8 @@ import type { Course, CourseIndexEntry } from '../../content/course';
 
 vi.mock('../../content/downloadWorkbook', () => ({ downloadWorkbook: vi.fn() }));
 import { downloadWorkbook } from '../../content/downloadWorkbook';
+vi.mock('../../content/downloadText', () => ({ downloadText: vi.fn() }));
+import { downloadText } from '../../content/downloadText';
 
 const COURSE: Course = {
   id: 'thai', title: 'Survival Thai', emoji: '🇹🇭',
@@ -82,6 +84,17 @@ describe('CoursesTab course template', () => {
     const call = (downloadWorkbook as unknown as { mock: { calls: [import('xlsx').WorkBook, string][] } }).mock.calls[0];
     expect(call[1]).toBe('course-template.xlsx');
     expect(call[0].SheetNames).toEqual(['Course', 'Units', 'Items', 'Bosses']);
+  });
+});
+
+describe('CoursesTab course guide', () => {
+  it('downloads the combined course authoring guide (.md)', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /download .*guide/i }));
+    expect(downloadText).toHaveBeenCalledTimes(1);
+    const [content, filename] = (downloadText as unknown as { mock: { calls: [string, string][] } }).mock.calls[0];
+    expect(filename).toBe('course-authoring-guide.md');
+    expect(content).toMatch(/content authoring guides/i); // bundled README title
   });
 });
 
