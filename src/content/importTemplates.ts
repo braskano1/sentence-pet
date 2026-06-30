@@ -3,9 +3,8 @@ import * as XLSX from 'xlsx';
 export type TemplateSurface = 'Course' | 'Units' | 'Items' | 'Bosses' | 'Pets';
 
 interface TemplateSpec {
-  sheet: TemplateSurface; // exact sheet name the importer expects
-  columns: string[];      // header row, in order
-  examples: string[][];   // valid example rows, cells in `columns` order
+  columns: string[];    // header row, in order
+  examples: string[][]; // valid example rows, cells in `columns` order
 }
 
 // Items header is the UNION of all per-kind columns; each row fills only its kind's cells.
@@ -18,12 +17,10 @@ const ITEM_COLUMNS = [
 // whole-course workbook. Units u1-basics / u2-next-steps; each unit's LAST node = checkpoint.
 export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
   Course: {
-    sheet: 'Course',
     columns: ['id', 'title', 'emoji', 'l1Ready'],
     examples: [['template-course', 'Template Course', '📘', 'false']],
   },
   Units: {
-    sheet: 'Units',
     columns: ['id', 'title', 'emoji', 'order', 'l1Enabled'],
     examples: [
       ['u1-basics', 'Basics', '🐣', '1', 'true'],
@@ -31,7 +28,6 @@ export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
     ],
   },
   Items: {
-    sheet: 'Items',
     columns: ITEM_COLUMNS,
     // Order matters: per unit, the checkpoint node must be the LAST node group to appear.
     examples: [
@@ -44,7 +40,6 @@ export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
     ],
   },
   Bosses: {
-    sheet: 'Bosses',
     columns: ['id', 'scope', 'afterUnit', 'reviewsUnits', 'reviewCount', 'pinnedItemIds', 'rewardPetDefId'],
     examples: [
       ['gate-1', 'gated', 'u1-basics', 'u1-basics', '2', 'it1', ''],
@@ -52,7 +47,6 @@ export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
     ],
   },
   Pets: {
-    sheet: 'Pets',
     columns: [
       'id', 'name', 'gen', 'dexNo', 'types', 'element', 'base_min', 'base_max',
       'enabled', 'starter', 'rarity', 'gachaObtainable', 'evolvesFromId', 'evolvesToId', 'evolutionStage', 'spriteDefault',
@@ -73,7 +67,7 @@ export function buildWorkbook(surfaces: TemplateSurface[]): XLSX.WorkBook {
   for (const surface of surfaces) {
     const spec = SURFACE_TEMPLATES[surface];
     const aoa = [spec.columns, ...spec.examples];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), spec.sheet);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), surface);
   }
   return wb;
 }

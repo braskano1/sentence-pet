@@ -22,6 +22,8 @@ describe('buildWorkbook', () => {
   it('Bosses template round-trips through importBosses with no errors', () => {
     expect(importBosses(buildWorkbook(['Bosses'])).errors).toEqual([]);
   });
+  // Units without an Items sheet have lessons:[] and would fail validateCourse — structural
+  // unit+item coverage lives in the 'whole-course workbook' test below.
   it('Units template round-trips through importUnits with no errors', () => {
     expect(importUnits(buildWorkbook(['Units'])).errors).toEqual([]);
   });
