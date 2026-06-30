@@ -35,7 +35,7 @@ A **Course** is one workbook. Inside it:
   a lesson is formed by giving several Items the same `node` value. The last
   lesson in each unit is automatically its **checkpoint**.
 - **Bosses** are review battles: mid-course **gates** and one **final** boss.
-- **Pets** are the collectible catalog (separate system; guide coming).
+- **Pets** are the collectible catalog (a separate, additive surface — see [`pets.md`](pets.md)).
 
 So the workbook has these sheets, named **exactly** (case-sensitive):
 
