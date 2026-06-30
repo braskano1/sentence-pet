@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
@@ -12,6 +12,8 @@ vi.mock('../effects/evolutionSound', async (orig) => {
 import confetti from 'canvas-confetti';
 import { EvolutionCinematic } from './EvolutionCinematic';
 import { useGameStore } from '../state/gameStore';
+import { SPRITES } from '../config/sprites';
+import { TIMINGS } from '../hooks/useEvolutionSequence';
 
 beforeEach(() => {
   useGameStore.getState().resetForTest();
@@ -70,5 +72,49 @@ describe('EvolutionCinematic', () => {
     render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
     fireEvent.click(screen.getByTestId('evolution-stage')); // skip -> reveal
     expect(confetti).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('EvolutionCinematic mystery silhouette (hatch)', () => {
+  it('rolls a random BABY silhouette that does NOT reveal the real pet during the roll', () => {
+    vi.useFakeTimers();
+    try {
+      // rng 0.3 -> floor(0.3*4)=1 -> 'fire'; real species is 'leaf'
+      render(
+        <EvolutionCinematic
+          from="egg" to="baby" species="leaf"
+          mysterySilhouette rng={() => 0.3} onDone={() => {}}
+        />,
+      );
+      act(() => { vi.advanceTimersByTime(TIMINGS.announce); }); // -> silhouette
+      const img = screen.getByTestId('evolution-stage');
+      // baby-stage silhouette of a different element, not the real pet's sprite
+      expect(img.getAttribute('src')).toBe(SPRITES.fire.baby.happy);
+      expect(img.getAttribute('src')).not.toBe(SPRITES.leaf.baby.happy);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still reveals the REAL pet at the end', () => {
+    render(
+      <EvolutionCinematic
+        from="egg" to="baby" species="water"
+        mysterySilhouette rng={() => 0} onDone={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('evolution-stage')); // skip -> reveal
+    expect(screen.getByTestId('evolution-stage').getAttribute('src')).toBe(SPRITES.water.baby.happy);
+  });
+
+  it('WITHOUT the prop (evolution) the silhouette uses the REAL species (regression guard)', () => {
+    vi.useFakeTimers();
+    try {
+      render(<EvolutionCinematic from="baby" to="young" species="leaf" onDone={() => {}} />);
+      act(() => { vi.advanceTimersByTime(TIMINGS.announce); }); // -> silhouette shows from=baby leaf
+      expect(screen.getByTestId('evolution-stage').getAttribute('src')).toBe(SPRITES.leaf.baby.happy);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

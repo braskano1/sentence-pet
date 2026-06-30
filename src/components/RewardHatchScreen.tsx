@@ -31,6 +31,7 @@ export function RewardHatchScreen() {
       to="baby"
       species={pet.species}
       def={resolvePetDef(pet.defId, defs)}
+      mysterySilhouette
       onDone={() => {
         clearHatch();
         setScreen(lastStageChange ? 'evolution' : 'petRoom');
