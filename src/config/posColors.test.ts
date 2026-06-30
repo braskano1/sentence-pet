@@ -3,7 +3,7 @@ import { posClasses } from './posColors';
 
 describe('posClasses', () => {
   it('maps known parts of speech to their hue', () => {
-    expect(posClasses('Pronoun')).toContain('sky');
+    expect(posClasses('Subject')).toContain('sky');
     expect(posClasses('Verb')).toContain('emerald');
     expect(posClasses('Object')).toContain('amber');
   });

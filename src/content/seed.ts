@@ -14,7 +14,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 1,
       "thaiHint": "ฉันวิ่ง",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["I", "run"]
     },
     "l1-2": {
@@ -23,7 +23,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 1,
       "thaiHint": "เขากิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["he", "eats"]
     },
     "l1-3": {
@@ -32,7 +32,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 1,
       "thaiHint": "พวกเรานอน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["we", "sleep"]
     },
     "l1-4": {
@@ -41,7 +41,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 1,
       "thaiHint": "เธอเดิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["she", "walks"]
     },
     "l1-5": {
@@ -50,7 +50,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 1,
       "thaiHint": "พวกเขาเล่น",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["they", "play"]
     },
     "l2-1": {
@@ -59,7 +59,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 2,
       "thaiHint": "ฉันกินข้าว",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["I", "eat", "rice"]
     },
     "l2-2": {
@@ -68,7 +68,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 2,
       "thaiHint": "เขาดื่มน้ำ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["he", "drinks", "water"]
     },
     "l2-3": {
@@ -77,7 +77,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 2,
       "thaiHint": "เธออ่านหนังสือ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["she", "reads", "a book"]
     },
     "l2-4": {
@@ -86,7 +86,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 2,
       "thaiHint": "พวกเราเล่นฟุตบอล",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["we", "play", "football"]
     },
     "l2-5": {
@@ -95,7 +95,7 @@ export const SEED: ContentBundle = {
       "drill": "pattern",
       "level": 2,
       "thaiHint": "พวกเขาดูทีวี",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["they", "watch", "TV"]
     },
     "wc-l1-1": {
@@ -104,7 +104,7 @@ export const SEED: ContentBundle = {
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "ฉันวิ่ง",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["I", "run"],
       "distractors": ["runs", "running"]
     },
@@ -114,7 +114,7 @@ export const SEED: ContentBundle = {
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "เขากิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["he", "eats"],
       "distractors": ["eat", "eating"]
     },
@@ -124,7 +124,7 @@ export const SEED: ContentBundle = {
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "พวกเรานอน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["we", "sleep"],
       "distractors": ["sleeps", "sleeping"]
     },
@@ -134,7 +134,7 @@ export const SEED: ContentBundle = {
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "เธอเดิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["she", "walks"],
       "distractors": ["walk", "walking"]
     },
@@ -144,7 +144,7 @@ export const SEED: ContentBundle = {
       "drill": "wordChoice",
       "level": 1,
       "thaiHint": "พวกเขาเล่น",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["they", "play"],
       "distractors": ["plays", "playing"]
     },
@@ -154,7 +154,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เขากิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["he", "eats"],
       "traps": [{ "slot": 1, "word": "eat", "tip": "เขา → he eats 👍" }]
     },
@@ -164,7 +164,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เธอเดิน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["she", "walks"],
       "traps": [{ "slot": 1, "word": "walk", "tip": "เธอ → she walks 👍" }]
     },
@@ -174,7 +174,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 1,
       "thaiHint": "แมววิ่ง",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["it", "runs"],
       "traps": [{ "slot": 1, "word": "run", "tip": "it → it runs 👍" }]
     },
@@ -184,7 +184,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เขานอน",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["he", "sleeps"],
       "traps": [{ "slot": 1, "word": "sleep", "tip": "เขา → he sleeps 👍" }]
     },
@@ -194,7 +194,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 1,
       "thaiHint": "เธอเล่น",
-      "slots": ["Pronoun", "Verb"],
+      "slots": ["Subject", "Verb"],
       "answer": ["she", "plays"],
       "traps": [{ "slot": 1, "word": "play", "tip": "เธอ → she plays 👍" }]
     },
@@ -204,7 +204,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธอกินข้าว",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["she", "eats", "rice"],
       "traps": [{ "slot": 1, "word": "eat", "tip": "เธอ → she eats 👍" }]
     },
@@ -214,7 +214,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เขาดื่มน้ำ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["he", "drinks", "water"],
       "traps": [{ "slot": 1, "word": "drink", "tip": "เขา → he drinks 👍" }]
     },
@@ -224,7 +224,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธออ่านหนังสือ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["she", "reads", "books"],
       "traps": [{ "slot": 1, "word": "read", "tip": "เธอ → she reads 👍" }]
     },
@@ -234,7 +234,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เขาเล่นฟุตบอล",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["he", "plays", "football"],
       "traps": [{ "slot": 1, "word": "play", "tip": "เขา → he plays 👍" }]
     },
@@ -244,7 +244,7 @@ export const SEED: ContentBundle = {
       "drill": "grammar",
       "level": 2,
       "thaiHint": "เธอชอบแมว",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["she", "likes", "cats"],
       "traps": [{ "slot": 1, "word": "like", "tip": "เธอ → she likes 👍" }]
     },
@@ -254,7 +254,7 @@ export const SEED: ContentBundle = {
       "drill": "mixed",
       "level": 1,
       "thaiHint": "ฉันกินข้าว",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["I", "eat", "rice"],
       "distractors": ["bread"],
       "traps": [{ "slot": 1, "word": "eats", "tip": "ฉัน → I eat 👍" }]
@@ -265,7 +265,7 @@ export const SEED: ContentBundle = {
       "drill": "mixed",
       "level": 1,
       "thaiHint": "เขาดื่มน้ำ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["he", "drinks", "water"],
       "distractors": ["juice"],
       "traps": [{ "slot": 1, "word": "drink", "tip": "เขา → he drinks 👍" }]
@@ -276,7 +276,7 @@ export const SEED: ContentBundle = {
       "drill": "mixed",
       "level": 1,
       "thaiHint": "เธออ่านหนังสือ",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["she", "reads", "a book"],
       "distractors": ["a pen"],
       "traps": [{ "slot": 1, "word": "read", "tip": "เธอ → she reads 👍" }]
@@ -287,7 +287,7 @@ export const SEED: ContentBundle = {
       "drill": "mixed",
       "level": 1,
       "thaiHint": "พวกเราเล่นฟุตบอล",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["we", "play", "football"],
       "distractors": ["tennis"],
       "traps": [{ "slot": 1, "word": "plays", "tip": "เรา → we play 👍" }]
@@ -298,7 +298,7 @@ export const SEED: ContentBundle = {
       "drill": "mixed",
       "level": 1,
       "thaiHint": "พวกเขาดูทีวี",
-      "slots": ["Pronoun", "Verb", "Object"],
+      "slots": ["Subject", "Verb", "Object"],
       "answer": ["they", "watch", "TV"],
       "distractors": ["a movie"],
       "traps": [{ "slot": 1, "word": "watches", "tip": "เขา → they watch 👍" }]

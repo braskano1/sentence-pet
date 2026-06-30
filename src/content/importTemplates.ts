@@ -31,12 +31,12 @@ export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
     columns: ITEM_COLUMNS,
     // Order matters: per unit, the checkpoint node must be the LAST node group to appear.
     examples: [
-      ['it1', 'dragdrop', 'u1-basics', 'u1-pattern', '1', 'pattern', 'ฉันวิ่ง', 'Pronoun,Verb', 'I,run', '', '', '', '', '', '', '', ''],
+      ['it1', 'dragdrop', 'u1-basics', 'u1-pattern', '1', 'pattern', 'ฉันวิ่ง', 'Subject,Verb', 'I,run', '', '', '', '', '', '', '', ''],
       ['it2', 'flashcard', 'u1-basics', 'u1-words', '1', '', '', '', '', '', 'dog', 'หมา', '', '', 'หมา', '', ''],
       ['it3', 'fillblank', 'u1-basics', 'u1-words', '1', '', '', '', 'eat', '', '', '', 'I ___ rice every day', 'eats', 'ฉันกินข้าว', '', ''],
-      ['it4', 'dragdrop', 'u1-basics', 'u1-checkpoint', '1', 'mixed', 'ฉันกินข้าว', 'Pronoun,Verb,Object', 'I,eat,rice', 'bread', '', '', '', '', '', '', ''],
+      ['it4', 'dragdrop', 'u1-basics', 'u1-checkpoint', '1', 'mixed', 'ฉันกินข้าว', 'Subject,Verb,Object', 'I,eat,rice', 'bread', '', '', '', '', '', '', ''],
       ['it5', 'matching', 'u2-next-steps', 'u2-pattern', '1', '', '', '', '', '', '', '', '', '', '', 'dog|หมา|หมา', 'cat|แมว|แมว'],
-      ['it6', 'dragdrop', 'u2-next-steps', 'u2-checkpoint', '2', 'pattern', 'เธอเดิน', 'Pronoun,Verb', 'she,walks', '', '', '', '', '', '', '', ''],
+      ['it6', 'dragdrop', 'u2-next-steps', 'u2-checkpoint', '2', 'pattern', 'เธอเดิน', 'Subject,Verb', 'she,walks', '', '', '', '', '', '', '', ''],
     ],
   },
   Bosses: {

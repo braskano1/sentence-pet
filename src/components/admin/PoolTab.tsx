@@ -46,7 +46,7 @@ export function PoolTab({ course, onChange, parseItemsFile = defaultParseItemsFi
 
   function addItem() {
     const id = freshId();
-    const fresh: DrillItem = { id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun', 'Verb'], answer: ['', ''] };
+    const fresh: DrillItem = { id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Subject', 'Verb'], answer: ['', ''] };
     onChange({ ...course, pool: { ...course.pool, [id]: fresh } });
     setSelected(id);
   }

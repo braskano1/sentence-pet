@@ -17,7 +17,7 @@ function validBook(): XLSX.WorkBook {
     Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'Unit One', '🐣', 1, false]],
     Items: [
       ['id', 'kind', 'level', 'unit', 'node', 'l1_th', 'front', 'back', 'audio', 'template', 'answer', 'alternates', 'variant', 'slots', 'distractors', 'hidePos', 'thaiHint'],
-      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Pronoun,Verb', '', false, 'ฉันวิ่ง'],
+      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Subject,Verb', '', false, 'ฉันวิ่ง'],
       ['c1card', 'flashcard', 1, 'u1', 'u1-n1', 'แมว', 'cat', 'แมว', '', '', '', '', '', '', '', '', ''],
     ],
     Bosses: [
@@ -163,7 +163,7 @@ describe('parseWorkbookSlices (tolerant)', () => {
     const wb = bookWith({
       Items: [
         ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'variant', 'slots', 'answer'],
-        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Pronoun,Verb', 'I,run'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Subject,Verb', 'I,run'],
       ],
     });
     const slices = parseWorkbookSlices(wb);

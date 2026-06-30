@@ -8,7 +8,7 @@ import type { CheckpointBoss } from './model';
 import { BUILTIN_PET_DEFS } from '../domain/petDef';
 
 const item = (id: string): DrillItem =>
-  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject', 'Verb'], answer: ['I', 'run'] });
 
 function good(): ContentBundle {
   return {
@@ -118,7 +118,7 @@ const sampleBoss: CheckpointBoss = {
 
 const base: Course = {
   id: 'c', title: 'C',
-  pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
+  pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject'], answer: ['I'] } },
   units: [{
     id: 'u', title: 'U', emoji: '🦊', order: 0, l1Enabled: false,
     lessons: [{ id: 'l', kind: 'dragdrop', drill: 'pattern', level: 1, itemIds: ['a'], isCheckpoint: true }],

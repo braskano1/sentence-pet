@@ -6,7 +6,7 @@ import { resolveCourseBundle } from './journey';
 import { orderedUnits, findLesson } from './model';
 
 const dd = (id: string): DragDropItem =>
-  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun'], answer: ['I'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Subject'], answer: ['I'] });
 
 function course(): Course {
   return {

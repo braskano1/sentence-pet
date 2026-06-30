@@ -1,4 +1,4 @@
-export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
+export type PosLabel = 'Subject' | 'Verb' | 'Object';
 
 export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 

@@ -3,7 +3,7 @@ import type { ContentBundle } from './model';
 import type { DrillItem } from '../data/types';
 
 const item = (id: string): DrillItem =>
-  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun', 'Verb'], answer: ['I', 'run'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject', 'Verb'], answer: ['I', 'run'] });
 
 const liveBundle: ContentBundle = {
   pool: { a: item('a') },
