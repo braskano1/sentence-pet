@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { gradeFillBlank, hintAt } from '../domain/fillblank';
 import { computeStars } from '../domain/scoring';
 import { shuffle } from '../domain/check';
 import { showL1 } from '../content/l1';
+import { useSpeech } from '../hooks/useSpeech';
 import { LessonShell } from './lesson/LessonShell';
 import type { FillBlankItem } from '../data/types';
 
@@ -56,11 +57,19 @@ export function buildTiles(items: FillBlankItem[], index: number): string[] {
 export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit: { l1Enabled?: boolean } }) {
   const finishRound = useGameStore((s) => s.finishRound);
   const l1Mode = useGameStore((s) => s.l1Mode);
+  const speak = useSpeech();
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [wrongCount, setWrongCount] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
   const [wrongTiles, setWrongTiles] = useState<Set<string>>(() => new Set());
+  const [solved, setSolved] = useState(false); // brief "Correct!" beat before advancing
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up any pending advance timer on unmount.
+  useEffect(() => () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+  }, []);
 
   // Defensive: an empty pool (e.g. wrong-kind lesson) has nothing to practice.
   const tiles = useMemo(() => (items.length === 0 ? [] : buildTiles(items, index)), [items, index]);
@@ -71,24 +80,31 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
   const [a, b] = item.template.split('___');
 
   function tap(word: string) {
+    if (solved) return; // locked during the success beat
     if (wrongTiles.has(word)) return; // already-wrong tile is disabled
     setSelected(word);
     if (gradeFillBlank(item, word)) {
-      if (index + 1 >= items.length) {
-        finishRound({
-          drill: 'mixed',
-          kind: 'fillblank',
-          level: item.level,
-          stars: computeStars({ hints: 0, mistakes: wrongCount }),
-          correctCount: items.length,
-        });
-        return;
-      }
-      setIndex(index + 1);
-      setSelected(null);
-      setWrongCount(0);
-      setHint(null);
-      setWrongTiles(new Set());
+      // Keep the blank filled green, say the completed sentence, then beat-then-advance.
+      speak.speakSentence(item.template.replace('___', item.answer));
+      setSolved(true);
+      advanceTimer.current = setTimeout(() => {
+        if (index + 1 >= items.length) {
+          finishRound({
+            drill: 'mixed',
+            kind: 'fillblank',
+            level: item.level,
+            stars: computeStars({ hints: 0, mistakes: wrongCount }),
+            correctCount: items.length,
+          });
+          return;
+        }
+        setIndex(index + 1);
+        setSelected(null);
+        setWrongCount(0);
+        setHint(null);
+        setWrongTiles(new Set());
+        setSolved(false);
+      }, 700);
     } else {
       setHint(hintAt(item, wrongCount, l1));
       setWrongCount((w) => w + 1);
@@ -99,7 +115,17 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
 
   return (
     <LessonShell title="Fill the blank" instruction="Tap the missing word." index={index} total={items.length} l1={unit.l1Enabled}>
-    <div className="flex flex-1 flex-col items-center gap-4 p-6">
+    <div className="relative flex flex-1 flex-col items-center gap-4 p-6">
+      {solved && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div
+            role="status"
+            className="rounded-2xl bg-emerald-500 px-8 py-4 text-2xl font-black text-white shadow-xl"
+          >
+            Correct! ✓
+          </div>
+        </div>
+      )}
       <p className="text-2xl font-bold">
         {a}
         <span className="mx-1 inline-block min-w-[4rem] border-b-4 border-slate-400 px-2 text-center text-emerald-600">
@@ -117,7 +143,7 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
               type="button"
               data-testid={`tile-${word}`}
               onClick={() => tap(word)}
-              disabled={isWrong}
+              disabled={isWrong || solved}
               className={`min-h-12 min-w-12 rounded-xl px-5 py-3 text-lg font-semibold text-white shadow active:scale-95 ${
                 isWrong ? 'cursor-not-allowed bg-rose-400 opacity-60' : 'bg-indigo-500'
               }`}
