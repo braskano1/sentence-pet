@@ -124,8 +124,9 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
           </div>
         </div>
       )}
-      {/* Gentle, legible wrong-placement signal for assistive tech (visual cue lives on the slot). */}
-      {errorRight && (
+      {/* Gentle, legible wrong-placement signal for assistive tech (visual cue lives on the slot).
+          Suppressed while the success beat is up so only one role="status" region is ever live. */}
+      {errorRight && !solved && (
         <div role="status" aria-live="polite" className="text-center text-sm font-semibold text-rose-500">
           Try again
         </div>
