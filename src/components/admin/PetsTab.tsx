@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import type { PetDef } from '../../data/types';
 import { defaultDefForElement, getActivePetDefs, setActivePetDefs } from '../../domain/petDef';
 import { hydratePetDefs } from '../../content/load';
 import { validatePetDefs } from '../../content/validate';
+import { importPets } from '../../content/petImport';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
 import {
   setRarityBand, stripDefault, setVariant, clearVariant, reconcileEvolution,
 } from './petsTab/helpers';
 import { PetForm } from './petsTab/PetForm';
-import { Card, Button, SaveBar, ValidationSummary, SearchableList, FilterChips } from './ui';
+import { Card, Button, SaveBar, ValidationSummary, SearchableList, FilterChips, ImportDrawer } from './ui';
 import type { FilterChip } from './ui';
 
 // Re-exported so existing test imports (`import { … } from './PetsTab'`) keep resolving.
@@ -26,7 +28,14 @@ function genId(defs: PetDef[]): string {
   return `def-${n}`;
 }
 
-export function PetsTab() {
+async function defaultParsePetsFile(file: File) {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  return importPets(wb);
+}
+
+export function PetsTab({ parsePetsFile = defaultParsePetsFile }: {
+  parsePetsFile?: (file: File) => Promise<{ entities: PetDef[]; errors: string[] }>;
+} = {}) {
   const [draft, setDraft] = useState<PetDef[]>(() => [...getActivePetDefs()]);
   const [status, setStatus] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | number>('all');
@@ -34,6 +43,7 @@ export function PetsTab() {
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => { setConfirming(false); }, [editingId]);
 
@@ -88,6 +98,11 @@ export function PetsTab() {
     }
   }
 
+  function applyImport(merged: PetDef[]) {
+    setDraft(merged);
+    setEditingId(null);
+  }
+
   function addPet() {
     const gen = genFilter === 'all' ? 1 : genFilter;
     const id = genId(draft);
@@ -131,6 +146,7 @@ export function PetsTab() {
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-base font-semibold">Pets</h2>
         <span className="flex-1" />
+        <Button variant="ghost" onClick={() => setImporting(true)}>⬇ Import…</Button>
         <SaveBar valid={validation.ok} status={status} onSave={save} errorCount={validation.errors.length} />
       </div>
 
@@ -184,6 +200,18 @@ export function PetsTab() {
           )}
         </div>
       </div>
+
+      <ImportDrawer<PetDef>
+        open={importing}
+        title="Import pets"
+        noun="pet"
+        existing={draft}
+        getId={(d) => d.id}
+        parseFile={parsePetsFile}
+        onApply={applyImport}
+        onClose={() => setImporting(false)}
+        renderChange={(c) => <>{c.incoming.name} <span className="text-slate-400">· {c.incoming.id} · gen {c.incoming.gen} #{c.incoming.dexNo}</span></>}
+      />
     </div>
   );
 }
