@@ -4,6 +4,8 @@ import type { Course, CourseIndexEntry } from '../../content/course';
 import { parseWorkbookToCourse } from '../../content/excelImport';
 import { SearchableList, Field, TextInput, Button, SectionLabel, ValidationSummary } from './ui';
 import { courseCounts } from './coursesTab/courseCounts';
+import { buildWorkbook, COURSE_WORKBOOK_SURFACES } from '../../content/importTemplates';
+import { downloadWorkbook } from '../../content/downloadWorkbook';
 
 async function defaultReadWorkbook(file: File): Promise<XLSX.WorkBook> {
   const buf = await file.arrayBuffer();
@@ -93,6 +95,13 @@ export function CoursesTab({
               <input type="file" accept=".xlsx" className="sr-only"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); }} />
             </label>
+            <button
+              type="button"
+              onClick={() => downloadWorkbook(buildWorkbook(COURSE_WORKBOOK_SURFACES), 'course-template.xlsx')}
+              className="self-start text-sm text-indigo-600 hover:underline"
+            >
+              <span aria-hidden="true">⬇ </span>Download course template
+            </button>
             <ValidationSummary errors={importError} />
           </div>
         }

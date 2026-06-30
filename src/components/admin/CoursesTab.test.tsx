@@ -3,6 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { CoursesTab } from './CoursesTab';
 import type { Course, CourseIndexEntry } from '../../content/course';
 
+vi.mock('../../content/downloadWorkbook', () => ({ downloadWorkbook: vi.fn() }));
+import { downloadWorkbook } from '../../content/downloadWorkbook';
+
 const COURSE: Course = {
   id: 'thai', title: 'Survival Thai', emoji: '🇹🇭',
   pool: { a: {} as never },
@@ -67,6 +70,18 @@ describe('CoursesTab', () => {
     fireEvent.change(screen.getByLabelText(/new course title/i), { target: { value: 'Fresh' } });
     fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
     expect(onCreate).toHaveBeenCalledWith({ title: 'Fresh' });
+  });
+});
+
+describe('CoursesTab course template', () => {
+  it('downloads a 4-sheet course-template.xlsx', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: /download course template/i }));
+
+    expect(downloadWorkbook).toHaveBeenCalledTimes(1);
+    const call = (downloadWorkbook as unknown as { mock: { calls: [import('xlsx').WorkBook, string][] } }).mock.calls[0];
+    expect(call[1]).toBe('course-template.xlsx');
+    expect(call[0].SheetNames).toEqual(['Course', 'Units', 'Items', 'Bosses']);
   });
 });
 
