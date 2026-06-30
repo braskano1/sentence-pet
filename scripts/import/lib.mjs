@@ -15,7 +15,9 @@ export const FOLDER_ELEMENT = {
   Air: 'air', Fire: 'fire', Water: 'water', Earth: 'leaf',
   'Carnivorous plants': 'leaf', 'Insect Kingdom collection': 'leaf',
   'Season collection': 'leaf', 'Tiny friend collection': 'leaf',
-  '🧬 8. Newly Discovered Creatures': 'leaf', '.': 'leaf', // loose root sheets
+  '🧬 8. Newly Discovered Creatures': 'leaf',
+  // NOTE: root '.' excluded — those loose PNGs are egg art (ChatGPT Image *),
+  // not 3-age creature sheets.
 };
 export const IMPORT_FOLDERS = Object.keys(FOLDER_ELEMENT);
 export const SKIP_FOLDERS = ['baby', 'young', 'mood'];

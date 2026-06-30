@@ -4,14 +4,17 @@
 import sys, json
 import numpy as np
 from PIL import Image
-from rembg import remove
+from rembg import remove, new_session
 import cv2
 
 MAX = 512  # mirrors MAX_SPRITE_DIM in src/firebase/imageTranscode.ts
+# isnet-general-use keeps small/light-colored creatures the default u2net model
+# drops as background — critical for these multi-age sheets on a white bg.
+_SESSION = new_session("isnet-general-use")
 
 def main(src, out_dir, banner_path):
     img = Image.open(src).convert("RGBA")
-    cut = remove(img)                      # rembg -> transparent bg (harmless CUDA warn on CPU)
+    cut = remove(img, session=_SESSION)    # rembg/isnet -> transparent bg (harmless CUDA warn on CPU)
     arr = np.array(cut)
     alpha = arr[:, :, 3]
     H = alpha.shape[0]
