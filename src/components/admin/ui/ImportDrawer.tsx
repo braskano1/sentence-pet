@@ -113,11 +113,10 @@ export function ImportDrawer<T>({
           {downloadTemplate && (
             <button
               type="button"
-              aria-label={`Download ${noun} template`}
               onClick={() => downloadWorkbook(downloadTemplate.build(), downloadTemplate.filename)}
               className="self-start text-xs font-medium text-indigo-600 hover:underline"
             >
-              ↳ Download template (with examples)
+              <span aria-hidden="true">↓ </span>Download {noun} template (with examples)
             </button>
           )}
 
