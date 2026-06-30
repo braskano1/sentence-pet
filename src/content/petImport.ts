@@ -90,6 +90,14 @@ export function parsePetsSheet(wb: XLSX.WorkBook): { defs: PetDef[]; errors: str
     const rarityRaw = s(r['rarity']);
     if (rarityRaw && !RARITIES.includes(rarityRaw as Rarity)) errors.push(`Pets row ${line}: rarity "${rarityRaw}" must be one of ${RARITIES.join('/')}`);
 
+    const evoStageRaw = s(r['evolutionStage']);
+    let evoStage: number | undefined;
+    if (evoStageRaw !== '') {
+      const v = n(r['evolutionStage']);
+      if (!Number.isFinite(v) || v < 1) errors.push(`Pets row ${line}: evolutionStage must be a number >= 1`);
+      else evoStage = v;
+    }
+
     const def: PetDef = {
       id,
       name,
@@ -104,7 +112,7 @@ export function parsePetsSheet(wb: XLSX.WorkBook): { defs: PetDef[]; errors: str
       ...(s(r['gachaObtainable']) !== '' ? { gachaObtainable: b(r['gachaObtainable']) } : {}),
       ...(s(r['evolvesFromId']) ? { evolvesFromId: s(r['evolvesFromId']) } : {}),
       ...(s(r['evolvesToId']) ? { evolvesToId: s(r['evolvesToId']) } : {}),
-      ...(s(r['evolutionStage']) !== '' ? { evolutionStage: n(r['evolutionStage']) } : {}),
+      ...(evoStage !== undefined ? { evolutionStage: evoStage } : {}),
       ...(s(r['spriteDefault']) ? { sprite: { default: s(r['spriteDefault']) } } : {}),
     };
     defs.push(def);

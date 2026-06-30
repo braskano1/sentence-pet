@@ -90,4 +90,55 @@ describe('parsePetsSheet', () => {
     expect(res.errors).toContain('expected exactly one starter pet-def, found 0');
     expect(res.errors.some((e) => e.includes('def-new') && /band|type|element|gen|dexNo/.test(e))).toBe(false);
   });
+
+  it('invalid evolutionStage → error and field omitted from def', () => {
+    const { defs, errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tevolutionStage\n' +
+      'def-x\tEx\t1\t1\tfire\tfire\t2nd',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /evolutionStage/.test(e))).toBe(true);
+    expect(defs).toHaveLength(1);
+    expect('evolutionStage' in defs[0]).toBe(false);
+  });
+
+  it('partial base (only base_min set) → error', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tbase_min\tbase_max\n' +
+      'def-x\tEx\t1\t1\tfire\tfire\t40\t',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /base_min and base_max/.test(e))).toBe(true);
+  });
+
+  it('inverted base (base_min > base_max) → error', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tbase_min\tbase_max\n' +
+      'def-x\tEx\t1\t1\tfire\tfire\t80\t20',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /base_min must be <= base_max/.test(e))).toBe(true);
+  });
+
+  it('optional fields round-trip correctly', () => {
+    const { defs, errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\trarity\tgachaObtainable\tevolvesToId\tevolutionStage\tspriteDefault\n' +
+      'def-opt\tOptional\t3\t7\tair\tair\trare\tfalse\tdef-next\t2\thttps://example.com/a.png',
+    ));
+    expect(errors).toEqual([]);
+    expect(defs).toHaveLength(1);
+    const d = defs[0];
+    expect(d.rarity).toBe('rare');
+    expect(d.gachaObtainable).toBe(false);
+    expect(d.evolvesToId).toBe('def-next');
+    expect(d.evolutionStage).toBe(2);
+    expect(d.sprite?.default).toBe('https://example.com/a.png');
+  });
+
+  it('row with empty name is still emitted (contract guard)', () => {
+    const { defs, errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-noname\t\t1\t1\tleaf\tleaf',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /name/.test(e))).toBe(true);
+    expect(defs).toHaveLength(1);
+    expect(defs[0].name).toBe('');
+  });
 });
