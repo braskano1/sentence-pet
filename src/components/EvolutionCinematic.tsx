@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
 import { spriteSrc } from '../config/sprites';
+import { pickSpecies } from '../domain/species';
 import { STAGE_NAME } from '../domain/xp';
 import type { PetDef, PetStage, Species } from '../data/types';
 import { useEvolutionSequence } from '../hooks/useEvolutionSequence';
@@ -14,12 +15,21 @@ import { PressButton } from './PressButton';
  * skip, sound toggle, and confetti. Presentational + store-sound-setting only;
  * the caller decides what `onDone` does. */
 export function EvolutionCinematic({
-  from, to, species, def, onDone,
-}: { from: PetStage; to: PetStage; species: Species; def?: PetDef; onDone: () => void }) {
+  from, to, species, def, onDone, mysterySilhouette = false, rng = Math.random,
+}: {
+  from: PetStage; to: PetStage; species: Species; def?: PetDef; onDone: () => void;
+  /** Hatch-only: hide the result by rolling a RANDOM baby silhouette while the egg
+   * "rolls", instead of darkening the real pet. Evolution leaves this off. */
+  mysterySilhouette?: boolean;
+  /** Injectable RNG for the mystery roll (deterministic tests). */
+  rng?: () => number;
+}) {
   const audio = useGameStore((s) => s.audio);
   const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
   const reduced = !!useReducedMotion();
   const { phase, swap, skip } = useEvolutionSequence({ reduced });
+  // Slot-machine roll: a fresh random baby element each strobe tick (and on entry).
+  const [rolled, setRolled] = useState<Species>(() => pickSpecies(rng));
   const sound = useRef(getEvolutionSound());
   const celebrated = useRef(false);
 
@@ -57,7 +67,19 @@ export function EvolutionCinematic({
   const revealed = phase === 'reveal' || phase === 'done';
   const showNew = revealed || (phase === 'strobe' && swap);
   const isSil = phase === 'silhouette' || phase === 'strobe';
-  const src = spriteSrc(species, showNew ? to : from, 'happy', def);
+
+  // Re-roll the mystery baby on each strobe tick (swap) and on entering the roll.
+  useEffect(() => {
+    if (mysterySilhouette && isSil) setRolled(pickSpecies(rng));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swap, phase, mysterySilhouette]);
+
+  // During the roll, mystery hides the result behind a random baby silhouette (no
+  // `def` — the real pet's custom art would leak). At flash/reveal we show the REAL pet.
+  const rolling = mysterySilhouette && isSil;
+  const src = rolling
+    ? spriteSrc(rolled, 'baby', 'happy')
+    : spriteSrc(species, showNew ? to : from, 'happy', def);
 
   const finish = () => { sound.current.stop(); onDone(); };
 
@@ -82,7 +104,7 @@ export function EvolutionCinematic({
       <motion.img
         data-testid="evolution-stage"
         src={src}
-        alt={`pet-${species}-${showNew ? to : from}`}
+        alt={rolling ? 'mystery-egg-rolling' : `pet-${species}-${showNew ? to : from}`}
         draggable={false}
         className={`h-[clamp(7rem,30vh,13rem)] w-auto object-contain ${isSil ? 'evo-silhouette' : ''}`}
         animate={revealed ? { scale: [0.2, 1.35, 0.9, 1.05, 1] } : { scale: 1 }}

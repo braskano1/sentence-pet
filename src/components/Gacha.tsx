@@ -44,6 +44,7 @@ export function Gacha() {
         to="baby"
         species={lastPull.species}
         def={pulledDef}
+        mysterySilhouette
         onDone={() => setHatching(false)}
       />
     );
