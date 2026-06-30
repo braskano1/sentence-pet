@@ -6,6 +6,12 @@ It produces two TSV tables — the `Course` sheet (one row) and the `Units` shee
 (the activities) and [`bosses.md`](bosses.md) (the review battles) to build a
 full course.
 
+> **Tip — start from the template.** In the admin **Courses** tab, click
+> **"Download course template"** to get a `.xlsx` already set up with these
+> columns and sample rows (it bundles the Course/Units/Items/Bosses sheets).
+> Then have the AI produce more rows like the samples. The columns below match
+> that template exactly.
+
 ---
 
 ## What this produces

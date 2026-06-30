@@ -8,6 +8,12 @@ Depends on the `Units` and `Items` sheets — bosses reference unit ids and
 (optionally) item ids. See [`course-and-units.md`](course-and-units.md) and
 [`lessons-and-items.md`](lessons-and-items.md).
 
+> **Tip — start from the template.** In the admin **Bosses** tab, open
+> **Import…** and click **"Download template (with examples)"** to get a `Bosses`
+> `.xlsx` already set up with these columns and sample gate + final rows. Then
+> have the AI produce more rows like the samples. The columns below match that
+> template exactly.
+
 ---
 
 ## What this produces

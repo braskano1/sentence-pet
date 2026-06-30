@@ -7,6 +7,12 @@ column. There is no separate Lessons sheet.
 
 This is the densest guide. Read the "How lessons form" section before authoring.
 
+> **Tip — start from the template.** In the admin **Items** tab, open **Import…**
+> and click **"Download template (with examples)"** to get an `Items` `.xlsx`
+> already set up with these columns and one sample row per kind. Then have the AI
+> produce more rows like the samples. The columns below match that template
+> exactly.
+
 ---
 
 ## What this produces
