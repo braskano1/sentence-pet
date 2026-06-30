@@ -37,4 +37,20 @@ describe('useSpeech voice gating', () => {
     expect(speak).toHaveBeenNthCalledWith(2, 'แมว', 'th-TH', 1);
     expect(speak).toHaveBeenNthCalledWith(3, 'the cat sits', 'en-US', 1);
   });
+
+  it('collapses a same-letter flashcard front to one letter for speech', () => {
+    const a = defaultAudioSettings();
+    a.master.level = 1; a.voice.level = 1;
+    useGameStore.setState({ audio: a });
+    renderHook(() => useSpeech()).result.current.speakWord('B b');
+    expect(speak).toHaveBeenCalledWith('B', 'en-US', 1);
+  });
+
+  it('leaves an ordinary word unchanged for speech', () => {
+    const a = defaultAudioSettings();
+    a.master.level = 1; a.voice.level = 1;
+    useGameStore.setState({ audio: a });
+    renderHook(() => useSpeech()).result.current.speakWord('dog');
+    expect(speak).toHaveBeenCalledWith('dog', 'en-US', 1);
+  });
 });

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getSpeechProvider } from '../config/audio';
 import { effectiveGain } from '../audio/mixer';
 import { useGameStore } from '../state/gameStore';
+import { normalizeSpeechWord } from './speechText';
 
 export const EN = 'en-US';
 export const TH = 'th-TH';
@@ -16,7 +17,7 @@ export function useSpeech() {
       p.speak(text, lang, g);
     };
     return {
-      speakWord: (w: string) => say(w, EN),
+      speakWord: (w: string) => say(normalizeSpeechWord(w), EN),
       speakThai: (t: string) => say(t, TH),
       speakSentence: (s: string) => say(s, EN),
     };
