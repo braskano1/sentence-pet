@@ -91,6 +91,7 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
         const distractors = csv(r.distractors);
         if (distractors.length) ddItem.distractors = distractors;
         if (bool(r.hidePos)) ddItem.hidePos = true;
+        if (str(r.punct) === '?') ddItem.endPunct = '?';
         item = ddItem;
         break;
       }

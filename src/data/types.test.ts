@@ -17,3 +17,23 @@ describe('content item type guards', () => {
     expect(isFlashcard(dd)).toBe(false);
   });
 });
+
+describe('DragDropItem slot labels + endPunct', () => {
+  it('accepts the extended POS slot vocabulary and a question endPunct', () => {
+    const q: ContentItem = {
+      id: 'q1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'คุณชอบปลาไหม',
+      slots: ['Helper', 'Subject', 'Verb', 'Object'],
+      answer: ['do', 'you', 'like', 'fish'],
+      endPunct: '?',
+    };
+    const stmt: ContentItem = {
+      id: 's1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'เขาไม่สูง',
+      slots: ['Subject', 'Be', 'Not', 'Adjective', 'Place', 'Question'],
+      answer: ['he', 'is', 'not', 'tall', 'here', 'why'],
+    };
+    expect(isDragDrop(q)).toBe(true);
+    if (q.kind === 'dragdrop') expect(q.endPunct).toBe('?');
+    expect(isDragDrop(stmt)).toBe(true);
+    if (stmt.kind === 'dragdrop') expect(stmt.endPunct).toBeUndefined();
+  });
+});
