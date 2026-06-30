@@ -11,6 +11,13 @@ import { LessonShell } from './lesson/LessonShell';
 import type { MatchingItem, MatchingPair } from '../data/types';
 
 /**
+ * Rolling-window cap: at most this many UNSOLVED pairs are shown at once, in original
+ * order. As the learner matches one, it leaves the board and the next pair rolls in.
+ * Items with ≤3 pairs are unaffected. Grading/completion still span ALL item.pairs.
+ */
+const MATCH_WINDOW = 3;
+
+/**
  * Matching activity (Spec §5/§7). Drag each prompt tile (left = L2 prompt) into its
  * target slot (right = answer). Correct when EVERY prompt sits in its right slot.
  * Wrong placements CLEAR but correct ones stay (selective clear, mirroring drag-drop).
@@ -54,6 +61,11 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   if (items.length === 0) return null;
 
   const item = items[index];
+
+  // Rolling window: the first MATCH_WINDOW still-unsolved pairs, in original order.
+  // A pair is solved when its prompt sits in its own right slot. Solved pairs leave,
+  // letting later pairs roll into view. Grading/completion below still span item.pairs.
+  const activePairs = item.pairs.filter((p) => assignment[p.left] !== p.right).slice(0, MATCH_WINDOW);
 
   function place(left: string, right: string) {
     const next = { ...assignment, [left]: right };
@@ -121,15 +133,13 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
           <div className="flex flex-col gap-2">
-            {item.pairs.map((p) => {
+            {activePairs.map((p) => {
               const th = showL1(unit, l1Mode, p.l1);
-              return assignment[p.left] === p.right ? null : (
-                <PromptTile key={p.left} id={p.left} label={p.left} sub={th} />
-              );
+              return <PromptTile key={p.left} id={p.left} label={p.left} sub={th} />;
             })}
           </div>
           <div className="flex flex-col gap-2">
-            {item.pairs.map((p) => (
+            {activePairs.map((p) => (
               <TargetSlot
                 key={p.right}
                 id={p.right}

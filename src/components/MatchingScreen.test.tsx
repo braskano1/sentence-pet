@@ -96,7 +96,10 @@ describe('MatchingScreen — wrong-placement feedback', () => {
     render(<MatchingScreen items={[item]} unit={{ l1Enabled: false }} />);
     drop('cat', 'AAA');
 
-    expect(screen.getByTestId('target-AAA')).not.toHaveClass('shake-wrong');
+    // The solved pair leaves the board (rolling window) — no error treatment fired:
+    // its slot is gone and no remaining slot carries the wrong-placement shake.
+    expect(screen.queryByTestId('target-AAA')).not.toBeInTheDocument();
+    expect(document.querySelector('.shake-wrong')).toBeNull();
     expect(screen.queryByText('Try again')).not.toBeInTheDocument();
   });
 
@@ -126,5 +129,101 @@ describe('MatchingScreen — wrong-placement feedback', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('MatchingScreen — rolling window (≤3 active pairs)', () => {
+  // A 5-pair item: far past the working-memory limit if all shown at once.
+  const five: MatchingItem = {
+    id: 'm5', kind: 'matching', level: 1,
+    pairs: [
+      { left: 'a', right: 'A' },
+      { left: 'b', right: 'B' },
+      { left: 'c', right: 'C' },
+      { left: 'd', right: 'D' },
+      { left: 'e', right: 'E' },
+    ],
+  };
+
+  beforeEach(() => {
+    useGameStore.getState().resetForTest();
+  });
+
+  it('shows only the first 3 unsolved pairs initially (3 prompts + 3 targets)', () => {
+    render(<MatchingScreen items={[five]} unit={{ l1Enabled: false }} />);
+
+    expect(screen.getAllByTestId(/^target-/)).toHaveLength(3);
+    // First 3 prompts visible, pairs 4 & 5 hidden.
+    expect(screen.getByText('a')).toBeInTheDocument();
+    expect(screen.getByText('b')).toBeInTheDocument();
+    expect(screen.getByText('c')).toBeInTheDocument();
+    expect(screen.queryByText('d')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('target-D')).not.toBeInTheDocument();
+    expect(screen.queryByText('e')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('target-E')).not.toBeInTheDocument();
+  });
+
+  it('rolls the next hidden pair in when a visible pair is solved (still 3)', () => {
+    render(<MatchingScreen items={[five]} unit={{ l1Enabled: false }} />);
+
+    // Correctly match the first visible pair → it leaves, the 4th rolls in.
+    drop('a', 'A');
+
+    expect(screen.getAllByTestId(/^target-/)).toHaveLength(3);
+    // Solved pair gone.
+    expect(screen.queryByTestId('target-A')).not.toBeInTheDocument();
+    expect(screen.queryByText('a')).not.toBeInTheDocument();
+    // Previously-hidden 4th pair now visible.
+    expect(screen.getByTestId('target-D')).toBeInTheDocument();
+    expect(screen.getByText('d')).toBeInTheDocument();
+    // 5th still hidden.
+    expect(screen.queryByTestId('target-E')).not.toBeInTheDocument();
+  });
+
+  it('shows all pairs when the item has ≤3 (no windowing regression)', () => {
+    const two: MatchingItem = {
+      id: 'm2', kind: 'matching', level: 1,
+      pairs: [{ left: 'x', right: 'X' }, { left: 'y', right: 'Y' }],
+    };
+    render(<MatchingScreen items={[two]} unit={{ l1Enabled: false }} />);
+
+    expect(screen.getAllByTestId(/^target-/)).toHaveLength(2);
+    expect(screen.getByText('x')).toBeInTheDocument();
+    expect(screen.getByText('y')).toBeInTheDocument();
+  });
+
+  it('completion still requires ALL pairs across the rolling window', () => {
+    vi.useFakeTimers();
+    try {
+      render(<MatchingScreen items={[five]} unit={{ l1Enabled: false }} />);
+
+      // Solve every pair in order; the window keeps refilling.
+      drop('a', 'A');
+      drop('b', 'B');
+      drop('c', 'C');
+      // No success yet — d & e still outstanding.
+      expect(screen.queryByText('Correct! ✓')).not.toBeInTheDocument();
+      drop('d', 'D');
+      expect(screen.queryByText('Correct! ✓')).not.toBeInTheDocument();
+      drop('e', 'E');
+
+      // Now every pair is matched → success beat fires, then finishes.
+      expect(screen.getByRole('status')).toHaveTextContent('Correct! ✓');
+      expect(useGameStore.getState().screen).toBe('egg');
+      act(() => { vi.advanceTimersByTime(700); });
+      expect(useGameStore.getState().screen).toBe('reward');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('wrong-placement feedback still works within the window', () => {
+    render(<MatchingScreen items={[five]} unit={{ l1Enabled: false }} />);
+    // Drop "a" onto wrong (visible) slot "B".
+    drop('a', 'B');
+
+    const slot = screen.getByTestId('target-B');
+    expect(slot).toHaveClass('shake-wrong');
+    expect(screen.getByText('Try again')).toBeInTheDocument();
   });
 });
