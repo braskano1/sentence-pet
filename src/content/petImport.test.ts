@@ -21,8 +21,9 @@ describe('deriveStatBands', () => {
   });
 
   it('clamps a derived min below zero up to zero', () => {
-    const bands = deriveStatBands([0, 5]);
-    expect(bands.common.hp[0]).toBe(0);
+    const bands = deriveStatBands([-50, 5]);
+    expect(bands.common.hp[0]).toBe(0);            // -50 clamped up to 0
     expect(bands.common.hp[0]).toBeGreaterThanOrEqual(0);
+    expect(bands.common.hp[1]).toBeGreaterThanOrEqual(bands.common.hp[0]); // max >= min
   });
 });
