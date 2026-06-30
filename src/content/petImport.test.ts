@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { deriveStatBands } from './petImport';
+import * as XLSX from 'xlsx';
+import { deriveStatBands, parsePetsSheet } from './petImport';
 import { GAME_CONFIG } from '../config/gameConfig';
+import { validatePetDefs } from './validate';
 
 const common = GAME_CONFIG.gacha.rarities.find((r) => r.rarity === 'common')!.band;
 
@@ -25,5 +27,67 @@ describe('deriveStatBands', () => {
     expect(bands.common.hp[0]).toBe(0);            // -50 clamped up to 0
     expect(bands.common.hp[0]).toBeGreaterThanOrEqual(0);
     expect(bands.common.hp[1]).toBeGreaterThanOrEqual(bands.common.hp[0]); // max >= min
+  });
+});
+
+function wbWithPets(tsv: string): XLSX.WorkBook {
+  const aoa = tsv.split('\n').map((l) => l.split('\t'));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Pets');
+  return wb;
+}
+
+describe('parsePetsSheet', () => {
+  it('absent Pets sheet → empty, no errors', () => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['x']]), 'Other');
+    expect(parsePetsSheet(wb)).toEqual({ defs: [], errors: [] });
+  });
+
+  it('parses a full row and derives statBands from the base range', () => {
+    const { defs, errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tbase_min\tbase_max\tenabled\tstarter\n' +
+      'def-sprig\tSprig\t1\t1\tleaf\tleaf\t40\t60\ttrue\ttrue',
+    ));
+    expect(errors).toEqual([]);
+    expect(defs).toHaveLength(1);
+    const d = defs[0];
+    expect(d.id).toBe('def-sprig');
+    expect(d.types).toEqual(['leaf']);
+    expect(d.statBands.common.hp).toEqual([40, 60]);
+    expect(d.statBands.legendary.hp).toEqual([85, 90]);
+    expect(d.starter).toBe(true);
+    expect(d.enabled).toBe(true);
+  });
+
+  it('omitted base columns → gacha-table statBands (builtin-identical)', () => {
+    const { defs } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-x\tEx\t1\t1\tfire\tfire',
+    ));
+    expect(defs[0].statBands.common.hp).toEqual([40, 60]);
+    expect(defs[0].statBands.epic.hp).toEqual([72, 88]);
+  });
+
+  it('reports per-row shape errors prefixed "Pets row N:"', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      '\tNoId\t1\t1\tleaf\tleaf\n' +
+      'def-b\tB\t1\t1\t\tleaf\n' +
+      'def-c\tC\t0\t1\tleaf\twind',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /id/.test(e))).toBe(true);
+    expect(errors.some((e) => e.startsWith('Pets row 3:') && /type/.test(e))).toBe(true);
+    expect(errors.some((e) => e.startsWith('Pets row 4:'))).toBe(true);
+  });
+
+  it('parsed defs merged with builtins pass validatePetDefs', () => {
+    const { defs } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tenabled\n' +
+      'def-new\tNewbie\t2\t1\twater\twater\ttrue',
+    ));
+    const res = validatePetDefs(defs);
+    expect(res.errors).toContain('expected exactly one starter pet-def, found 0');
+    expect(res.errors.some((e) => e.includes('def-new') && /band|type|element|gen|dexNo/.test(e))).toBe(false);
   });
 });
