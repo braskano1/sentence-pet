@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { WorkBook } from 'xlsx';
+import { downloadWorkbook } from '../../../content/downloadWorkbook';
 import { mergeById } from '../../../content/mergeById';
 import type { MergeChange, MergeResult } from '../../../content/mergeById';
 import { Button } from './Button';
@@ -28,6 +30,7 @@ export function ImportDrawer<T>({
   onApply,
   onClose,
   renderChange,
+  downloadTemplate,
 }: {
   open: boolean;
   title: string;
@@ -38,6 +41,7 @@ export function ImportDrawer<T>({
   onApply: (merged: T[]) => void;
   onClose: () => void;
   renderChange: (change: MergeChange<T>) => ReactNode;
+  downloadTemplate?: { filename: string; build: () => WorkBook };
 }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -105,6 +109,17 @@ export function ImportDrawer<T>({
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); }}
             />
           </label>
+
+          {downloadTemplate && (
+            <button
+              type="button"
+              aria-label={`Download ${noun} template`}
+              onClick={() => downloadWorkbook(downloadTemplate.build(), downloadTemplate.filename)}
+              className="self-start text-xs font-medium text-indigo-600 hover:underline"
+            >
+              ↳ Download template (with examples)
+            </button>
+          )}
 
           <ValidationSummary errors={errors} />
 
