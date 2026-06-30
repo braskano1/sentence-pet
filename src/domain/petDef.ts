@@ -2,6 +2,10 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import { SPECIES } from './species';
 import type { BattleStats, PetDef, Rarity, Species, StatRange } from '../data/types';
 
+import falconBaby from '../assets/sprites/tempest-falcon/baby.webp';
+import falconYoung from '../assets/sprites/tempest-falcon/young.webp';
+import falconAdult from '../assets/sprites/tempest-falcon/adult.webp';
+
 /** Build per-rarity × per-stat bands from the gacha rarity table (single source of truth). */
 function bandsFromGacha(): Record<Rarity, Record<keyof BattleStats, StatRange>> {
   const out = {} as Record<Rarity, Record<keyof BattleStats, StatRange>>;
@@ -31,6 +35,36 @@ export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element, i): Pet
   ...(i === 0 ? { starter: true } : {}), // SPECIES[0] === 'leaf' — the starter is dexNo 1
   enabled: true,
 }));
+
+/**
+ * Proof-of-concept import from a friend's combined character sheet
+ * (Air / "Tempest Falcon" / Rare). The single sheet was split into 3 stage
+ * images, background-removed (transparent) and downscaled to <=512px. The same
+ * creature growing baby->young->adult is ONE PetDef with per-stage sprite
+ * variants — NOT evolvesToId (that's def->def for *different* creatures).
+ * Happy/sad reuse one art (no mood-specific art delivered).
+ */
+const TEMPEST_FALCON: PetDef = {
+  id: 'def-tempest-falcon',
+  name: 'Tempest Falcon',
+  gen: 2,
+  dexNo: 1,
+  types: ['air'],
+  element: 'air',
+  statBands: bandsFromGacha(),
+  enabled: true,
+  rarity: 'rare', // sheet "Rare"; a "Mythical" sheet would map -> 'legendary'
+  sprite: {
+    variants: {
+      baby: { happy: falconBaby, sad: falconBaby },
+      young: { happy: falconYoung, sad: falconYoung },
+      adult: { happy: falconAdult, sad: falconAdult },
+    },
+  },
+};
+
+/** Built-ins + imported pets. Spread keeps the per-element starter logic intact. */
+export const ALL_PET_DEFS: readonly PetDef[] = [...BUILTIN_PET_DEFS, TEMPEST_FALCON];
 
 /** Module-level active catalog. Hydration swaps this; defaults to the built-ins so the game never blanks. */
 let active: readonly PetDef[] = BUILTIN_PET_DEFS;

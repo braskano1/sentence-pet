@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import type { PetDef } from '../data/types';
 import { evolutionChain, stageForChainPosition, type SpriteStage } from '../domain/dex';
 import { spriteSrc } from '../config/sprites';
-import { ELEMENT_EMOJI, formatDexNo, PET_NAME } from '../config/petDisplay';
+import { ELEMENT_EMOJI, formatDexNo, PET_NAME, STAGE_NAME } from '../config/petDisplay';
 import { PressButton } from './PressButton';
 
 /** One chain node at its own stage: full art + name if caught, silhouette + ??? if not. */
@@ -16,7 +16,7 @@ function ChainNode({ def, caught, stage }: { def: PetDef; caught: boolean; stage
         className="h-16 w-16 object-contain"
         style={caught ? undefined : { filter: 'brightness(0)' }}
       />
-      <span className="text-[10px] font-bold text-amber-900/60">{formatDexNo(def.dexNo)}</span>
+      <span className="text-[10px] font-bold text-amber-900/60">{STAGE_NAME[stage]}</span>
       <span className="text-xs font-extrabold text-amber-950">{caught ? def.name : '???'}</span>
     </div>
   );

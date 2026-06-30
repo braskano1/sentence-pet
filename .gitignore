@@ -54,3 +54,8 @@ serviceAccountKey.json
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Firebase emulator persisted state + debug logs (dev only)
+.emulator-data/
+firebase-export-*/
+*-debug.log
