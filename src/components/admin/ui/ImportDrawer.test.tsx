@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import * as XLSX from 'xlsx';
 import { ImportDrawer } from './ImportDrawer';
+vi.mock('../../../content/downloadWorkbook', () => ({ downloadWorkbook: vi.fn() }));
+import { downloadWorkbook } from '../../../content/downloadWorkbook';
 
 type Row = { id: string; v: number };
 const existing: Row[] = [{ id: 'a', v: 1 }, { id: 'b', v: 2 }];
@@ -81,5 +84,25 @@ describe('ImportDrawer', () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('ImportDrawer download template', () => {
+  it('renders the button and downloads the built workbook on click', () => {
+    const wb = XLSX.utils.book_new();
+    const build = vi.fn(() => wb);
+    render(
+      <ImportDrawer<Row>
+        open title="Import rows" noun="row" existing={existing}
+        getId={(r) => r.id}
+        parseFile={async () => ({ entities: [], errors: [] })}
+        onApply={vi.fn()} onClose={vi.fn()} renderChange={() => null}
+        downloadTemplate={{ filename: 'rows-template.xlsx', build }}
+      />,
+    );
+    const btn = screen.getByRole('button', { name: /download .*template/i });
+    fireEvent.click(btn);
+    expect(build).toHaveBeenCalledTimes(1);
+    expect(downloadWorkbook).toHaveBeenCalledWith(wb, 'rows-template.xlsx');
   });
 });
