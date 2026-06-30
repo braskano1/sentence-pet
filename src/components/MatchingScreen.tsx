@@ -80,7 +80,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   }
 
   return (
-    <LessonShell title="Match the pairs" index={index} total={items.length} l1={unit.l1Enabled}>
+    <LessonShell title="Match the pairs" instruction="Drag each word to its match." index={index} total={items.length} l1={unit.l1Enabled}>
     <div className="flex flex-1 flex-col gap-4 p-6">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
