@@ -42,7 +42,7 @@ export function LessonShell({
   }, []);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50">
       <div className="flex flex-col gap-1 px-4 pt-4">
         <div className="flex items-center gap-2">
           <button

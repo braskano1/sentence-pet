@@ -168,7 +168,7 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <LessonShell title="Build the sentence" streak={streak} index={index} total={items.length}>
-      <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
+      <div className="flex h-full flex-col gap-3 p-4">
         <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} defId={pet.defId} />
 
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">

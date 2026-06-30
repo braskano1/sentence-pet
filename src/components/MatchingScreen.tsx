@@ -169,7 +169,7 @@ function TargetSlot({ id, label, filledBy }: { id: string; label: string; filled
             : 'border-dashed border-slate-300 bg-white'
       }`}
     >
-      <span className="block text-xs opacity-70">{label}</span>
+      <span className="block text-xs font-semibold text-slate-600">{label}</span>
       {filledBy && <span className="font-bold">{filledBy}</span>}
     </div>
   );
