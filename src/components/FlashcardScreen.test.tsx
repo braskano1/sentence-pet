@@ -29,6 +29,7 @@ describe('FlashcardScreen', () => {
     expect(useGameStore.getState().lastReward).toBeNull();
 
     render(<FlashcardScreen items={[items[0]]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /got it/i }));
 
     // finishRound flips the store to the reward screen and records a reward.
@@ -40,6 +41,7 @@ describe('FlashcardScreen', () => {
     expect(useGameStore.getState().screen).toBe('egg');
 
     render(<FlashcardScreen items={[items[0]]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /again/i }));
 
     // Still practicing the same card; nothing was completed.
@@ -51,9 +53,11 @@ describe('FlashcardScreen', () => {
   it('Again re-queues the front card to the back', () => {
     render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
     // cat is front; "Again" sends it behind dog.
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /again/i }));
     expect(screen.getByText('dog')).toBeInTheDocument();
     // Got it on dog removes it; cat (re-queued) comes back, round not finished.
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /got it/i }));
     expect(screen.getByText('cat')).toBeInTheDocument();
     expect(useGameStore.getState().screen).toBe('egg');
@@ -62,9 +66,12 @@ describe('FlashcardScreen', () => {
   it('only completing every card via Got it finishes the round', () => {
     render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
     // Re-queue cat, then clear the whole queue with Got it: dog, cat.
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /again/i })); // cat → back; dog front
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /got it/i })); // dog done; cat front
     expect(useGameStore.getState().screen).toBe('egg');
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
     fireEvent.click(screen.getByRole('button', { name: /got it/i })); // cat done; queue empty
     expect(useGameStore.getState().screen).toBe('reward');
     expect(useGameStore.getState().lastReward).not.toBeNull();
@@ -77,6 +84,47 @@ describe('FlashcardScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /got it/i }));
     // New card shows its front (not carried-over flipped state).
     expect(screen.getByText('dog')).toBeInTheDocument();
+    expect(screen.getByText('tap to flip')).toBeInTheDocument();
+  });
+
+  it('hides the grade row until the card is flipped', () => {
+    render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
+    // Fresh card: grade buttons absent, flip hint present.
+    expect(screen.queryByRole('button', { name: /again/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /got it/i })).toBeNull();
+    expect(screen.getByText('tap to flip')).toBeInTheDocument();
+    // After flipping, both grade buttons appear.
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
+    expect(screen.getByRole('button', { name: /again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /got it/i })).toBeInTheDocument();
+  });
+
+  it('keeps the grade row open after flipping back to the front of the same card', () => {
+    render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /flip/i })); // show back
+    fireEvent.click(screen.getByRole('button', { name: /flip/i })); // back to front, same card
+    // Already saw the back of THIS card — gate stays open.
+    expect(screen.getByRole('button', { name: /again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /got it/i })).toBeInTheDocument();
+  });
+
+  it('re-hides the grade row for the next card after Got it (gate reset)', () => {
+    render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
+    fireEvent.click(screen.getByRole('button', { name: /got it/i })); // advance to dog
+    expect(screen.getByText('dog')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /again/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /got it/i })).toBeNull();
+    expect(screen.getByText('tap to flip')).toBeInTheDocument();
+  });
+
+  it('re-hides the grade row for the next front card after Again (gate reset)', () => {
+    render(<FlashcardScreen items={items} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByRole('button', { name: /flip/i }));
+    fireEvent.click(screen.getByRole('button', { name: /again/i })); // cat → back; dog front
+    expect(screen.getByText('dog')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /again/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /got it/i })).toBeNull();
     expect(screen.getByText('tap to flip')).toBeInTheDocument();
   });
 });

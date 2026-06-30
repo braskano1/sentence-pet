@@ -11,6 +11,13 @@ import { LessonShell } from './lesson/LessonShell';
 import type { MatchingItem, MatchingPair } from '../data/types';
 
 /**
+ * Rolling-window cap: at most this many UNSOLVED pairs are shown at once, in original
+ * order. As the learner matches one, it leaves the board and the next pair rolls in.
+ * Items with ≤3 pairs are unaffected. Grading/completion still span ALL item.pairs.
+ */
+const MATCH_WINDOW = 3;
+
+/**
  * Matching activity (Spec §5/§7). Drag each prompt tile (left = L2 prompt) into its
  * target slot (right = answer). Correct when EVERY prompt sits in its right slot.
  * Wrong placements CLEAR but correct ones stay (selective clear, mirroring drag-drop).
@@ -34,11 +41,14 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   const [mistakes, setMistakes] = useState(0);
   const [activeLeft, setActiveLeft] = useState<string | null>(null);
   const [solved, setSolved] = useState(false); // brief "Correct!" beat before advancing
+  const [errorRight, setErrorRight] = useState<string | null>(null); // target just wrongly filled
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clean up any pending advance timer on unmount.
+  // Clean up any pending timers on unmount.
   useEffect(() => () => {
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    if (errorTimer.current) clearTimeout(errorTimer.current);
   }, []);
 
   const sensors = useSensors(
@@ -52,12 +62,22 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
 
   const item = items[index];
 
+  // Rolling window: the first MATCH_WINDOW still-unsolved pairs, in original order.
+  // A pair is solved when its prompt sits in its own right slot. Solved pairs leave,
+  // letting later pairs roll into view. Grading/completion below still span item.pairs.
+  const activePairs = item.pairs.filter((p) => assignment[p.left] !== p.right).slice(0, MATCH_WINDOW);
+
   function place(left: string, right: string) {
     const next = { ...assignment, [left]: right };
     const { done, wrong } = gradeMatching(item.pairs, next);
     if (wrong.length) {
       setMistakes((m) => m + 1);
       for (const w of wrong) next[w] = undefined; // clear wrong, keep correct
+      // Gentle-but-legible: flag the just-dropped target slot for a brief shake + rose
+      // border, announced politely, then clear it ~600ms later.
+      setErrorRight(right);
+      if (errorTimer.current) clearTimeout(errorTimer.current);
+      errorTimer.current = setTimeout(() => setErrorRight(null), 600);
     }
     setAssignment(next);
     if (done) {
@@ -104,23 +124,29 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
           </div>
         </div>
       )}
+      {/* Gentle, legible wrong-placement signal for assistive tech (visual cue lives on the slot).
+          Suppressed while the success beat is up so only one role="status" region is ever live. */}
+      {errorRight && !solved && (
+        <div role="status" aria-live="polite" className="text-center text-sm font-semibold text-rose-500">
+          Try again
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
           <div className="flex flex-col gap-2">
-            {item.pairs.map((p) => {
+            {activePairs.map((p) => {
               const th = showL1(unit, l1Mode, p.l1);
-              return assignment[p.left] === p.right ? null : (
-                <PromptTile key={p.left} id={p.left} label={p.left} sub={th} />
-              );
+              return <PromptTile key={p.left} id={p.left} label={p.left} sub={th} />;
             })}
           </div>
           <div className="flex flex-col gap-2">
-            {item.pairs.map((p) => (
+            {activePairs.map((p) => (
               <TargetSlot
                 key={p.right}
                 id={p.right}
                 label={p.right}
                 filledBy={Object.entries(assignment).find(([, r]) => r === p.right)?.[0]}
+                error={errorRight === p.right}
               />
             ))}
           </div>
@@ -155,18 +181,20 @@ function PromptTile({ id, label, sub }: { id: string; label: string; sub: string
   );
 }
 
-function TargetSlot({ id, label, filledBy }: { id: string; label: string; filledBy?: string }) {
+function TargetSlot({ id, label, filledBy, error }: { id: string; label: string; filledBy?: string; error?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div
       ref={setNodeRef}
       data-testid={`target-${id}`}
       className={`min-h-12 rounded-xl border-2 px-4 py-3 ${
-        isOver
-          ? 'border-emerald-500 bg-emerald-50'
-          : filledBy
-            ? 'border-emerald-400 bg-emerald-100'
-            : 'border-dashed border-slate-300 bg-white'
+        error
+          ? 'shake-wrong border-rose-400 bg-rose-50'
+          : isOver
+            ? 'border-emerald-500 bg-emerald-50'
+            : filledBy
+              ? 'border-emerald-400 bg-emerald-100'
+              : 'border-dashed border-slate-300 bg-white'
       }`}
     >
       <span className="block text-xs font-semibold text-slate-600">{label}</span>

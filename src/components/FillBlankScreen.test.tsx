@@ -1,5 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+
+const speech = vi.hoisted(() => ({
+  speakWord: vi.fn(),
+  speakThai: vi.fn(),
+  speakSentence: vi.fn(),
+}));
+vi.mock('../hooks/useSpeech', () => ({ useSpeech: () => speech }));
+
 import { FillBlankScreen } from './FillBlankScreen';
 import { useGameStore } from '../state/gameStore';
 import type { FillBlankItem } from '../data/types';
@@ -8,9 +16,15 @@ const items: FillBlankItem[] = [
   { id: 'b1', kind: 'fillblank', level: 1, template: 'I ___ rice.', answer: 'eat', l1: { th: 'กิน' } },
 ];
 
+const twoItems: FillBlankItem[] = [
+  { id: 'b1', kind: 'fillblank', level: 1, template: 'I ___ rice.', answer: 'eat', l1: { th: 'กิน' } },
+  { id: 'b2', kind: 'fillblank', level: 1, template: 'You ___ tea.', answer: 'drink', l1: { th: 'ดื่ม' } },
+];
+
 describe('FillBlankScreen', () => {
   beforeEach(() => {
     useGameStore.getState().resetForTest();
+    speech.speakSentence.mockClear();
   });
 
   it('hides Thai when L1 is off: first wrong tile tap shows the first-letter rung', () => {
@@ -52,14 +66,72 @@ describe('FillBlankScreen', () => {
     expect(useGameStore.getState().screen).toBe('egg');
   });
 
-  it('finishes the round when the correct tile is tapped on the last item', () => {
-    expect(useGameStore.getState().screen).toBe('egg');
-    expect(useGameStore.getState().lastReward).toBeNull();
+  it('shows the "Correct! ✓" beat and does NOT advance immediately on a correct tap', () => {
+    vi.useFakeTimers();
+    try {
+      render(<FillBlankScreen items={items} unit={{ l1Enabled: false }} />);
+      act(() => {
+        fireEvent.click(screen.getByTestId('tile-eat'));
+      });
 
-    render(<FillBlankScreen items={items} unit={{ l1Enabled: false }} />);
-    fireEvent.click(screen.getByTestId('tile-eat'));
+      // Loud-on-success: emerald status banner is up.
+      expect(screen.getByRole('status')).toHaveTextContent('Correct! ✓');
+      // The completed sentence is spoken aloud.
+      expect(speech.speakSentence).toHaveBeenCalledWith('I eat rice.');
+      // But the round has NOT advanced yet — still on the practice screen.
+      expect(useGameStore.getState().screen).toBe('egg');
+      expect(useGameStore.getState().lastReward).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
-    expect(useGameStore.getState().screen).toBe('reward');
-    expect(useGameStore.getState().lastReward).not.toBeNull();
+  it('finishes the round ~700ms after the correct tile is tapped on the last item', () => {
+    vi.useFakeTimers();
+    try {
+      expect(useGameStore.getState().screen).toBe('egg');
+      expect(useGameStore.getState().lastReward).toBeNull();
+
+      render(<FillBlankScreen items={items} unit={{ l1Enabled: false }} />);
+      act(() => {
+        fireEvent.click(screen.getByTestId('tile-eat'));
+      });
+      // Still not finished during the beat.
+      expect(useGameStore.getState().screen).toBe('egg');
+
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
+
+      expect(useGameStore.getState().screen).toBe('reward');
+      expect(useGameStore.getState().lastReward).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('advances to the next item ~700ms after a correct tap (not the last item)', () => {
+    vi.useFakeTimers();
+    try {
+      render(<FillBlankScreen items={twoItems} unit={{ l1Enabled: false }} />);
+      // First item template visible.
+      expect(screen.getByText('rice.', { exact: false })).toBeInTheDocument();
+
+      act(() => {
+        fireEvent.click(screen.getByTestId('tile-eat'));
+      });
+      expect(speech.speakSentence).toHaveBeenCalledWith('I eat rice.');
+
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
+
+      // Now on the second item, banner gone.
+      expect(screen.getByText('tea.', { exact: false })).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(useGameStore.getState().screen).toBe('egg');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
