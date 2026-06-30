@@ -166,3 +166,38 @@ describe('importPets', () => {
     expect(errors[0]).toMatch(/Pets/);
   });
 });
+
+describe('parsePetsSheet integer enforcement + types dedup', () => {
+  it('rejects a fractional gen', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-f\tF\t1.5\t1\tleaf\tleaf',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /gen must be an integer/.test(e))).toBe(true);
+  });
+
+  it('rejects a fractional dexNo', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-f\tF\t1\t2.5\tleaf\tleaf',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /dexNo must be an integer/.test(e))).toBe(true);
+  });
+
+  it('rejects a fractional base_min/base_max', () => {
+    const { errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\tbase_min\tbase_max\n' +
+      'def-f\tF\t2\t1\tleaf\tleaf\t40.5\t60',
+    ));
+    expect(errors.some((e) => e.startsWith('Pets row 2:') && /whole number/.test(e))).toBe(true);
+  });
+
+  it('dedupes duplicate types', () => {
+    const { defs, errors } = parsePetsSheet(wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-d\tD\t2\t1\tleaf,leaf\tleaf',
+    ));
+    expect(errors).toEqual([]);
+    expect(defs[0].types).toEqual(['leaf']);
+  });
+});

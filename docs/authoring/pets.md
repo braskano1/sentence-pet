@@ -31,11 +31,11 @@ below.
 |---|---|---|---|
 | `id` | string | ✅ | Unique, stable pet id (e.g. `def-spark`). Used to merge re-imports and to wire evolution links — keep it stable across edits. |
 | `name` | string | ✅ | Display name. |
-| `gen` | number ≥ 1 | ✅ | Generation (the Pokédex "book"). |
-| `dexNo` | number ≥ 1 | ✅ | Number within that generation. **`(gen, dexNo)` must be unique across the WHOLE catalog** (your rows + the pets already in the game). |
+| `gen` | whole number ≥ 1 | ✅ | Generation (the Pokédex "book"). Must be an integer. |
+| `dexNo` | whole number ≥ 1 | ✅ | Number within that generation. Must be an integer. **`(gen, dexNo)` must be unique across the WHOLE catalog** (your rows + the pets already in the game). |
 | `types` | CSV, ≥ 1 | ✅ | Battle types, comma-separated. Each must be one of `leaf` / `fire` / `air` / `water` (the current type registry). |
 | `element` | `leaf` / `fire` / `air` / `water` | ✅ | The art family / sprite source. One of the four — any other value is an error. |
-| `base_min`, `base_max` | number PAIR | – | The pet's base stat range (see *Stats*). **Omit BOTH for standard stats** (recommended). Both-or-neither: setting only one is an error. `base_min` ≥ 0, `base_min` ≤ `base_max`. |
+| `base_min`, `base_max` | whole-number PAIR | – | The pet's base stat range (see *Stats*). **Omit BOTH for standard stats** (recommended). Both-or-neither: setting only one is an error. Whole numbers; `base_min` ≥ 0, `base_min` ≤ `base_max`. |
 | `enabled` | `true` / `false` | – | Whether the pet is active. Defaults to `true`. |
 | `starter` | `true` / `false` | – | Marks the starter pet. **Leave blank** — the game already has exactly one starter (see rules). |
 | `rarity` | `common` / `rare` / `epic` / `legendary` | – | Optional fixed rarity override. Omit to let the game assign rarity normally. |

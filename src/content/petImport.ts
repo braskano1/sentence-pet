@@ -66,10 +66,10 @@ export function parsePetsSheet(wb: XLSX.WorkBook): { defs: PetDef[]; errors: str
 
     const gen = n(r['gen']);
     const dexNo = n(r['dexNo']);
-    if (!Number.isFinite(gen) || gen < 1) errors.push(`Pets row ${line}: gen must be a number >= 1`);
-    if (!Number.isFinite(dexNo) || dexNo < 1) errors.push(`Pets row ${line}: dexNo must be a number >= 1`);
+    if (!Number.isInteger(gen) || gen < 1) errors.push(`Pets row ${line}: gen must be an integer >= 1`);
+    if (!Number.isInteger(dexNo) || dexNo < 1) errors.push(`Pets row ${line}: dexNo must be an integer >= 1`);
 
-    const types = list(r['types']) as PetType[];
+    const types = [...new Set(list(r['types']))] as PetType[];
     if (types.length === 0) errors.push(`Pets row ${line}: types is required (>= 1, comma-separated)`);
     else for (const t of types) if (!isPetType(t)) errors.push(`Pets row ${line}: unknown type "${t}"`);
 
@@ -82,7 +82,7 @@ export function parsePetsSheet(wb: XLSX.WorkBook): { defs: PetDef[]; errors: str
     if (hasMin !== hasMax) errors.push(`Pets row ${line}: base_min and base_max must both be set or both empty`);
     else if (hasMin && hasMax) {
       const lo = n(r['base_min']); const hi = n(r['base_max']);
-      if (!Number.isFinite(lo) || !Number.isFinite(hi)) errors.push(`Pets row ${line}: base_min/base_max must be numbers`);
+      if (!Number.isInteger(lo) || !Number.isInteger(hi)) errors.push(`Pets row ${line}: base_min and base_max must be whole numbers`);
       else if (lo < 0) errors.push(`Pets row ${line}: base_min must be >= 0`);
       else if (lo > hi) errors.push(`Pets row ${line}: base_min must be <= base_max`);
       else base = [lo, hi];

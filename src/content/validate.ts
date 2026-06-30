@@ -166,7 +166,9 @@ export function validatePetDefs(defs: PetDef[]): { ok: boolean; errors: string[]
     if (!SPECIES.includes(d.element)) push(`pet-def ${d.id} element ${String(d.element)} is not one of the fixed four`);
 
     if (typeof d.gen !== 'number' || d.gen < 1) push(`pet-def ${d.id} gen must be >= 1`);
+    else if (!Number.isInteger(d.gen)) push(`pet-def ${d.id} gen must be an integer`);
     if (typeof d.dexNo !== 'number' || d.dexNo < 1) push(`pet-def ${d.id} dexNo must be >= 1`);
+    else if (!Number.isInteger(d.dexNo)) push(`pet-def ${d.id} dexNo must be an integer`);
     const gd = `${d.gen}:${d.dexNo}`;
     if (seenGenDex.has(gd)) push(`pet-def ${d.id} duplicate (gen ${d.gen}, dexNo ${d.dexNo})`);
     seenGenDex.add(gd);
