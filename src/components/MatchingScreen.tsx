@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor,
   closestCenter, useDraggable, useDroppable, useSensor, useSensors,
@@ -33,6 +33,13 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   const [assignment, setAssignment] = useState<Record<string, string | undefined>>({});
   const [mistakes, setMistakes] = useState(0);
   const [activeLeft, setActiveLeft] = useState<string | null>(null);
+  const [solved, setSolved] = useState(false); // brief "Correct!" beat before advancing
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up any pending advance timer on unmount.
+  useEffect(() => () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -54,19 +61,24 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
     }
     setAssignment(next);
     if (done) {
-      if (index + 1 >= items.length) {
-        finishRound({
-          drill: 'mixed',
-          kind: 'matching',
-          level: item.level,
-          stars: computeStars({ hints: 0, mistakes }),
-          correctCount: items.length,
-        });
-      } else {
-        setIndex(index + 1);
-        setAssignment({});
-        setMistakes(0);
-      }
+      // Presentational beat: show "Correct! ✓" for ~700ms, THEN advance / finishRound.
+      setSolved(true);
+      advanceTimer.current = setTimeout(() => {
+        if (index + 1 >= items.length) {
+          finishRound({
+            drill: 'mixed',
+            kind: 'matching',
+            level: item.level,
+            stars: computeStars({ hints: 0, mistakes }),
+            correctCount: items.length,
+          });
+        } else {
+          setIndex(index + 1);
+          setAssignment({});
+          setMistakes(0);
+          setSolved(false);
+        }
+      }, 700);
     }
   }
 
@@ -81,7 +93,17 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
 
   return (
     <LessonShell title="Match the pairs" instruction="Drag each word to its match." index={index} total={items.length} l1={unit.l1Enabled}>
-    <div className="flex flex-1 flex-col gap-4 p-6">
+    <div className="relative flex flex-1 flex-col gap-4 p-6">
+      {solved && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div
+            role="status"
+            className="rounded-2xl bg-emerald-500 px-8 py-4 text-2xl font-black text-white shadow-xl"
+          >
+            Correct! ✓
+          </div>
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
           <div className="flex flex-col gap-2">
