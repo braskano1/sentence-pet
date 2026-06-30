@@ -22,6 +22,9 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
   // Queue of remaining card indices; front = the card currently shown.
   const [queue, setQueue] = useState<number[]>(() => items.map((_, i) => i));
   const [flipped, setFlipped] = useState(false);
+  // Gate: the self-grade row only appears once the learner has flipped THIS card at
+  // least once (seen the meaning). Stays open if they flip back; resets per new card.
+  const [hasFlipped, setHasFlipped] = useState(false);
 
   // Defensive: an empty pool (e.g. wrong-kind lesson) has nothing to practice.
   if (items.length === 0) return null;
@@ -39,12 +42,14 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
     }
     setQueue(rest);
     setFlipped(false);
+    setHasFlipped(false);
   }
 
   /** "Again" — re-queue the front card to the back; does NOT count as completed. */
   function again() {
     setQueue([...queue.slice(1), queue[0]]);
     setFlipped(false);
+    setHasFlipped(false);
   }
 
   return (
@@ -59,7 +64,10 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
       <button
         type="button"
         aria-label="flip card"
-        onClick={() => setFlipped((f) => !f)}
+        onClick={() => {
+          setFlipped((f) => !f);
+          setHasFlipped(true);
+        }}
         className="flex min-h-48 w-full max-w-sm items-center justify-center rounded-3xl border-2 border-slate-200 bg-white text-3xl font-extrabold shadow"
       >
         {flipped ? item.back : item.front}
@@ -74,14 +82,16 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
         🔊
       </button>
       {th && <p className="text-lg font-bold text-slate-600">{th}</p>}
-      <div className="mt-auto flex w-full max-w-sm gap-3">
-        <button type="button" onClick={again} className="flex-1 rounded-2xl bg-slate-200 py-3 font-black">
-          Again
-        </button>
-        <button type="button" onClick={gotIt} className="flex-1 rounded-2xl bg-emerald-500 py-3 font-black text-white">
-          Got it
-        </button>
-      </div>
+      {hasFlipped && (
+        <div className="mt-auto flex w-full max-w-sm gap-3">
+          <button type="button" onClick={again} className="flex-1 rounded-2xl bg-slate-200 py-3 font-black">
+            Again
+          </button>
+          <button type="button" onClick={gotIt} className="flex-1 rounded-2xl bg-emerald-500 py-3 font-black text-white">
+            Got it
+          </button>
+        </div>
+      )}
     </div>
     </LessonShell>
   );
