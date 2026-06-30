@@ -10,6 +10,12 @@ have their own catalog. An import is **additive and merges by `id`**: a row whos
 the game (the four element starters) stay unless you reuse their ids, so the
 **catalog-wide rules below apply to your rows *plus* the builtin pets**.
 
+> **Tip — start from the template.** In the admin **Pets** tab, open **Import…**
+> and click **"Download template (with examples)"** to get a `Pets` `.xlsx`
+> already set up with these columns and a sample evolution pair. Then have the AI
+> produce more rows like the samples. The columns below match that template
+> exactly.
+
 ---
 
 ## What this produces

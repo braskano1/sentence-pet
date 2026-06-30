@@ -80,6 +80,16 @@ id<TAB>kind<TAB>...
 the text "<TAB>" and not spaces). Header row first. One blank line between
 sheet blocks.
 
+### Start from a ready-made template (recommended)
+
+You don't have to build the workbook by hand. In the admin panel, each surface's
+**Import…** drawer has a **"Download template (with examples)"** button, and the
+**Courses** tab has **"Download course template"** (all four sheets at once). The
+downloaded `.xlsx` already has the correct sheet name(s), the exact header row,
+and a few valid example rows. Then the AI's only job is to produce **more rows
+like the examples** — paste them under the header. The column lists in these
+guides match those templates exactly.
+
 ### Getting it into Excel
 
 1. Open (or create) the workbook. Make sure a sheet is named exactly `Items`
