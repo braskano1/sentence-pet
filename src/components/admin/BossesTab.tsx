@@ -4,6 +4,7 @@ import type { Course, BossNode } from '../../content/course';
 import type { Species, PetStage } from '../../data/types';
 import { usePetDefs } from '../../state/usePetDefs';
 import { importBosses } from '../../content/surfaceImport';
+import { buildWorkbook } from '../../content/importTemplates';
 import {
   Card, SectionLabel, Field, TextInput, NumberInput, Select, Checkbox, Button,
   SearchableList, FilterChips, AssignList, ImportDrawer,
@@ -278,6 +279,7 @@ export function BossesTab({ course, onChange, parseBossesFile = defaultParseBoss
         onApply={applyImport}
         onClose={() => setImporting(false)}
         renderChange={(c) => <>{c.incoming.boss.name} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.scope}</span></>}
+        downloadTemplate={{ filename: 'bosses-template.xlsx', build: () => buildWorkbook(['Bosses']) }}
       />
     </div>
   );

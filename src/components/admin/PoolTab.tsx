@@ -4,6 +4,7 @@ import type { Course } from '../../content/course';
 import type { ContentItem, DrillItem } from '../../data/types';
 import { isDragDrop } from '../../data/types';
 import { importItems } from '../../content/surfaceImport';
+import { buildWorkbook } from '../../content/importTemplates';
 import { ItemEditor } from './ItemEditor';
 import { Button, SearchableList, FilterChips, ImportDrawer } from './ui';
 import type { FilterChip } from './ui';
@@ -121,6 +122,7 @@ export function PoolTab({ course, onChange, parseItemsFile = defaultParseItemsFi
         onApply={applyImport}
         onClose={() => setImporting(false)}
         renderChange={(c) => <>{itemLabel(c.incoming)} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.kind}</span></>}
+        downloadTemplate={{ filename: 'items-template.xlsx', build: () => buildWorkbook(['Items']) }}
       />
     </div>
   );

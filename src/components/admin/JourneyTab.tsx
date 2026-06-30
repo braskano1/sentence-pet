@@ -8,6 +8,7 @@ import { LessonTree } from './journeyTab/LessonTree';
 import type { TreeSelection } from './journeyTab/LessonTree';
 import * as XLSX from 'xlsx';
 import { importUnits } from '../../content/surfaceImport';
+import { buildWorkbook } from '../../content/importTemplates';
 
 async function defaultParseUnitsFile(file: File) {
   const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
@@ -237,6 +238,7 @@ export function JourneyTab({ course, onChange, parseUnitsFile = defaultParseUnit
         onApply={applyImport}
         onClose={() => setImporting(false)}
         renderChange={(c) => <>{c.incoming.title} <span className="text-slate-400">· {c.incoming.id} · {c.incoming.lessons.length} lessons</span></>}
+        downloadTemplate={{ filename: 'units-template.xlsx', build: () => buildWorkbook(['Units']) }}
       />
     </div>
   );
