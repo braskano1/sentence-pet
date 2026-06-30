@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
-import { deriveStatBands, parsePetsSheet } from './petImport';
+import { deriveStatBands, parsePetsSheet, importPets } from './petImport';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { validatePetDefs } from './validate';
 
@@ -140,5 +140,29 @@ describe('parsePetsSheet', () => {
     expect(errors.some((e) => e.startsWith('Pets row 2:') && /name/.test(e))).toBe(true);
     expect(defs).toHaveLength(1);
     expect(defs[0].name).toBe('');
+  });
+});
+
+describe('importPets', () => {
+  it('returns entities + Pets-prefixed errors only', () => {
+    const wb = wbWithPets(
+      'id\tname\tgen\tdexNo\ttypes\telement\n' +
+      'def-ok\tOk\t2\t1\tleaf\tleaf\n' +
+      '\tBad\t1\t1\tleaf\tleaf',
+    );
+    const { entities, errors } = importPets(wb);
+    expect(entities).toHaveLength(1);
+    expect(entities[0].id).toBe('def-ok');
+    expect(errors.every((e) => e.startsWith('Pets'))).toBe(true);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('absent/empty Pets sheet → empty entities + a "no rows" message', () => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['x']]), 'Other');
+    const { entities, errors } = importPets(wb);
+    expect(entities).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/Pets/);
   });
 });

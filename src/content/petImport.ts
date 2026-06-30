@@ -3,6 +3,7 @@ import { GAME_CONFIG } from '../config/gameConfig';
 import type { BattleStats, PetDef, PetType, Rarity, Species, StatRange } from '../data/types';
 import { SPECIES } from '../domain/species';
 import { isPetType } from '../domain/petType';
+import type { SurfaceImport } from './surfaceImport';
 
 /** Per-rarity offset of the gacha band from the gacha *common* band. */
 function rarityOffsets(): Record<Rarity, [number, number]> {
@@ -119,4 +120,15 @@ export function parsePetsSheet(wb: XLSX.WorkBook): { defs: PetDef[]; errors: str
   });
 
   return { defs, errors };
+}
+
+/** Pet defs from a `Pets` sheet (other sheets ignored). Surfaces only Pets-sheet
+ *  errors; empty + clean → a "no rows" hint (matches the other surface adapters). */
+export function importPets(wb: XLSX.WorkBook): SurfaceImport<PetDef> {
+  const { defs, errors } = parsePetsSheet(wb);
+  const own = errors.filter((e) => e.startsWith('Pets'));
+  if (defs.length === 0 && own.length === 0) {
+    return { entities: [], errors: ['No pet rows found. The file needs a "Pets" sheet.'] };
+  }
+  return { entities: defs, errors: own };
 }
