@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { L1Toggle } from '../L1Toggle';
 import { PressButton } from '../PressButton';
+import { SettingsButton } from '../SettingsButton';
 
 /**
  * Shared lesson chrome (Spec: consistent header across all 4 lesson types).
@@ -64,7 +65,10 @@ export function LessonShell({
           <span className="min-w-0 flex-1 truncate text-center text-base font-extrabold text-slate-800">
             {title}
           </span>
-          {l1 ? <L1Toggle /> : <span className="h-11 w-11 shrink-0" aria-hidden />}
+          <div className="flex shrink-0 items-center gap-1">
+            {l1 && <L1Toggle />}
+            <SettingsButton />
+          </div>
         </div>
         {instruction && <p className="text-center text-sm text-slate-500">{instruction}</p>}
         <div className="flex justify-center gap-1.5 pt-1">
