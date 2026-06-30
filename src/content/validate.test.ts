@@ -290,6 +290,13 @@ describe('validatePetDefs', () => {
     const b = clone(); b[0].dexNo = 0; expect(validatePetDefs(b).ok).toBe(false);
   });
 
+  it('rejects a non-integer gen or dexNo', () => {
+    const a = clone(); a[0].gen = 1.5;
+    expect(validatePetDefs(a).errors.join(' ')).toMatch(/gen must be an integer/);
+    const b = clone(); b[0].dexNo = 2.5;
+    expect(validatePetDefs(b).errors.join(' ')).toMatch(/dexNo must be an integer/);
+  });
+
   it('rejects a duplicate (gen, dexNo)', () => {
     const defs = clone();
     defs[1].gen = defs[0].gen; defs[1].dexNo = defs[0].dexNo;
