@@ -3,7 +3,7 @@ import { useGameStore } from '../state/gameStore';
 import { gradeFillBlank, hintAt } from '../domain/fillblank';
 import { computeStars } from '../domain/scoring';
 import { showL1 } from '../content/l1';
-import { L1Toggle } from './L1Toggle';
+import { LessonShell } from './lesson/LessonShell';
 import type { FillBlankItem } from '../data/types';
 
 /**
@@ -51,12 +51,8 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
   }
 
   return (
+    <LessonShell title="Fill the blank" index={index} total={items.length} l1={unit.l1Enabled}>
     <div className="flex flex-1 flex-col items-center gap-4 p-6">
-      {unit.l1Enabled && (
-        <div className="self-end">
-          <L1Toggle />
-        </div>
-      )}
       <p className="text-2xl font-bold">
         {a}
         <span className="mx-1 border-b-4 border-slate-400 px-6">&nbsp;</span>
@@ -78,5 +74,6 @@ export function FillBlankScreen({ items, unit }: { items: FillBlankItem[]; unit:
         Check
       </button>
     </div>
+    </LessonShell>
   );
 }

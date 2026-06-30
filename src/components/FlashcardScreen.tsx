@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../state/gameStore';
 import { useSpeech } from '../hooks/useSpeech';
 import { showL1 } from '../content/l1';
-import { L1Toggle } from './L1Toggle';
+import { LessonShell } from './lesson/LessonShell';
 import type { FlashcardItem } from '../data/types';
 
 /**
@@ -34,12 +34,8 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
   }
 
   return (
+    <LessonShell title="Flip the cards" index={index} total={items.length} l1={unit.l1Enabled}>
     <div className="flex flex-1 flex-col items-center gap-4 p-6">
-      {unit.l1Enabled && (
-        <div className="self-end">
-          <L1Toggle />
-        </div>
-      )}
       <button
         type="button"
         aria-label="flip card"
@@ -66,5 +62,6 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
         </button>
       </div>
     </div>
+    </LessonShell>
   );
 }

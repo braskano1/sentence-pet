@@ -7,7 +7,7 @@ import {
 import { useGameStore } from '../state/gameStore';
 import { computeStars } from '../domain/scoring';
 import { showL1 } from '../content/l1';
-import { L1Toggle } from './L1Toggle';
+import { LessonShell } from './lesson/LessonShell';
 import type { MatchingItem, MatchingPair } from '../data/types';
 
 /**
@@ -80,12 +80,8 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   }
 
   return (
+    <LessonShell title="Match the pairs" index={index} total={items.length} l1={unit.l1Enabled}>
     <div className="flex flex-1 flex-col gap-4 p-6">
-      {unit.l1Enabled && (
-        <div className="self-end">
-          <L1Toggle />
-        </div>
-      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
           <div className="flex flex-col gap-2">
@@ -116,6 +112,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
         </DragOverlay>
       </DndContext>
     </div>
+    </LessonShell>
   );
 }
 
