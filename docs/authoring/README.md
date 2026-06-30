@@ -17,7 +17,7 @@ output format the AI must produce. The AI never has to see the codebase.
 | The course header + its units | [`course-and-units.md`](course-and-units.md) |
 | Practice activities + the lessons they form | [`lessons-and-items.md`](lessons-and-items.md) |
 | Review bosses (gates + final) | [`bosses.md`](bosses.md) |
-| Pets (the collectible catalog) | `pets.md` *(coming — Pets import not built yet)* |
+| Pets (the collectible catalog) | [`pets.md`](pets.md) |
 
 You can author one surface at a time. The importer accepts a workbook with
 **only the sheet(s) you changed** — see *Additive imports* below.
@@ -43,7 +43,8 @@ So the workbook has these sheets, named **exactly** (case-sensitive):
 Course   Units   Items   Bosses
 ```
 
-A full new course needs all four. Pets, once supported, add a fifth: `Pets`.
+A full new course needs all four. Pets are a separate, additive surface that
+adds an optional fifth sheet: `Pets` (see [`pets.md`](pets.md)).
 
 ---
 
@@ -153,4 +154,4 @@ ignores:
   defaults on import; tune them in the admin Bosses editor afterward.
 - **Matching images, sprite variants** — not in the xlsx contract.
 
-Pets import is not built yet; `pets.md` lands with it.
+Pet rules live in [`pets.md`](pets.md) — pets are their own additive surface.

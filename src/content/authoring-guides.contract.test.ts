@@ -6,7 +6,10 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
 import { parseWorkbookToCourse } from './excelImport';
-import { validateCourse } from './validate';
+import { validateCourse, validatePetDefs } from './validate';
+import { importPets } from './petImport';
+import { BUILTIN_PET_DEFS } from '../domain/petDef';
+import { mergeById } from './mergeById';
 
 // Each block is exactly what a guide tells the AI to emit (tab-separated),
 // minus the `=== Sheet ===` label which only names the target sheet.
@@ -75,5 +78,26 @@ describe('authoring guides dry-run', () => {
     expect(kinds).toEqual(['dragdrop', 'dragdrop', 'dragdrop', 'fillblank', 'flashcard', 'matching']);
     const mt = course!.pool['mt-1'];
     expect(mt.kind === 'matching' && mt.pairs.length).toBe(2);
+  });
+});
+
+// One new pet at a free (gen,dexNo); base omitted → builtin-identical stats.
+const PETS = `id\tname\tgen\tdexNo\ttypes\telement\tenabled
+def-sprig\tSprig\t2\t1\tleaf\tleaf\ttrue`;
+
+function petsWorkbook(): XLSX.WorkBook {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetFromTsv(PETS), 'Pets');
+  return wb;
+}
+
+describe('pets authoring guide dry-run', () => {
+  it('cold-AI Pets table imports + merges into a valid catalog', () => {
+    const { entities, errors } = importPets(petsWorkbook());
+    expect(errors).toEqual([]);
+    const merged = mergeById([...BUILTIN_PET_DEFS], entities, (d) => d.id).merged;
+    const res = validatePetDefs(merged);
+    expect(res.errors).toEqual([]);
+    expect(res.ok).toBe(true);
   });
 });
