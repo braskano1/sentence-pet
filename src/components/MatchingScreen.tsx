@@ -34,11 +34,14 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   const [mistakes, setMistakes] = useState(0);
   const [activeLeft, setActiveLeft] = useState<string | null>(null);
   const [solved, setSolved] = useState(false); // brief "Correct!" beat before advancing
+  const [errorRight, setErrorRight] = useState<string | null>(null); // target just wrongly filled
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clean up any pending advance timer on unmount.
+  // Clean up any pending timers on unmount.
   useEffect(() => () => {
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    if (errorTimer.current) clearTimeout(errorTimer.current);
   }, []);
 
   const sensors = useSensors(
@@ -58,6 +61,11 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
     if (wrong.length) {
       setMistakes((m) => m + 1);
       for (const w of wrong) next[w] = undefined; // clear wrong, keep correct
+      // Gentle-but-legible: flag the just-dropped target slot for a brief shake + rose
+      // border, announced politely, then clear it ~600ms later.
+      setErrorRight(right);
+      if (errorTimer.current) clearTimeout(errorTimer.current);
+      errorTimer.current = setTimeout(() => setErrorRight(null), 600);
     }
     setAssignment(next);
     if (done) {
@@ -104,6 +112,12 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
           </div>
         </div>
       )}
+      {/* Gentle, legible wrong-placement signal for assistive tech (visual cue lives on the slot). */}
+      {errorRight && (
+        <div role="status" aria-live="polite" className="text-center text-sm font-semibold text-rose-500">
+          Try again
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex justify-around gap-4">
           <div className="flex flex-col gap-2">
@@ -121,6 +135,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
                 id={p.right}
                 label={p.right}
                 filledBy={Object.entries(assignment).find(([, r]) => r === p.right)?.[0]}
+                error={errorRight === p.right}
               />
             ))}
           </div>
@@ -155,18 +170,20 @@ function PromptTile({ id, label, sub }: { id: string; label: string; sub: string
   );
 }
 
-function TargetSlot({ id, label, filledBy }: { id: string; label: string; filledBy?: string }) {
+function TargetSlot({ id, label, filledBy, error }: { id: string; label: string; filledBy?: string; error?: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div
       ref={setNodeRef}
       data-testid={`target-${id}`}
       className={`min-h-12 rounded-xl border-2 px-4 py-3 ${
-        isOver
-          ? 'border-emerald-500 bg-emerald-50'
-          : filledBy
-            ? 'border-emerald-400 bg-emerald-100'
-            : 'border-dashed border-slate-300 bg-white'
+        error
+          ? 'shake-wrong border-rose-400 bg-rose-50'
+          : isOver
+            ? 'border-emerald-500 bg-emerald-50'
+            : filledBy
+              ? 'border-emerald-400 bg-emerald-100'
+              : 'border-dashed border-slate-300 bg-white'
       }`}
     >
       <span className="block text-xs font-semibold text-slate-600">{label}</span>
