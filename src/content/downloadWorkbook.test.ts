@@ -1,12 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as XLSX from 'xlsx';
 import { downloadWorkbook } from './downloadWorkbook';
+
+const origCreate = URL.createObjectURL;
+const origRevoke = URL.revokeObjectURL;
 
 describe('downloadWorkbook', () => {
   beforeEach(() => {
     // jsdom lacks these — stub them.
     (URL as unknown as { createObjectURL: () => string }).createObjectURL = vi.fn(() => 'blob:fake');
     (URL as unknown as { revokeObjectURL: (u: string) => void }).revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = origCreate;
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = origRevoke;
   });
 
   it('serializes the workbook, clicks an anchor, and revokes the url', () => {

@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 
 /** Serialize a workbook to .xlsx and trigger a browser download. The app's first xlsx WRITE. */
 export function downloadWorkbook(wb: XLSX.WorkBook, filename: string): void {
-  const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
+  const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array<ArrayBuffer>;
   const blob = new Blob([data], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
