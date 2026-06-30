@@ -167,7 +167,7 @@ describe('DrillScreen', () => {
 
   it('exit ✕ opens a confirm; Stay keeps the drill mounted', () => {
     render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
-    fireEvent.click(screen.getByRole('button', { name: /leave drill/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leave lesson/i }));
     expect(screen.getByText(/won't be saved/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /stay/i }));
     expect(screen.queryByText(/won't be saved/i)).not.toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('DrillScreen', () => {
   it('exit ✕ -> Leave returns to the journey map without finishing the round', () => {
     const finishSpy = vi.spyOn(useGameStore.getState(), 'finishRound');
     render(<DrillScreen items={[ITEM]} drill="pattern" level={1} />);
-    fireEvent.click(screen.getByRole('button', { name: /leave drill/i }));
+    fireEvent.click(screen.getByRole('button', { name: /leave lesson/i }));
     fireEvent.click(screen.getByRole('button', { name: /^leave$/i }));
     expect(useGameStore.getState().screen).toBe('pickDrill');
     expect(finishSpy).not.toHaveBeenCalled();

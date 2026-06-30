@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor,
   closestCenter, useDraggable, useDroppable, useSensor, useSensors,
@@ -7,7 +7,7 @@ import {
 import { useGameStore } from '../state/gameStore';
 import { computeStars } from '../domain/scoring';
 import { showL1 } from '../content/l1';
-import { L1Toggle } from './L1Toggle';
+import { LessonShell } from './lesson/LessonShell';
 import type { MatchingItem, MatchingPair } from '../data/types';
 
 /**
@@ -33,6 +33,13 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   const [assignment, setAssignment] = useState<Record<string, string | undefined>>({});
   const [mistakes, setMistakes] = useState(0);
   const [activeLeft, setActiveLeft] = useState<string | null>(null);
+  const [solved, setSolved] = useState(false); // brief "Correct!" beat before advancing
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up any pending advance timer on unmount.
+  useEffect(() => () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -54,19 +61,24 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
     }
     setAssignment(next);
     if (done) {
-      if (index + 1 >= items.length) {
-        finishRound({
-          drill: 'mixed',
-          kind: 'matching',
-          level: item.level,
-          stars: computeStars({ hints: 0, mistakes }),
-          correctCount: items.length,
-        });
-      } else {
-        setIndex(index + 1);
-        setAssignment({});
-        setMistakes(0);
-      }
+      // Presentational beat: show "Correct! ✓" for ~700ms, THEN advance / finishRound.
+      setSolved(true);
+      advanceTimer.current = setTimeout(() => {
+        if (index + 1 >= items.length) {
+          finishRound({
+            drill: 'mixed',
+            kind: 'matching',
+            level: item.level,
+            stars: computeStars({ hints: 0, mistakes }),
+            correctCount: items.length,
+          });
+        } else {
+          setIndex(index + 1);
+          setAssignment({});
+          setMistakes(0);
+          setSolved(false);
+        }
+      }, 700);
     }
   }
 
@@ -80,10 +92,16 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6">
-      {unit.l1Enabled && (
-        <div className="self-end">
-          <L1Toggle />
+    <LessonShell title="Match the pairs" instruction="Drag each word to its match." index={index} total={items.length} l1={unit.l1Enabled}>
+    <div className="relative flex flex-1 flex-col gap-4 p-6">
+      {solved && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div
+            role="status"
+            className="rounded-2xl bg-emerald-500 px-8 py-4 text-2xl font-black text-white shadow-xl"
+          >
+            Correct! ✓
+          </div>
         </div>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -116,6 +134,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
         </DragOverlay>
       </DndContext>
     </div>
+    </LessonShell>
   );
 }
 
@@ -150,7 +169,7 @@ function TargetSlot({ id, label, filledBy }: { id: string; label: string; filled
             : 'border-dashed border-slate-300 bg-white'
       }`}
     >
-      <span className="block text-xs opacity-70">{label}</span>
+      <span className="block text-xs font-semibold text-slate-600">{label}</span>
       {filledBy && <span className="font-bold">{filledBy}</span>}
     </div>
   );
