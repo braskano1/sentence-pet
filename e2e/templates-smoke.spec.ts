@@ -45,6 +45,12 @@ test('templates smoke: download + re-import per surface', async ({ page }) => {
   await page.getByRole('tab', { name: /Items/ }).click();
   await page.getByRole('button', { name: /import/i }).click();
   const itemsFile = await downloadTemplate(page, 'items-template.xlsx');
+  // Also grab the AI authoring guide (.md) that sits next to the template.
+  const [guideDl] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: /download .*guide/i }).click(),
+  ]);
+  await guideDl.saveAs(`${OUT}/items-and-lessons-guide.md`);
   await page.getByLabel(/choose a file/i).setInputFiles(itemsFile);
   // Template has 6 items not in the SEED pool → all NEW, zero parse errors.
   await expect(page.getByText(/\bnew\b/i).first()).toBeVisible({ timeout: 15_000 });

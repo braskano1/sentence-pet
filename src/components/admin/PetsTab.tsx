@@ -6,6 +6,7 @@ import { hydratePetDefs } from '../../content/load';
 import { validatePetDefs } from '../../content/validate';
 import { importPets } from '../../content/petImport';
 import { buildWorkbook } from '../../content/importTemplates';
+import { SURFACE_GUIDES } from '../../content/importGuides';
 import { savePetDefs } from '../../firebase/content';
 import { writePetDefsCache } from '../../content/cache';
 import {
@@ -213,6 +214,7 @@ export function PetsTab({ parsePetsFile = defaultParsePetsFile }: {
         onClose={() => setImporting(false)}
         renderChange={(c) => <>{c.incoming.name} <span className="text-slate-400">· {c.incoming.id} · gen {c.incoming.gen} #{c.incoming.dexNo}</span></>}
         downloadTemplate={{ filename: 'pets-template.xlsx', build: () => buildWorkbook(['Pets']) }}
+        downloadGuide={SURFACE_GUIDES.Pets}
       />
     </div>
   );

@@ -4,6 +4,8 @@ import * as XLSX from 'xlsx';
 import { ImportDrawer } from './ImportDrawer';
 vi.mock('../../../content/downloadWorkbook', () => ({ downloadWorkbook: vi.fn() }));
 import { downloadWorkbook } from '../../../content/downloadWorkbook';
+vi.mock('../../../content/downloadText', () => ({ downloadText: vi.fn() }));
+import { downloadText } from '../../../content/downloadText';
 
 type Row = { id: string; v: number };
 const existing: Row[] = [{ id: 'a', v: 1 }, { id: 'b', v: 2 }];
@@ -104,5 +106,22 @@ describe('ImportDrawer download template', () => {
     fireEvent.click(btn);
     expect(build).toHaveBeenCalledTimes(1);
     expect(downloadWorkbook).toHaveBeenCalledWith(wb, 'rows-template.xlsx');
+  });
+});
+
+describe('ImportDrawer download guide', () => {
+  it('renders the guide button and downloads the markdown on click', () => {
+    render(
+      <ImportDrawer<Row>
+        open title="Import rows" noun="row" existing={existing}
+        getId={(r) => r.id}
+        parseFile={async () => ({ entities: [], errors: [] })}
+        onApply={vi.fn()} onClose={vi.fn()} renderChange={() => null}
+        downloadGuide={{ filename: 'rows-guide.md', content: '# guide' }}
+      />,
+    );
+    const btn = screen.getByRole('button', { name: /download .*guide/i });
+    fireEvent.click(btn);
+    expect(downloadText).toHaveBeenCalledWith('# guide', 'rows-guide.md');
   });
 });

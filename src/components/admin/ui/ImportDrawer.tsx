@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { WorkBook } from 'xlsx';
 import { downloadWorkbook } from '../../../content/downloadWorkbook';
+import { downloadText } from '../../../content/downloadText';
 import { mergeById } from '../../../content/mergeById';
 import type { MergeChange, MergeResult } from '../../../content/mergeById';
 import { Button } from './Button';
@@ -31,6 +32,7 @@ export function ImportDrawer<T>({
   onClose,
   renderChange,
   downloadTemplate,
+  downloadGuide,
 }: {
   open: boolean;
   title: string;
@@ -42,6 +44,7 @@ export function ImportDrawer<T>({
   onClose: () => void;
   renderChange: (change: MergeChange<T>) => ReactNode;
   downloadTemplate?: { filename: string; build: () => WorkBook };
+  downloadGuide?: { filename: string; content: string };
 }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -110,14 +113,27 @@ export function ImportDrawer<T>({
             />
           </label>
 
-          {downloadTemplate && (
-            <button
-              type="button"
-              onClick={() => downloadWorkbook(downloadTemplate.build(), downloadTemplate.filename)}
-              className="self-start text-xs font-medium text-indigo-600 hover:underline"
-            >
-              <span aria-hidden="true">↓ </span>Download {noun} template (with examples)
-            </button>
+          {(downloadTemplate || downloadGuide) && (
+            <div className="flex flex-col gap-1">
+              {downloadTemplate && (
+                <button
+                  type="button"
+                  onClick={() => downloadWorkbook(downloadTemplate.build(), downloadTemplate.filename)}
+                  className="self-start text-xs font-medium text-indigo-600 hover:underline"
+                >
+                  <span aria-hidden="true">↓ </span>Download {noun} template (with examples)
+                </button>
+              )}
+              {downloadGuide && (
+                <button
+                  type="button"
+                  onClick={() => downloadText(downloadGuide.content, downloadGuide.filename)}
+                  className="self-start text-xs font-medium text-indigo-600 hover:underline"
+                >
+                  <span aria-hidden="true">↓ </span>Download AI authoring guide (.md)
+                </button>
+              )}
+            </div>
           )}
 
           <ValidationSummary errors={errors} />
