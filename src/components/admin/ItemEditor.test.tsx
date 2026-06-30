@@ -11,7 +11,7 @@ describe('ItemEditor by kind', () => {
     expect(screen.getByLabelText(/back/i)).toBeInTheDocument();
   });
   it('dragdrop shows hidePos checkbox', () => {
-    const item: ContentItem = { id: 'd1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'แมว', slots: ['Pronoun'], answer: ['I'] };
+    const item: ContentItem = { id: 'd1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'แมว', slots: ['Subject'], answer: ['I'] };
     render(<ItemEditor item={item} onChange={vi.fn()} />);
     expect(screen.getByLabelText(/hidePos/i)).toBeInTheDocument();
   });

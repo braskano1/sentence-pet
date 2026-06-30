@@ -7,7 +7,7 @@ import { BUILTIN_PET_DEFS, setActivePetDefs } from '../../domain/petDef';
 function course(): Course {
   return {
     id: 'c', title: 'C', gates: [],
-    pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] } },
+    pool: { a: { id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject'], answer: ['I'] } },
     units: [
       { id: 'u1', title: 'One', emoji: '🐣', order: 1, l1Enabled: false,
         lessons: [{ id: 'u1-cp', kind: 'dragdrop', drill: 'mixed', level: 1, itemIds: ['a'], isCheckpoint: true }] },

@@ -6,7 +6,7 @@ import type { DragDropItem, FlashcardItem } from '../data/types';
 import { sampleReviewItems } from './review';
 
 const dd = (id: string): DragDropItem =>
-  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Pronoun'], answer: ['I'] });
+  ({ id, kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: '', slots: ['Subject'], answer: ['I'] });
 const fc = (id: string): FlashcardItem =>
   ({ id, kind: 'flashcard', level: 1, front: 'a', back: 'b' });
 

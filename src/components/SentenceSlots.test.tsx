@@ -9,7 +9,7 @@ describe('SentenceSlots', () => {
   it('capitalizes the first placed word for display', () => {
     render(
       <DndContext>
-        <SentenceSlots slots={['Pronoun', 'Verb']} placed={['i', 'run']} onClearSlot={() => {}} />
+        <SentenceSlots slots={['Subject', 'Verb']} placed={['i', 'run']} onClearSlot={() => {}} />
       </DndContext>,
     );
     expect(screen.getByText('I')).toBeInTheDocument(); // first slot capitalized
@@ -20,7 +20,7 @@ describe('SentenceSlots', () => {
     const onClearSlot = vi.fn();
     render(
       <DndContext>
-        <SentenceSlots slots={['Pronoun', 'Verb']} placed={['i', null]} onClearSlot={onClearSlot} />
+        <SentenceSlots slots={['Subject', 'Verb']} placed={['i', null]} onClearSlot={onClearSlot} />
       </DndContext>,
     );
     await userEvent.click(screen.getByText('I'));
@@ -30,7 +30,7 @@ describe('SentenceSlots', () => {
   it('highlights the current (leftmost empty) slot', () => {
     render(
       <DndContext>
-        <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', null, null]} onClearSlot={() => {}} />
+        <SentenceSlots slots={['Subject', 'Verb', 'Object']} placed={['She', null, null]} onClearSlot={() => {}} />
       </DndContext>,
     );
     expect(screen.getByTestId('slot-1')).toHaveClass('border-emerald-500');
@@ -39,7 +39,7 @@ describe('SentenceSlots', () => {
   it('colors a filled slot by its part of speech', () => {
     render(
       <DndContext>
-        <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} />
+        <SentenceSlots slots={['Subject', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} />
       </DndContext>,
     );
     expect(screen.getByTestId('slot-1')).toHaveClass('bg-emerald-100');
@@ -49,25 +49,25 @@ describe('SentenceSlots', () => {
     it('shows the POS label when hidePos is false', () => {
       render(
         <DndContext>
-          <SentenceSlots slots={['Pronoun']} placed={[null]} onClearSlot={() => {}} hidePos={false} />
+          <SentenceSlots slots={['Subject']} placed={[null]} onClearSlot={() => {}} hidePos={false} />
         </DndContext>,
       );
-      expect(screen.getByText('Pronoun')).toBeInTheDocument();
+      expect(screen.getByText('Subject')).toBeInTheDocument();
     });
 
     it('hides the POS label when hidePos is true', () => {
       render(
         <DndContext>
-          <SentenceSlots slots={['Pronoun']} placed={[null]} onClearSlot={() => {}} hidePos />
+          <SentenceSlots slots={['Subject']} placed={[null]} onClearSlot={() => {}} hidePos />
         </DndContext>,
       );
-      expect(screen.queryByText('Pronoun')).toBeNull();
+      expect(screen.queryByText('Subject')).toBeNull();
     });
 
     it('skips the POS color tint on a filled slot when hidePos is true', () => {
       render(
         <DndContext>
-          <SentenceSlots slots={['Pronoun', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} hidePos />
+          <SentenceSlots slots={['Subject', 'Verb', 'Object']} placed={['She', 'feeds', null]} onClearSlot={() => {}} hidePos />
         </DndContext>,
       );
       const filled = screen.getByTestId('slot-1');

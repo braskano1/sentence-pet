@@ -9,7 +9,7 @@ import type {
 } from '../../data/types';
 import { Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
 
-const POS: PosLabel[] = ['Pronoun', 'Verb', 'Object'];
+const POS: PosLabel[] = ['Subject', 'Verb', 'Object'];
 const KINDS: ContentItem['kind'][] = ['flashcard', 'matching', 'dragdrop', 'fillblank'];
 
 const csv = (s: string) => s.split(',').map((w) => w.trim()).filter(Boolean);

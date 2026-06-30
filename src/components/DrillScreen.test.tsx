@@ -28,7 +28,7 @@ import type { DrillItem } from '../data/types';
 
 const ITEM: DrillItem = {
   id: 'i1', kind: 'dragdrop', drill: 'pattern' as const, level: 1, thaiHint: 'เธอให้อาหารแมว',
-  slots: ['Pronoun', 'Verb', 'Object'],
+  slots: ['Subject', 'Verb', 'Object'],
   answer: ['She', 'feeds', 'the cat'],
   distractors: ['eats'],
 };
@@ -42,7 +42,7 @@ describe('DrillScreen', () => {
     const items = itemsForDrill(SEED, 'pattern', 1);
     render(<DrillScreen items={items} drill="pattern" level={1} />);
     expect(screen.getByText(items[0].thaiHint)).toBeInTheDocument();
-    expect(screen.getAllByText('Pronoun').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Subject').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Verb').length).toBeGreaterThan(0);
   });
 

@@ -17,7 +17,7 @@ function validBook(): XLSX.WorkBook {
     Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'Unit One', '🐣', 1, false]],
     Items: [
       ['id', 'kind', 'level', 'unit', 'node', 'l1_th', 'front', 'back', 'audio', 'template', 'answer', 'alternates', 'variant', 'slots', 'distractors', 'hidePos', 'thaiHint'],
-      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Pronoun,Verb', '', false, 'ฉันวิ่ง'],
+      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Subject,Verb', '', false, 'ฉันวิ่ง'],
       ['c1card', 'flashcard', 1, 'u1', 'u1-n1', 'แมว', 'cat', 'แมว', '', '', '', '', '', '', '', '', ''],
     ],
     Bosses: [
@@ -132,6 +132,25 @@ describe('parseWorkbookToCourse', () => {
     expect(errors.some((e) => /spans units/.test(e))).toBe(true);
   });
 
+  it('reads the optional dragdrop punct column into endPunct (omitting leaves it undefined)', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer', 'punct'],
+        ['q1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Helper,Subject,Verb,Object', 'do,you,like,fish', '?'],
+        ['s1', 'dragdrop', 1, 'u1', 'u1-n2', 'hint', 'Subject,Verb', 'he,eats', ''],
+      ],
+      Bosses: [['id', 'scope', 'reviewsUnits', 'reviewCount'], ['f1', 'final', 'u1', 6]],
+    });
+    const { course } = parseWorkbookToCourse(book);
+    const q1 = course!.pool.q1;
+    const s1 = course!.pool.s1;
+    expect(q1.kind).toBe('dragdrop');
+    if (q1.kind === 'dragdrop') expect(q1.endPunct).toBe('?');
+    if (s1.kind === 'dragdrop') expect(s1.endPunct).toBeUndefined();
+  });
+
   it('parses rewardPetDefId from a Bosses row (blank omits it)', () => {
     const book = wb({
       Course: [['id', 'title'], ['c1', 'C']],
@@ -163,7 +182,7 @@ describe('parseWorkbookSlices (tolerant)', () => {
     const wb = bookWith({
       Items: [
         ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'variant', 'slots', 'answer'],
-        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Pronoun,Verb', 'I,run'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Subject,Verb', 'I,run'],
       ],
     });
     const slices = parseWorkbookSlices(wb);

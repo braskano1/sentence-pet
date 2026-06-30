@@ -1,4 +1,4 @@
-export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
+export type PosLabel = 'Subject' | 'Verb' | 'Object' | 'Be' | 'Adjective' | 'Not' | 'Helper' | 'Question' | 'Place';
 
 export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 
@@ -63,6 +63,7 @@ export interface DragDropItem extends BaseContentItem {
   distractors?: string[];
   traps?: GrammarTrap[];
   hidePos?: boolean;       // difficulty: hide POS label/tint in slots
+  endPunct?: '.' | '?';    // display sentence-ending punctuation (default '.', '?' for questions). Display-only — answer-check unaffected.
 }
 
 /** ④ Fill-blank — typed, strict trimmed match. */
