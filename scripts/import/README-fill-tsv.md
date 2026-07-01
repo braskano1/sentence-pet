@@ -50,3 +50,19 @@ Hand the file back. Downstream is pure code/compute (no model vision cost):
 `gen-defs.ts` (Task 7, validate) → `upload-and-seed.mjs` (Task 8, emulator) →
 `verify.spec.ts` (Task 9, Playwright). See
 `docs/superpowers/plans/2026-06-30-bulk-pet-import.md`.
+
+## Running the Dex verification (Task 9)
+
+With emulators running + seeded (`npm run dev:emulators` then
+`node scripts/import/upload-and-seed.mjs`):
+
+```bash
+npx playwright test --config scripts/import/playwright.verify.config.ts
+```
+
+The config auto-starts vite (webServer, `reuseExistingServer`). The spec fetches
+the seeded `content/petDefs` from the emulator REST API on the Node side and
+injects it via `window.petDefs.set()` — the Firestore JS SDK's WebChannel does
+not reliably connect from Playwright's Chromium to the emulator, so this verifies
+that the **seeded catalog renders** (115 lines) rather than the SDK hydration
+transport (covered by unit tests + the manual proof).
