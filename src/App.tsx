@@ -27,6 +27,7 @@ import { ComingSoon } from './components/ComingSoon';
 import { FlashcardScreen } from './components/FlashcardScreen';
 import { MatchingScreen } from './components/MatchingScreen';
 import { FillBlankScreen } from './components/FillBlankScreen';
+import { NameEntry } from './components/NameEntry';
 
 export function screenKeyAndNode(
   screen: string,
@@ -39,6 +40,7 @@ export function screenKeyAndNode(
 ) {
   if (!hatched) return { key: 'egg', node: <EggHatch /> };
   switch (screen) {
+    case 'nameEntry': return { key: 'nameEntry', node: <NameEntry /> };
     case 'pickCourse': return { key: 'pickCourse', node: <CourseSelect /> };
     case 'pickDrill': return { key: 'pickDrill', node: <JourneyMap /> };
     case 'drill': {

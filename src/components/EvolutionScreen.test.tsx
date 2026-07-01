@@ -45,9 +45,10 @@ describe('EvolutionScreen', () => {
     expect(useGameStore.getState().screen).toBe('pickDrill');
   });
 
-  it('intro egg hatch (no course loaded) still routes to petRoom on Continue', () => {
+  it('intro egg hatch (no course loaded) routes to petRoom when name is already set', () => {
     // currentCourseId stays null (resetForTest) — the intro-hatch case must not go to the journey.
-    useGameStore.setState({ lastStageChange: { from: 'egg', to: 'baby' }, screen: 'evolution' });
+    // Set a name so the nameEntry gate does not fire; we verify the no-course routing only.
+    useGameStore.setState({ lastStageChange: { from: 'egg', to: 'baby' }, screen: 'evolution', displayName: 'Ava' });
     render(<EvolutionScreen />);
     fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));

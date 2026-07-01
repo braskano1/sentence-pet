@@ -78,6 +78,8 @@ export interface GameState {
   // Transient: a boss (checkpoint) outcome stinger to play once, consumed by a
   // mount effect in RewardScreen. NOT persisted (excluded from PersistedState).
   pendingStinger: StingerKind | null;
+  displayName: string;
+  setDisplayName: (name: string) => void;
   // actions
   setScreen: (s: Screen) => void;
   hatch: () => void;
@@ -115,14 +117,14 @@ export interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 18;
+export const PERSIST_VERSION = 19;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
   | 'screen' | 'currentCourseId' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
   | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
-  | 'caughtDefIds'
+  | 'caughtDefIds' | 'displayName'
 >;
 
 /** Project a full store snapshot down to the persisted payload. */
@@ -148,6 +150,7 @@ export function selectPersisted(s: GameState): PersistedState {
     audio: s.audio,
     l1Mode: s.l1Mode,
     caughtDefIds: s.caughtDefIds,
+    displayName: s.displayName,
   };
 }
 
@@ -237,6 +240,7 @@ function freshState() {
     l1Mode: 'TH' as L1Mode,
     journey: { lessonStars: {} as Record<string, number> },
     courseComplete: {} as Record<string, boolean>,
+    displayName: '' as string,
     currentLessonId: null as string | null,
     currentCourseId: null as string | null,
     currentBossLessonId: null as string | null,
@@ -250,6 +254,7 @@ export const useGameStore = create<GameState>()(
       ...freshState(),
 
       setScreen: (screen) => set({ screen }),
+      setDisplayName: (name) => set({ displayName: name }),
 
       hatch: () =>
         set((s) => ({
@@ -598,6 +603,9 @@ export const useGameStore = create<GameState>()(
           l1Mode: (st as { l1Mode?: L1Mode }).l1Mode ?? 'TH',
           // v14->v15: backfill per-player course-completion map (default {}).
           courseComplete: (st as { courseComplete?: Record<string, boolean> }).courseComplete ?? {},
+          // v18->v19: backfill the player display name (default '' — the name-entry
+          // scene captures it on the next intro hatch / self-heals via the gate).
+          displayName: (st as { displayName?: string }).displayName ?? '',
           audio: (() => {
             const saved = (st as { audio?: AudioSettings & { allMuted?: boolean } }).audio;
             const a = saved ? { ...saved } : defaultAudioSettings();
