@@ -26,6 +26,9 @@ export function EvolutionScreen() {
       to={change.to}
       species={pet.species}
       def={resolvePetDef(pet.defId, defs)}
+      // Intro hatch (egg -> baby) mystery-rolls a random baby silhouette, like the
+      // Mystery Egg / Gacha. Real evolutions (baby/young start) show the real pet.
+      mysterySilhouette={change.from === 'egg'}
       onDone={() => {
         clearStageChange();
         setScreen('petRoom');
