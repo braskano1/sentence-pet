@@ -110,6 +110,30 @@ describe('kind-aware validateItem', () => {
     const r = validateContent(bundleWith({ id: 'f2', kind: 'flashcard', level: 1, front: 'a', back: 'b', l1: { th: '' } }));
     expect(r.ok).toBe(false);
   });
+
+  // Lesson-images P1: optional image fields must not be empty strings when present.
+  it('rejects a flashcard with an empty-string image', () => {
+    const r = validateContent(bundleWith({ id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล', image: '   ' }));
+    expect(r.ok).toBe(false);
+    expect(r.errors).toContain('item fc1 flashcard image is empty');
+  });
+
+  it('accepts a flashcard with a non-empty image and no image field', () => {
+    const withImg = validateContent(bundleWith({ id: 'fc2', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล', image: 'https://x/apple.png' }));
+    const noImg = validateContent(bundleWith({ id: 'fc3', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล' }));
+    expect(withImg).toEqual({ ok: true, errors: [] });
+    expect(noImg).toEqual({ ok: true, errors: [] });
+  });
+
+  it('rejects a matching pair with an empty-string leftImage/rightImage', () => {
+    const r = validateContent(bundleWith({ id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'แอปเปิล', leftImage: ' ' },
+      { left: 'cat', right: 'แมว', rightImage: '' },
+    ] }));
+    expect(r.ok).toBe(false);
+    expect(r.errors).toContain('item m1 pair 0 leftImage is empty');
+    expect(r.errors).toContain('item m1 pair 1 rightImage is empty');
+  });
 });
 
 const sampleBoss: CheckpointBoss = {
