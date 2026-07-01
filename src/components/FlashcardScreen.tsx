@@ -68,7 +68,7 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
           setFlipped((f) => !f);
           setHasFlipped(true);
         }}
-        className="flex min-h-48 w-full max-w-sm items-center justify-center rounded-3xl border-2 border-slate-200 bg-white text-3xl font-extrabold shadow"
+        className="flex min-h-[18rem] w-full max-w-sm items-center justify-center rounded-3xl border-2 border-slate-200 bg-white p-6 text-3xl font-extrabold shadow"
       >
         {flipped ? <CardBack item={item} /> : item.front}
       </button>
@@ -107,7 +107,7 @@ function CardBack({ item }: { item: FlashcardItem }) {
         <img
           src={item.image}
           alt={item.back}
-          className="h-32 w-full object-contain"
+          className="h-44 w-full object-contain"
           onError={() => setImgFailed(true)}
         />
         {item.imageCaption !== false && <span>{item.back}</span>}
