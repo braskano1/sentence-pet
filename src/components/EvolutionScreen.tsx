@@ -3,6 +3,7 @@ import { useGameStore, selectActivePet, postCinematicScreen } from '../state/gam
 import { resolvePetDef } from '../domain/petDef';
 import { usePetDefs } from '../state/usePetDefs';
 import { EvolutionCinematic } from './EvolutionCinematic';
+import { needsNameEntry } from '../domain/playerName';
 
 /** Routed evolution screen (hatch / L16 / L36). Binds the transient
  * lastStageChange + active pet to the shared cinematic. */
@@ -13,6 +14,7 @@ export function EvolutionScreen() {
   const clearStageChange = useGameStore((s) => s.clearStageChange);
   const setScreen = useGameStore((s) => s.setScreen);
   const currentCourseId = useGameStore((s) => s.currentCourseId);
+  const displayName = useGameStore((s) => s.displayName);
   const defs = usePetDefs();
 
   // No stage change to show (e.g. a genuine reload landing here) -> leave.
@@ -37,7 +39,11 @@ export function EvolutionScreen() {
       mysterySilhouette={change.from === 'egg'}
       onDone={() => {
         clearStageChange();
-        setScreen(postCinematicScreen(currentCourseId));
+        setScreen(
+          needsNameEntry(change.from, displayName)
+            ? 'nameEntry'
+            : postCinematicScreen(currentCourseId),
+        );
       }}
     />
   );
