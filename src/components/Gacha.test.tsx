@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Gacha } from './Gacha';
 import { useGameStore } from '../state/gameStore';
+import { GAME_CONFIG } from '../config/gameConfig';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
@@ -41,6 +42,33 @@ describe('Gacha screen', () => {
   it('Back returns to the pet room', () => {
     render(<Gacha />);
     fireEvent.click(screen.getByRole('button', { name: /back/i }));
+    expect(useGameStore.getState().screen).toBe('petRoom');
+  });
+
+  it('shows the drop-rate odds for each rarity on the pull screen', () => {
+    render(<Gacha />);
+    const total = GAME_CONFIG.gacha.rarities.reduce((s, r) => s + r.weight, 0);
+    for (const r of GAME_CONFIG.gacha.rarities) {
+      const pct = Math.round((r.weight / total) * 100);
+      expect(
+        screen.getByText(new RegExp(`${r.rarity}\\s*${pct}%`, 'i')),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it('Back from the reveal returns to the pull screen (not petRoom); a second Back leaves to the room', () => {
+    useGameStore.getState().addCoinsForTest(100);
+    useGameStore.getState().setScreen('gacha');
+    render(<Gacha />);
+    fireEvent.click(screen.getByRole('button', { name: /pull/i }));
+    advanceCinematic();
+    // On the reveal card: Back should go back to eggs, not navigate away.
+    fireEvent.click(screen.getByRole('button', { name: /back to eggs/i }));
+    expect(useGameStore.getState().screen).toBe('gacha');
+    expect(screen.getByRole('button', { name: /pull/i })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /name your pet/i })).toBeNull();
+    // Now on the pull screen: Back leaves to the room.
+    fireEvent.click(screen.getByRole('button', { name: /back to room/i }));
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
 

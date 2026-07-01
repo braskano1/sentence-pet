@@ -37,6 +37,23 @@ export function Gacha() {
 
   const pulled = revealed ? lastPull : null;
 
+  // Reveal → Back returns to the pull screen (buy another egg); pull → Back leaves to the room.
+  const onBack = () => {
+    if (pulled) {
+      setRevealed(false);
+      setNameDraft('');
+    } else {
+      setScreen('petRoom');
+    }
+  };
+
+  // Drop rates from config — weight/sum(weights)*100, rounded, so config changes flow through.
+  const totalWeight = GAME_CONFIG.gacha.rarities.reduce((sum, r) => sum + r.weight, 0);
+  const dropRates = GAME_CONFIG.gacha.rarities.map((r) => ({
+    rarity: r.rarity,
+    pct: Math.round((r.weight / totalWeight) * 100),
+  }));
+
   if (hatching && lastPull) {
     return (
       <EvolutionCinematic
@@ -76,6 +93,22 @@ export function Gacha() {
           >
             Pull · {price} 🪙
           </PressButton>
+          <div
+            aria-label="Drop rates"
+            className="flex flex-col items-center gap-1.5 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-indigo-200"
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Drop rates</p>
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {dropRates.map(({ rarity, pct }) => (
+                <span
+                  key={rarity}
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${RARITY_BADGE[rarity]}`}
+                >
+                  {rarity} {pct}%
+                </span>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <div className="flex flex-col items-center gap-3">
@@ -118,8 +151,8 @@ export function Gacha() {
       )}
 
       <PressButton
-        onClick={() => setScreen('petRoom')}
-        aria-label="Back to room"
+        onClick={onBack}
+        aria-label={pulled ? 'Back to eggs' : 'Back to room'}
         className="min-h-12 rounded-xl bg-slate-600 px-6 py-3 text-lg font-semibold text-white shadow"
       >
         ← Back
