@@ -4,7 +4,6 @@ import { useGameStore, selectActivePet } from '../state/gameStore';
 import { PressButton } from './PressButton';
 import { SettingsButton } from './SettingsButton';
 import { StatRadar } from './StatRadar';
-import { useCountUp } from '../effects/useCountUp';
 import { BATTLE_STAT_LABELS, ELEMENT_EMOJI, PET_NAME, RARITY_BADGE, RARITY_HEX, RARITY_RING, displayStats, petDisplayName, petLevel, petPower, petSpecialty, petStageSprite } from '../config/petDisplay';
 import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
@@ -14,12 +13,6 @@ import { usePetDefs } from '../state/usePetDefs';
 
 const COLLECTION_TABS = ['pets', 'dex'] as const;
 type CollectionTab = (typeof COLLECTION_TABS)[number];
-
-/** A single battle-stat number that rolls when it changes (pet switch). */
-function StatNum({ value }: { value: number }) {
-  const shown = useCountUp(value);
-  return <span className="tabular-nums">{shown}</span>;
-}
 
 /** Rarity pill; epic/legendary get a periodic shine-sweep. */
 function RarityBadge({ rarity }: { rarity: Rarity }) {
@@ -213,15 +206,6 @@ export function Collection() {
               <div className="text-[8px] font-extrabold uppercase tracking-wide text-amber-900/60">★ Specialty</div>
               <div className="mt-1 text-base font-extrabold leading-none text-amber-700">{BATTLE_STAT_LABELS.find(([, k]) => k === petSpecialty(active))?.[0] ?? 'HP'}</div>
             </div>
-          </div>
-
-          <div className="flex w-full gap-1">
-            {BATTLE_STAT_LABELS.map(([label, key]) => (
-              <div key={key} className="flex flex-1 flex-col items-center rounded-lg bg-amber-900/10 px-1 py-1 text-xs font-bold text-amber-950">
-                <span className="text-amber-900/60">{label}</span>
-                <StatNum value={displayStats(active)[key]} />
-              </div>
-            ))}
           </div>
         </motion.div>
 
