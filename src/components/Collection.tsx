@@ -109,7 +109,15 @@ export function Collection() {
         </div>
       </div>
 
-      <div id="collection-panel" role="tabpanel" aria-labelledby={`collection-tab-${tab}`} className="flex-1 overflow-y-auto p-5">
+      <div
+        id="collection-panel"
+        role="tabpanel"
+        aria-labelledby={`collection-tab-${tab}`}
+        // The Dex hosts a PanViewport (its own clipping camera): it needs full
+        // height and must NOT sit inside a padded overflow-y-auto scroller (that
+        // double-scrolls and breaks its measurement). My Pets keeps the scroller.
+        className={tab === 'dex' ? 'flex-1 overflow-hidden' : 'flex-1 overflow-y-auto p-5'}
+      >
         {tab === 'dex' ? (
           <DexGrid />
         ) : (
