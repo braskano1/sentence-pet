@@ -10,6 +10,7 @@ import { strongAgainst, weakAgainst } from '../domain/elements';
 import { MAX_PET_NAME } from '../domain/petName';
 import type { Rarity } from '../data/types';
 import { DexGrid } from './DexGrid';
+import { usePetDefs } from '../state/usePetDefs';
 
 const COLLECTION_TABS = ['pets', 'dex'] as const;
 type CollectionTab = (typeof COLLECTION_TABS)[number];
@@ -53,6 +54,11 @@ export function Collection() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [tab, setTab] = useState<CollectionTab>('pets');
+  // Subscribe to the pet-def catalog so a post-paint Firestore hydration swap
+  // re-renders this screen and petStageSprite recomputes with the real def —
+  // otherwise the My Pets portrait/roster stay stuck on element fallback art.
+  // (The My Pets tab has no other petDefs subscription; DexGrid only mounts on the Dex tab.)
+  usePetDefs();
 
   const onTabKey = (e: KeyboardEvent, current: CollectionTab) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;

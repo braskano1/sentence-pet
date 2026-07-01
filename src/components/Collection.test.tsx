@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { Collection } from './Collection';
 import { useGameStore } from '../state/gameStore';
 import { makePet, rollStats } from '../domain/pets';
+import { BUILTIN_PET_DEFS, setActivePetDefs } from '../domain/petDef';
+import { SPRITES } from '../config/sprites';
+import type { PetDef } from '../data/types';
 
 beforeEach(() => useGameStore.getState().resetForTest());
 
@@ -82,5 +85,33 @@ describe('Collection dex tab', () => {
     useGameStore.getState().hatch();
     render(<Collection />);
     expect(screen.getAllByText(/my pets/i).length).toBeGreaterThan(0);
+  });
+});
+
+// Regression: the My Pets tab reads petStageSprite (which resolves the active
+// pet-def catalog singleton) but subscribes only to gameStore. On a fresh load
+// the Firestore catalog hydrates AFTER paint via setActivePetDefs(...); without a
+// pet-def subscription the portrait/roster stay stuck on element art. Collection
+// must re-render on that swap.
+describe('Collection — owned-pet art tracks async catalog hydration', () => {
+  afterEach(() => setActivePetDefs([...BUILTIN_PET_DEFS])); // restore the registry after swaps
+
+  const PLAIN_LEAF = BUILTIN_PET_DEFS[0]; // def-leaf, no sprite override (pre-hydration snapshot)
+  const ART_LEAF: PetDef = { ...PLAIN_LEAF, sprite: { default: 'https://cdn.test/leaf-real.webp' } };
+
+  it('re-renders the portrait from element art to def art on setActivePetDefs swap (no remount)', () => {
+    // A hatched leaf pet at baby stage (xp 0) owning the leaf def.
+    const pet = makePet({ id: 'p1', species: 'leaf', stats: rollStats(() => 0.5), rarity: 'common', hatched: true, defId: PLAIN_LEAF.id });
+    act(() => useGameStore.setState({ pets: [pet], activePetId: 'p1' }));
+
+    // Pre-hydration: catalog has the plain (no-art) leaf def → plain element art.
+    render(<Collection />);
+    const portrait = screen.getByRole('img', { name: 'Sprout' }); // PET_NAME.leaf = Sprout
+    expect(portrait.getAttribute('src')).toBe(SPRITES.leaf.baby.happy);
+
+    // Firestore hydration resolves after paint and swaps in the def WITH art.
+    act(() => setActivePetDefs([ART_LEAF, ...BUILTIN_PET_DEFS.slice(1)]));
+
+    expect(screen.getByRole('img', { name: 'Sprout' }).getAttribute('src')).toBe('https://cdn.test/leaf-real.webp');
   });
 });

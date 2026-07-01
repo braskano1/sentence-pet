@@ -6,9 +6,14 @@ import { findLesson, itemsForLesson } from '../../content/model';
 import { isDragDrop } from '../../data/types';
 import { findTier, recommendedPower } from '../../domain/bossTiers';
 import { petPower, petDisplayName, ELEMENT_EMOJI, petStageSprite } from '../../config/petDisplay';
+import { usePetDefs } from '../../state/usePetDefs';
 import { PressButton } from '../PressButton';
 
 export function BossPrepScreen() {
+  // Subscribe to the pet-def catalog so a post-paint Firestore hydration swap
+  // re-renders and petStageSprite recomputes with the real def — otherwise the
+  // pet-picker thumbnails stay stuck on element fallback art.
+  usePetDefs();
   const lessonId = useGameStore((s) => s.currentBossLessonId);
   const pets = useGameStore((s) => s.pets);
   const setScreen = useGameStore((s) => s.setScreen);
