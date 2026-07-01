@@ -127,4 +127,39 @@ describe('FlashcardScreen', () => {
     expect(screen.queryByRole('button', { name: /got it/i })).toBeNull();
     expect(screen.getByText('tap to flip')).toBeInTheDocument();
   });
+
+  it('shows the back image with caption after flipping', () => {
+    const item = { id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล', image: 'https://x/apple.png' } as const;
+    render(<FlashcardScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByLabelText('flip card'));
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', 'https://x/apple.png');
+    expect(img).toHaveAttribute('alt', 'แอปเปิล');
+    expect(screen.getByText('แอปเปิล')).toBeInTheDocument(); // caption shown by default
+  });
+
+  it('shows image only (no caption word) when imageCaption is false', () => {
+    const item = { id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล', image: 'https://x/apple.png', imageCaption: false } as const;
+    render(<FlashcardScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByLabelText('flip card'));
+    expect(screen.getByRole('img')).toBeInTheDocument();
+    expect(screen.queryByText('แอปเปิล')).toBeNull();
+  });
+
+  it('shows the back text when there is no image (unchanged behavior)', () => {
+    const item = { id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล' } as const;
+    render(<FlashcardScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByLabelText('flip card'));
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.getByText('แอปเปิล')).toBeInTheDocument();
+  });
+
+  it('falls back to the back text when the image fails to load', () => {
+    const item = { id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล', image: 'https://x/broken.png' } as const;
+    render(<FlashcardScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    fireEvent.click(screen.getByLabelText('flip card'));
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.getByText('แอปเปิล')).toBeInTheDocument();
+  });
 });

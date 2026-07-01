@@ -19,12 +19,15 @@ function validateItem(itemId: string, item: ContentItem, push: (m: string) => vo
     case 'flashcard':
       if (item.front.trim() === '') push(`item ${itemId} flashcard front is empty`);
       if (item.back.trim() === '') push(`item ${itemId} flashcard back is empty`);
+      if (item.image !== undefined && item.image.trim() === '') push(`item ${itemId} flashcard image is empty`);
       break;
     case 'matching':
       if (item.pairs.length < 2) push(`item ${itemId} matching needs >= 2 pairs`);
       item.pairs.forEach((p, i) => {
         if (p.left.trim() === '' || p.right.trim() === '') push(`item ${itemId} pair ${i} incomplete`);
         if (p.l1 && p.l1.th.trim() === '') push(`item ${itemId} pair ${i} l1.th is empty`);
+        if (p.leftImage !== undefined && p.leftImage.trim() === '') push(`item ${itemId} pair ${i} leftImage is empty`);
+        if (p.rightImage !== undefined && p.rightImage.trim() === '') push(`item ${itemId} pair ${i} rightImage is empty`);
       });
       break;
     case 'fillblank': {

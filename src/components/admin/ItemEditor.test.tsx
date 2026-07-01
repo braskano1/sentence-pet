@@ -31,4 +31,28 @@ describe('ItemEditor by kind', () => {
     expect(next.id).toBe('x1');   // id preserved
     expect(next.front).toBe('');  // minimal valid flashcard
   });
+
+  it('edits a flashcard image URL and caption flag', () => {
+    const onChange = vi.fn();
+    const item = { id: 'fc1', kind: 'flashcard', level: 1, front: 'apple', back: 'แอปเปิล' } as const;
+    render(<ItemEditor item={item as any} onChange={onChange} />);
+    fireEvent.change(screen.getByLabelText('image (url)'), { target: { value: 'https://x/apple.png' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ image: 'https://x/apple.png' }));
+
+    onChange.mockClear();
+    // unchecking caption stores false
+    fireEvent.click(screen.getByLabelText('image caption'));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ imageCaption: false }));
+  });
+
+  it('edits a matching pair leftImage URL', () => {
+    const onChange = vi.fn();
+    const item = { id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'A' }, { left: 'ball', right: 'B' },
+    ] } as const;
+    render(<ItemEditor item={item as any} onChange={onChange} />);
+    fireEvent.change(screen.getAllByLabelText('left image (url)')[0], { target: { value: 'https://x/apple.png' } });
+    const arg = onChange.mock.calls.at(-1)![0];
+    expect(arg.pairs[0].leftImage).toBe('https://x/apple.png');
+  });
 });

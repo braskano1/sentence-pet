@@ -68,9 +68,9 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
           setFlipped((f) => !f);
           setHasFlipped(true);
         }}
-        className="flex min-h-48 w-full max-w-sm items-center justify-center rounded-3xl border-2 border-slate-200 bg-white text-3xl font-extrabold shadow"
+        className="flex min-h-[18rem] w-full max-w-sm items-center justify-center rounded-3xl border-2 border-slate-200 bg-white p-6 text-3xl font-extrabold shadow"
       >
-        {flipped ? item.back : item.front}
+        {flipped ? <CardBack item={item} /> : item.front}
       </button>
       {!flipped && <p className="text-xs text-slate-400">tap to flip</p>}
       <button
@@ -95,4 +95,24 @@ export function FlashcardScreen({ items, unit }: { items: FlashcardItem[]; unit:
     </div>
     </LessonShell>
   );
+}
+
+/** Back face: picture (with optional word caption) when an image is set, else the back word.
+    Falls back to the back word if the image fails to load. */
+function CardBack({ item }: { item: FlashcardItem }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (item.image && !imgFailed) {
+    return (
+      <span className="flex flex-col items-center gap-2">
+        <img
+          src={item.image}
+          alt={item.back}
+          className="h-44 w-full object-contain"
+          onError={() => setImgFailed(true)}
+        />
+        {item.imageCaption !== false && <span>{item.back}</span>}
+      </span>
+    );
+  }
+  return <>{item.back}</>;
 }

@@ -136,7 +136,7 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
           <div className="flex flex-col gap-2">
             {activePairs.map((p) => {
               const th = showL1(unit, l1Mode, p.l1);
-              return <PromptTile key={p.left} id={p.left} label={p.left} sub={th} />;
+              return <PromptTile key={p.left} id={p.left} label={p.left} sub={th} image={p.leftImage} caption={p.leftImageCaption} />;
             })}
           </div>
           <div className="flex flex-col gap-2">
@@ -147,6 +147,8 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
                 label={p.right}
                 filledBy={Object.entries(assignment).find(([, r]) => r === p.right)?.[0]}
                 error={errorRight === p.right}
+                image={p.rightImage}
+                caption={p.rightImageCaption}
               />
             ))}
           </div>
@@ -154,7 +156,12 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
         <DragOverlay>
           {activeLeft ? (
             <div className="min-h-12 rounded-xl bg-indigo-600 px-5 py-3 text-lg font-semibold text-white shadow">
-              {activeLeft}
+              {(() => {
+                const ap = item.pairs.find((p) => p.left === activeLeft);
+                return ap?.leftImage
+                  ? <img src={ap.leftImage} alt={activeLeft} className="h-12 w-12 object-contain" />
+                  : activeLeft;
+              })()}
             </div>
           ) : null}
         </DragOverlay>
@@ -164,8 +171,13 @@ export function MatchingScreen({ items, unit }: { items: MatchingItem[]; unit: {
   );
 }
 
-function PromptTile({ id, label, sub }: { id: string; label: string; sub: string | null }) {
+function PromptTile({ id, label, sub, image, caption }: {
+  id: string; label: string; sub: string | null; image?: string; caption?: boolean;
+}) {
   const { setNodeRef, listeners, attributes, transform } = useDraggable({ id });
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = !!image && !imgFailed;
+  const showLabel = !showImage || caption !== false;
   return (
     <button
       ref={setNodeRef}
@@ -175,14 +187,22 @@ function PromptTile({ id, label, sub }: { id: string; label: string; sub: string
       style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined}
       className="rounded-xl border-2 border-slate-300 bg-white px-4 py-3 font-bold"
     >
-      {label}
+      {showImage && (
+        <img src={image} alt={label} className="mx-auto h-16 w-16 object-contain" onError={() => setImgFailed(true)} />
+      )}
+      {showLabel && label}
       {sub && <span className="block text-xs text-slate-500">{sub}</span>}
     </button>
   );
 }
 
-function TargetSlot({ id, label, filledBy, error }: { id: string; label: string; filledBy?: string; error?: boolean }) {
+function TargetSlot({ id, label, filledBy, error, image, caption }: {
+  id: string; label: string; filledBy?: string; error?: boolean; image?: string; caption?: boolean;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id });
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = !!image && !imgFailed;
+  const showLabel = !showImage || caption !== false;
   return (
     <div
       ref={setNodeRef}
@@ -197,7 +217,10 @@ function TargetSlot({ id, label, filledBy, error }: { id: string; label: string;
               : 'border-dashed border-slate-300 bg-white'
       }`}
     >
-      <span className="block text-xs font-semibold text-slate-600">{label}</span>
+      {showImage && (
+        <img src={image} alt={label} className="mx-auto h-16 w-16 object-contain" onError={() => setImgFailed(true)} />
+      )}
+      {showLabel && <span className="block text-xs font-semibold text-slate-600">{label}</span>}
       {filledBy && <span className="font-bold">{filledBy}</span>}
     </div>
   );

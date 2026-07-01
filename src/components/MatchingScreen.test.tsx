@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 // dnd-kit drag is not reliably simulable in jsdom (no layout/coordinates), so we
@@ -225,5 +225,57 @@ describe('MatchingScreen — rolling window (≤3 active pairs)', () => {
     const slot = screen.getByTestId('target-B');
     expect(slot).toHaveClass('shake-wrong');
     expect(screen.getByText('Try again')).toBeInTheDocument();
+  });
+});
+
+describe('MatchingScreen — images (display-only)', () => {
+  beforeEach(() => {
+    useGameStore.getState().resetForTest();
+  });
+
+  it('renders an image on a prompt tile and a target slot when set, with alt = word', () => {
+    const item = { id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'A', leftImage: 'https://x/apple.png' },
+      { left: 'ball', right: 'B', rightImage: 'https://x/b.png' },
+    ] } as const;
+    render(<MatchingScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    const imgs = screen.getAllByRole('img');
+    const srcs = imgs.map((i) => i.getAttribute('src'));
+    expect(srcs).toContain('https://x/apple.png');
+    expect(srcs).toContain('https://x/b.png');
+    expect(screen.getByAltText('apple')).toBeInTheDocument();
+  });
+
+  it('hides the caption word on a side when its caption flag is false', () => {
+    const item = { id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'A', leftImage: 'https://x/apple.png', leftImageCaption: false },
+      { left: 'ball', right: 'B' },
+    ] } as const;
+    render(<MatchingScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    // 'apple' image present but the word 'apple' not shown as a caption
+    expect(screen.getByAltText('apple')).toBeInTheDocument();
+    expect(screen.queryByText('apple')).toBeNull();
+  });
+
+  it('falls back to text on a tile when its image fails to load', () => {
+    const item = { id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'A', leftImage: 'https://x/broken.png', leftImageCaption: false },
+      { left: 'ball', right: 'B' },
+    ] } as const;
+    render(<MatchingScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    fireEvent.error(screen.getByAltText('apple'));
+    expect(screen.queryByAltText('apple')).toBeNull();
+    expect(screen.getByText('apple')).toBeInTheDocument(); // text fallback
+  });
+
+  it('still grades correctly when images are present (display-only)', () => {
+    const item = { id: 'm1', kind: 'matching', level: 1, pairs: [
+      { left: 'apple', right: 'A', leftImage: 'https://x/apple.png' },
+      { left: 'ball', right: 'B' },
+    ] } as const;
+    render(<MatchingScreen items={[item as any]} unit={{ l1Enabled: false }} />);
+    // drop apple→A (correct): the pair leaves the board; no "Try again"
+    drop('apple', 'A');
+    expect(screen.queryByText('Try again')).toBeNull();
   });
 });
