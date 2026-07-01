@@ -23,18 +23,54 @@ function bandsFromGacha(): Record<Rarity, Record<keyof BattleStats, StatRange>> 
 
 const ELEMENT_NAME: Record<Species, string> = { leaf: 'Leaflet', fire: 'Embers', air: 'Zephyr', water: 'Dewdrop' };
 
-/** One built-in def per fixed element. Leaf (dexNo 1) is the gen-1 starter. All enabled. */
-export const BUILTIN_PET_DEFS: readonly PetDef[] = SPECIES.map((element, i): PetDef => ({
-  id: `def-${element}`,
-  name: ELEMENT_NAME[element],
-  gen: 1,
-  dexNo: i + 1,
-  types: [element],
-  element,
-  statBands: bandsFromGacha(),
-  ...(i === 0 ? { starter: true } : {}), // SPECIES[0] === 'leaf' — the starter is dexNo 1
-  enabled: true,
-}));
+/** Root (grid-shown) dexNo per element — SPECIES[i] gets line number i+1 (leaf=1..water=4). */
+const ROOT_DEX: Record<Species, number> = { leaf: 1, fire: 2, air: 3, water: 4 };
+
+/**
+ * Build a 3-stage evolution chain (baby -> young -> adult) for one element, mirroring the
+ * live seed's `def-<el>-1/2/3` ids + chain links + stage numbers. Roots keep the shown line
+ * number; non-root stages get the high, never-displayed dexNos assigned by `nextHi`.
+ *
+ * statBands here are the OFFLINE/pre-hydration FALLBACK (bandsFromGacha()); once the catalog
+ * hydrates from Firestore the seed's real bands take over and the live catalog is authoritative.
+ */
+function builtinChain(element: Species, nextHi: () => number, opts: { starter?: boolean } = {}): PetDef[] {
+  const base = `def-${element}`;
+  const ids = [`${base}-1`, `${base}-2`, `${base}-3`];
+  return ids.map((id, i): PetDef => ({
+    id,
+    name: ELEMENT_NAME[element],
+    gen: 1,
+    dexNo: i === 0 ? ROOT_DEX[element] : nextHi(),
+    types: [element],
+    element,
+    statBands: bandsFromGacha(),
+    enabled: true,
+    evolutionStage: i + 1,
+    ...(i > 0 ? { evolvesFromId: ids[i - 1] } : {}),
+    ...(i < 2 ? { evolvesToId: ids[i + 1] } : {}),
+    ...(i === 0 && opts.starter ? { starter: true } : {}),
+  }));
+}
+
+/**
+ * Built-in element chains — mirror the seeded catalog exactly so pre- and post-hydration ids
+ * agree (a hatched starter registers in the Dex; art/name survive without resolve-fallback).
+ * Order is element-major, stage-minor: leaf 1/2/3, fire 1/2/3, air 1/2/3, water 1/2/3. So
+ * `[0]` and `defaultDefForElement(leaf)` resolve the leaf root, and `starterDef()` -> def-leaf-1.
+ * Non-root dexNos are remapped to a high band (1000+) in array order, matching the live seed's
+ * `let hi = 1000; for (d) if (d.evolvesFromId) d.dexNo = hi++`.
+ */
+export const BUILTIN_PET_DEFS: readonly PetDef[] = (() => {
+  let hi = 1000;
+  const nextHi = () => hi++;
+  return [
+    ...builtinChain('leaf', nextHi, { starter: true }), // SPECIES[0] === 'leaf' — the gen-1, dexNo-1 starter
+    ...builtinChain('fire', nextHi),
+    ...builtinChain('air', nextHi),
+    ...builtinChain('water', nextHi),
+  ];
+})();
 
 /**
  * Proof-of-concept import from a friend's combined character sheet

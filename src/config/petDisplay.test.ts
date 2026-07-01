@@ -11,9 +11,10 @@ describe('petDisplayName', () => {
   afterEach(() => setActivePetDefs([...BUILTIN_PET_DEFS]));
 
   it("returns the def's authored Dex name when name is blank", () => {
-    // Seed a def with a known authored name; an unnamed pet with that defId shows it.
-    const fire: PetDef = { ...BUILTIN_PET_DEFS[1], name: 'Sapphire Phoenix' };
-    setActivePetDefs([BUILTIN_PET_DEFS[0], fire, ...BUILTIN_PET_DEFS.slice(2)]);
+    // Seed a real fire builtin with a known authored name; an unnamed pet with that defId shows it.
+    const fireRoot = BUILTIN_PET_DEFS.find((d) => d.id === 'def-fire-1')!;
+    const fire: PetDef = { ...fireRoot, name: 'Sapphire Phoenix' };
+    setActivePetDefs(BUILTIN_PET_DEFS.map((d) => (d.id === fire.id ? fire : d)));
     const pet = makePet({ id: 'x', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', defId: fire.id });
     // CHANGED: was 'Ember' (PET_NAME element name); now the def's authored name.
     expect(petDisplayName(pet)).toBe('Sapphire Phoenix');

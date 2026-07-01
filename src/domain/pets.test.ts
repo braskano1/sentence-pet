@@ -58,7 +58,7 @@ describe('makePet', () => {
 
   it('defaults defId to the element default and honors an explicit defId', () => {
     const def = makePet({ id: 'a', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common' });
-    expect(def.defId).toBe('def-fire');
+    expect(def.defId).toBe('def-fire-1'); // element default now resolves the chain root
     const explicit = makePet({ id: 'b', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', defId: 'custom' });
     expect(explicit.defId).toBe('custom');
   });

@@ -34,10 +34,10 @@ describe('DexGrid', () => {
 
   it('shows a lines + forms count and renders a card per enabled line', () => {
     render(<DexGrid />);
-    // built-in catalog has 4 single-form lines; starter (def-leaf) is caught.
-    // 1/4 lines caught, 1/4 forms caught.
+    // built-in catalog has 4 three-stage lines (12 forms); starter (def-leaf-1) is caught.
+    // 1/4 lines caught, 1/12 forms caught.
     expect(screen.getByText(/caught\s*1\s*\/\s*4\s*lines/i)).toBeInTheDocument();
-    expect(screen.getByText(/1\s*\/\s*4\s*forms/i)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*\/\s*12\s*forms/i)).toBeInTheDocument();
   });
 
   it('shows full art for caught lines and ??? for undiscovered ones', () => {
@@ -56,12 +56,16 @@ describe('DexGrid', () => {
     render(<DexGrid />);
     expect(screen.getByText(/caught\s*1\s*\/\s*4\s*lines/i)).toBeInTheDocument();
 
-    // Simulate hydratePetDefs resolving after mount with a newly-published 5th def.
-    const newDef = { ...BUILTIN_PET_DEFS[1], id: 'def-gen2', name: 'Newbie', gen: 2, dexNo: 1 };
+    // Simulate hydratePetDefs resolving after mount with a newly-published 5th LINE.
+    // Spread a builtin root then clear its chain links so this is a standalone single-form line.
+    const newDef = {
+      ...BUILTIN_PET_DEFS[0], id: 'def-gen2', name: 'Newbie', gen: 2, dexNo: 1,
+      evolvesFromId: undefined, evolvesToId: undefined,
+    };
     act(() => setActivePetDefs([...BUILTIN_PET_DEFS, newDef]));
 
     expect(screen.getByText(/caught\s*1\s*\/\s*5\s*lines/i)).toBeInTheDocument();
-    expect(screen.getAllByText('???').length).toBe(4); // 4 undiscovered (3 builtins + new)
+    expect(screen.getAllByText('???').length).toBe(4); // 4 undiscovered lines (3 builtins + new)
   });
 
   it('first-run (0 caught) shows the catch hint', () => {
@@ -118,7 +122,8 @@ describe('DexGrid per-line badge', () => {
     });
     const { container } = render(<DexGrid />);
     expect(screen.getAllByText('???').length).toBe(5);
-    expect(screen.getByText('0/3')).toBeInTheDocument();
+    // every line is a 3-stage chain (4 builtins + the authored ln line), all uncaught → 0/3 badges
+    expect(screen.getAllByText('0/3').length).toBe(5);
     const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[];
     expect(imgs.some((img) => img.src.includes('baby'))).toBe(true);
   });

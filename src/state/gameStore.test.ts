@@ -1002,8 +1002,8 @@ describe('caught dex set', () => {
 
   it('freshState seeds the starter as caught', () => {
     const s = useGameStore.getState();
-    // starter pet defId is def-leaf
-    expect(selectCaughtSet(s).has('def-leaf')).toBe(true);
+    // starter pet defId is the leaf chain root, def-leaf-1
+    expect(selectCaughtSet(s).has('def-leaf-1')).toBe(true);
   });
 
   it('a gacha pull unions the pulled defId into caughtDefIds', () => {

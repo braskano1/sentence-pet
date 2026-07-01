@@ -521,7 +521,7 @@ export const useGameStore = create<GameState>()(
       //   allMuted:true lands as master.muted:true; the allMuted field is removed.
       // v13->v14 backfills l1Mode (per-user TH/ENG language-helper toggle; default 'TH').
       // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
-      // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>'.
+      // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>-1' (the chain root).
       // v16->v17: seed caughtDefIds (the def-chain dex) from owned pets' defIds.
       migrate: (persisted: unknown) => {
         const st = persisted as
@@ -626,7 +626,8 @@ export const useGameStore = create<GameState>()(
           );
         }
 
-        // v15->v16: backfill defId on any pet that predates the field (key off species/element).
+        // v15->v16: backfill defId on any pet that predates the field (key off species/element;
+        // defaultDefForElement now resolves the chain-root 'def-<element>-1').
         if (Array.isArray(base.pets)) {
           base.pets = base.pets.map((p) =>
             (p as PetInstance).defId
