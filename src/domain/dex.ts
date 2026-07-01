@@ -91,3 +91,40 @@ export function dexLines(defs: readonly PetDef[]): PetDef[][] {
   }
   return lines.sort((a, b) => a[0].gen - b[0].gen || a[0].dexNo - b[0].dexNo);
 }
+
+/**
+ * Per-line progress for the Dex card badge: how many of a line's countable
+ * (enabled) stages the player has caught, and how many there are. Renders as
+ * "X/N". Disabled stages (`enabled === false`) are excluded from both the
+ * numerator and denominator, mirroring the grid's enabled-gating so a
+ * partially-disabled line can't show 2/3 when only 2 stages are visible.
+ */
+export function chainCaughtCount(
+  chain: readonly PetDef[],
+  caught: ReadonlySet<string>,
+): { caught: number; total: number } {
+  const countable = chain.filter((d) => d.enabled !== false);
+  return {
+    caught: countable.filter((d) => caught.has(d.id)).length,
+    total: countable.length,
+  };
+}
+
+/**
+ * Group already-sorted dex lines into generation buckets for the gen-sectioned
+ * Dex layout, keyed by the root's (`line[0]`) gen. Buckets are ordered by
+ * ascending gen; within a bucket the incoming line order is preserved (callers
+ * pass `dexLines(...)` output, already sorted by (gen, dexNo)). Empty input → [].
+ */
+export function linesByGen(lines: readonly PetDef[][]): Array<{ gen: number; lines: PetDef[][] }> {
+  const byGen = new Map<number, PetDef[][]>();
+  for (const line of lines) {
+    const gen = line[0].gen;
+    const bucket = byGen.get(gen);
+    if (bucket) bucket.push(line);
+    else byGen.set(gen, [line]);
+  }
+  return [...byGen.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([gen, lns]) => ({ gen, lines: lns }));
+}
