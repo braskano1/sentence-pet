@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { TIMINGS } from '../hooks/useEvolutionSequence';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
@@ -34,5 +35,51 @@ describe('EvolutionScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(useGameStore.getState().lastStageChange).toBeNull();
     expect(useGameStore.getState().screen).toBe('petRoom');
+  });
+
+  it('returns to the journey map (pickDrill) after a lesson evolution when a course is loaded', () => {
+    useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, currentCourseId: 'default', screen: 'evolution' });
+    render(<EvolutionScreen />);
+    fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('pickDrill');
+  });
+
+  it('intro egg hatch (no course loaded) still routes to petRoom on Continue', () => {
+    // currentCourseId stays null (resetForTest) — the intro-hatch case must not go to the journey.
+    useGameStore.setState({ lastStageChange: { from: 'egg', to: 'baby' }, screen: 'evolution' });
+    render(<EvolutionScreen />);
+    fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('petRoom');
+  });
+
+  it('mystery-rolls the intro egg hatch (from egg -> baby): silhouette is the rolling egg, not the real pet', () => {
+    vi.useFakeTimers();
+    try {
+      useGameStore.setState({ lastStageChange: { from: 'egg', to: 'baby' }, screen: 'evolution' });
+      render(<EvolutionScreen />);
+      act(() => { vi.advanceTimersByTime(TIMINGS.announce); }); // -> silhouette phase
+      const img = screen.getByTestId('evolution-stage');
+      // mysterySilhouette=true drives the rolling-egg alt, hiding the real pet's identity.
+      expect(img.getAttribute('alt')).toBe('mystery-egg-rolling');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does NOT mystery-roll a real evolution (from baby -> young): silhouette shows the real pet', () => {
+    vi.useFakeTimers();
+    try {
+      useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, screen: 'evolution' });
+      render(<EvolutionScreen />);
+      act(() => { vi.advanceTimersByTime(TIMINGS.announce); }); // -> silhouette phase
+      const img = screen.getByTestId('evolution-stage');
+      // Real evolution: the alt names the real pet (pet-<species>-<stage>), not the mystery egg.
+      expect(img.getAttribute('alt')).not.toBe('mystery-egg-rolling');
+      expect(img.getAttribute('alt')).toMatch(/^pet-.+-baby$/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

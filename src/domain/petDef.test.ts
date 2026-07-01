@@ -10,6 +10,7 @@ import {
   obtainablePool,
 } from './petDef';
 import { rollStatsForRarity } from './pets';
+import { validatePetDefs } from '../content/validate';
 import { GAME_CONFIG } from '../config/gameConfig';
 import type { PetDef, Rarity, Species } from '../data/types';
 
@@ -17,22 +18,57 @@ const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 const ELEMENTS: Species[] = ['leaf', 'fire', 'air', 'water'];
 
 describe('BUILTIN_PET_DEFS', () => {
-  it('has exactly one def per element, all enabled', () => {
-    expect(BUILTIN_PET_DEFS).toHaveLength(4);
-    expect(BUILTIN_PET_DEFS.map((d) => d.element).sort()).toEqual([...ELEMENTS].sort());
+  it('is a 3-stage chain per element (12 defs), all enabled', () => {
+    expect(BUILTIN_PET_DEFS).toHaveLength(12); // 4 elements × 3 stages, mirroring the seed
+    // three defs per element, one per stage
+    for (const el of ELEMENTS) {
+      const chain = BUILTIN_PET_DEFS.filter((d) => d.element === el);
+      expect(chain.map((d) => d.evolutionStage)).toEqual([1, 2, 3]);
+      expect(chain.map((d) => d.id)).toEqual([`def-${el}-1`, `def-${el}-2`, `def-${el}-3`]);
+    }
     expect(BUILTIN_PET_DEFS.every((d) => d.enabled)).toBe(true);
   });
 
-  it('flags exactly one starter (leaf)', () => {
+  it('flags exactly one starter (leaf root)', () => {
     const starters = BUILTIN_PET_DEFS.filter((d) => d.starter);
     expect(starters).toHaveLength(1);
     expect(starters[0].element).toBe('leaf');
+    expect(starters[0].id).toBe('def-leaf-1');
   });
 
-  it('assigns gen 1, sequential dexNo, and element-derived types', () => {
+  it('assigns gen 1, roots keep line dexNos + non-roots a high band, element-derived types', () => {
     expect(BUILTIN_PET_DEFS.every((d) => d.gen === 1)).toBe(true);
-    expect(BUILTIN_PET_DEFS.map((d) => d.dexNo).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+    // roots (no evolvesFromId) hold the shown line numbers 1..4; non-roots get 1000..1007
+    const roots = BUILTIN_PET_DEFS.filter((d) => !d.evolvesFromId);
+    expect(roots.map((d) => d.dexNo)).toEqual([1, 2, 3, 4]);
+    const nonRoots = BUILTIN_PET_DEFS.filter((d) => d.evolvesFromId);
+    expect(nonRoots.map((d) => d.dexNo)).toEqual([1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007]);
+    // all dexNos unique
+    expect(new Set(BUILTIN_PET_DEFS.map((d) => d.dexNo)).size).toBe(12);
     for (const d of BUILTIN_PET_DEFS) expect(d.types).toEqual([d.element]);
+  });
+
+  it('links each element chain 1 -> 2 -> 3 with reciprocal evolves refs', () => {
+    for (const el of ELEMENTS) {
+      const [s1, s2, s3] = BUILTIN_PET_DEFS.filter((d) => d.element === el);
+      expect(s1.evolvesFromId).toBeUndefined();
+      expect(s1.evolvesToId).toBe(s2.id);
+      expect(s2.evolvesFromId).toBe(s1.id);
+      expect(s2.evolvesToId).toBe(s3.id);
+      expect(s3.evolvesFromId).toBe(s2.id);
+      expect(s3.evolvesToId).toBeUndefined();
+    }
+  });
+
+  it('resolves the -1 roots for the starter and each element default', () => {
+    expect(starterDef(BUILTIN_PET_DEFS).id).toBe('def-leaf-1');
+    for (const el of ELEMENTS) {
+      expect(defaultDefForElement(el, BUILTIN_PET_DEFS).id).toBe(`def-${el}-1`);
+    }
+  });
+
+  it('passes validatePetDefs (unique dexNos + integral chains)', () => {
+    expect(validatePetDefs([...BUILTIN_PET_DEFS]).ok).toBe(true);
   });
 
   it('pins the starter to gen 1, dexNo 1', () => {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, postCinematicScreen } from '../state/gameStore';
 import { resolvePetDef } from '../domain/petDef';
 import { usePetDefs } from '../state/usePetDefs';
 import { EvolutionCinematic } from './EvolutionCinematic';
@@ -12,6 +12,7 @@ export function RewardHatchScreen() {
   const screen = useGameStore((s) => s.screen);
   const clearHatch = useGameStore((s) => s.clearHatch);
   const setScreen = useGameStore((s) => s.setScreen);
+  const currentCourseId = useGameStore((s) => s.currentCourseId);
   const defs = usePetDefs();
 
   // Leave only on a genuine reload that lands here with nothing to hatch (lastHatch
@@ -34,7 +35,7 @@ export function RewardHatchScreen() {
       mysterySilhouette
       onDone={() => {
         clearHatch();
-        setScreen(lastStageChange ? 'evolution' : 'petRoom');
+        setScreen(lastStageChange ? 'evolution' : postCinematicScreen(currentCourseId));
       }}
     />
   );

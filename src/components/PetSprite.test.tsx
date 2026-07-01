@@ -50,8 +50,10 @@ describe('PetSprite — sprite override', () => {
 
   it('clears the error state when defId changes to a working image', () => {
     const brokenDef: PetDef = { ...BUILTIN_PET_DEFS[0], sprite: { default: 'https://cdn.test/broken.webp' } };
-    const goodDef: PetDef = { ...BUILTIN_PET_DEFS[1], id: 'def-fire-override', sprite: { default: 'https://cdn.test/good.webp' } };
-    setActivePetDefs([brokenDef, goodDef, ...BUILTIN_PET_DEFS.slice(2)]);
+    // Clone a real FIRE builtin so its element matches the species="fire" render (sprite is element-guarded).
+    const fireRoot = BUILTIN_PET_DEFS.find((d) => d.id === 'def-fire-1')!;
+    const goodDef: PetDef = { ...fireRoot, id: 'def-fire-override', sprite: { default: 'https://cdn.test/good.webp' } };
+    setActivePetDefs(BUILTIN_PET_DEFS.map((d) => (d.id === brokenDef.id ? brokenDef : d)).concat(goodDef));
 
     const { rerender } = render(<PetSprite stage="adult" species="leaf" happiness={80} defId={brokenDef.id} />);
     fireEvent.error(screen.getByRole('img'));

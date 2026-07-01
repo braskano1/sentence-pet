@@ -3,10 +3,28 @@
 // concerns here so a new species/rarity is a one-file change.
 import type { BattleStats, PetInstance, PetStage, Rarity, Species } from '../data/types';
 import { levelForXp, stageForXp } from '../domain/xp';
-import { SPRITES } from './sprites';
+import { spriteSrc } from './sprites';
+import { resolvePetDef } from '../domain/petDef';
 
 /** Friendly, A1-readable pet name per species. */
 export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
+
+/** Kid-friendly one-liner about where each element likes to be (no battle jargon). */
+export const ELEMENT_FLAVOR: Record<Species, string> = {
+  leaf: 'Loves grassy places',
+  fire: 'Loves warm sunny spots',
+  air: 'Loves breezy skies',
+  water: 'Loves splashing around',
+};
+
+/** Battle-stat key → friendly single word for the "Best at …" hero line. */
+export const SPECIALTY_WORD: Record<keyof BattleStats, string> = {
+  hp: 'Health',
+  atk: 'Attack',
+  def: 'Defense',
+  spd: 'Speed',
+  luk: 'Luck',
+};
 
 /** Element glyph per species (UI flavor; species IS the element). */
 export const ELEMENT_EMOJI: Record<Species, string> = { leaf: '🍃', fire: '🔥', air: '💨', water: '💧' };
@@ -81,13 +99,27 @@ export function petLevel(pet: PetInstance): number {
   return levelForXp(pet.xp);
 }
 
-/** Display name: the custom name if set, otherwise the species name. */
+/** Display name: the custom name if set, otherwise the pet's authored Dex name.
+ *  resolvePetDef reads the active catalog and never returns null (unknown id -> starter). */
 export function petDisplayName(pet: PetInstance): string {
-  return pet.name.trim() || PET_NAME[pet.species];
+  return pet.name.trim() || resolvePetDef(pet.defId).name;
 }
 
-/** A pet's happy sprite at its current stage (eggs fall back to the baby sprite). */
-export function petStageSprite(pet: PetInstance): string {
+/** A pet's displayed sprite stage (egg collapses to baby, matching petStageSprite). */
+export function petSpriteStage(pet: PetInstance): Exclude<PetStage, 'egg'> {
   const stage = stageForXp(pet.xp, pet.hatched);
-  return SPRITES[pet.species][stage === 'egg' ? 'baby' : stage].happy;
+  return stage === 'egg' ? 'baby' : stage;
+}
+
+/** A pet's happy sprite at its current stage (eggs fall back to the baby sprite).
+ *  Routes through spriteSrc so an owned pet shows its def's real art (as in the Dex);
+ *  spriteSrc's element guard rejects a mismatched/fallback def, yielding plain element art. */
+export function petStageSprite(pet: PetInstance): string {
+  return spriteSrc(pet.species, petSpriteStage(pet), 'happy', resolvePetDef(pet.defId));
+}
+
+/** Bundled element art at the pet's current stage (no def) — the onError fallback for a
+ *  dead sprite-override URL, so a broken image never shows on the hero or a roster tile. */
+export function petElementSprite(pet: PetInstance): string {
+  return spriteSrc(pet.species, petSpriteStage(pet), 'happy');
 }

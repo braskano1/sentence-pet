@@ -22,8 +22,13 @@ import { SpellOverlay } from './SpellOverlay';
 import { getSfx } from '../../effects/sfx';
 import { loadBattleSfx } from '../../effects/loadBattleSfx';
 import { petStageSprite, petDisplayName } from '../../config/petDisplay';
+import { usePetDefs } from '../../state/usePetDefs';
 
 export function BattleScreen() {
+  // Subscribe to the pet-def catalog so a post-paint Firestore hydration swap
+  // re-renders and petStageSprite recomputes with the real def — otherwise the
+  // pet portrait stays stuck on element fallback art.
+  usePetDefs();
   const lessonId = useGameStore((s) => s.currentBossLessonId);
   const finishBoss = useGameStore((s) => s.finishBoss);
   const setScreen = useGameStore((s) => s.setScreen);

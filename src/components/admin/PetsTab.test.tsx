@@ -27,6 +27,17 @@ import type { PetDef } from '../../data/types';
 import { BUILTIN_PET_DEFS, getActivePetDefs as active, setActivePetDefs } from '../../domain/petDef';
 import { deriveStatBands } from '../../content/petImport';
 
+// The builtins are now 4 three-stage chains (12 defs) that all share a name per element
+// (three "Leaflet"s, etc.), which makes name-based row selectors ambiguous. Tests that
+// edit "the leaf/fire builtin" only need ONE def per element with a unique name, so they
+// seed ROOTS: the 4 chain roots (def-<el>-1, dexNos 1..4) with the chain links stripped so
+// each is a standalone single-form line — behaviourally the old flat 4-builtin catalog.
+const ROOTS: PetDef[] = BUILTIN_PET_DEFS
+  .filter((d) => d.evolutionStage === 1)
+  // strip the chain fields so each root is a standalone single-form line (no stage/links),
+  // matching the old flat-builtin behaviour these tests were written against.
+  .map(({ evolvesToId: _t, evolvesFromId: _f, evolutionStage: _s, ...d }) => d);
+
 beforeEach(() => {
   savePetDefs.mockClear();
   writePetDefsCache.mockClear();
@@ -75,13 +86,15 @@ describe('PetsTab — list + save', () => {
 });
 
 describe('PetsTab — add / delete / filter', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // 4 unique-named single-form lines (dexNos 1..4)
+
   it('Add creates a new def with a unique id and the next free dexNo', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
     const before = screen.getAllByRole('listitem').length;
     fireEvent.click(screen.getByRole('button', { name: /add pet/i }));
     expect(screen.getAllByRole('listitem').length).toBe(before + 1);
-    // builtins are gen1 dexNo 1..4, so the new gen-1 def gets dexNo 5
+    // ROOTS are gen1 dexNo 1..4, so the new gen-1 def gets dexNo 5 (max+1)
     expect(screen.getByText(/#5/)).toBeInTheDocument();
   });
 
@@ -103,10 +116,10 @@ describe('PetsTab — add / delete / filter', () => {
 
   it('Delete is disabled for the last enabled def', async () => {
     setActivePetDefs([
-      { ...BUILTIN_PET_DEFS[0], enabled: false },                  // Leaflet — starter, disabled
-      { ...BUILTIN_PET_DEFS[1], starter: false },                 // Embers — the ONLY enabled def
-      { ...BUILTIN_PET_DEFS[2], starter: false, enabled: false }, // Zephyr — disabled
-      { ...BUILTIN_PET_DEFS[3], starter: false, enabled: false }, // Dewdrop — disabled
+      { ...ROOTS[0], enabled: false },                  // Leaflet — starter, disabled
+      { ...ROOTS[1], starter: false },                 // Embers — the ONLY enabled def
+      { ...ROOTS[2], starter: false, enabled: false }, // Zephyr — disabled
+      { ...ROOTS[3], starter: false, enabled: false }, // Dewdrop — disabled
     ]);
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
@@ -124,6 +137,8 @@ describe('PetsTab — add / delete / filter', () => {
 });
 
 describe('PetsTab — edit form', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // unique-named rows for name-based selectors
+
   async function openFirstEditor() {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
@@ -181,10 +196,10 @@ describe('PetsTab — edit form', () => {
     fireEvent.change(screen.getByLabelText(/common max/i), { target: { value: '9' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => {
-      const leaf = active().find((d) => d.id === 'def-leaf')!;
+      const leaf = active().find((d) => d.id === 'def-leaf-1')!;
       expect(leaf.statBands.common.hp).toEqual([3, 9]);
     });
-    const leaf = active().find((d) => d.id === 'def-leaf')!;
+    const leaf = active().find((d) => d.id === 'def-leaf-1')!;
     for (const stat of ['hp', 'atk', 'def', 'spd', 'luk'] as const) {
       expect(leaf.statBands.common[stat]).toEqual([3, 9]);
     }
@@ -192,15 +207,17 @@ describe('PetsTab — edit form', () => {
 });
 
 describe('PetsTab — evolution UI + validate gate', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // unique-named, chain-links stripped for a clean start
+
   it('setting evolvesToId in the form persists reciprocal links on save', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
-    fireEvent.click(screen.getByRole('button', { name: /leaflet/i })); // def-leaf, gen1 dex1
-    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
+    fireEvent.click(screen.getByRole('button', { name: /leaflet/i })); // def-leaf-1, gen1 dex1
+    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire-1' } });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => {
-      const fire = active().find((d) => d.id === 'def-fire')!;
-      expect(fire.evolvesFromId).toBe('def-leaf');
+      const fire = active().find((d) => d.id === 'def-fire-1')!;
+      expect(fire.evolvesFromId).toBe('def-leaf-1');
     });
   });
 
@@ -217,14 +234,16 @@ describe('PetsTab — evolution UI + validate gate', () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
     fireEvent.click(screen.getByRole('button', { name: /leaflet/i }));
-    fireEvent.change(screen.getByLabelText(/evolves from/i), { target: { value: 'def-fire' } });
-    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire' } });
+    fireEvent.change(screen.getByLabelText(/evolves from/i), { target: { value: 'def-fire-1' } });
+    fireEvent.change(screen.getByLabelText(/evolves to/i), { target: { value: 'def-fire-1' } });
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
     expect(screen.getByText(/evolution cycle/i)).toBeInTheDocument();
   });
 });
 
 describe('PetsTab — sprite upload', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // one unique "Leaflet" row
+
   async function openLeaflet() {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
@@ -236,7 +255,7 @@ describe('PetsTab — sprite upload', () => {
     await openLeaflet();
     const input = screen.getByLabelText(/^default sprite$/i);
     fireEvent.change(input, { target: { files: [webp()] } });
-    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'default', expect.any(File)));
+    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf-1', 'default', expect.any(File)));
     expect(await screen.findByAltText(/default sprite preview/i)).toHaveAttribute('src', 'https://download/leaf.webp');
   });
 
@@ -253,7 +272,7 @@ describe('PetsTab — sprite upload', () => {
   it('uploading a variant writes sprite.variants[stage][mood]', async () => {
     await openLeaflet();
     fireEvent.change(screen.getByLabelText(/^baby happy sprite$/i), { target: { files: [webp()] } });
-    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'baby-happy', expect.any(File)));
+    await waitFor(() => expect(uploadSprite).toHaveBeenCalledWith('def-leaf-1', 'baby-happy', expect.any(File)));
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
     await waitFor(() => expect(savePetDefs).toHaveBeenCalled());
     const saved = savePetDefs.mock.calls[0][0] as PetDef[];
@@ -315,16 +334,17 @@ describe('PetsTab — sprite upload', () => {
     fireEvent.change(screen.getByLabelText(/^default sprite$/i), { target: { files: [raw] } });
     await waitFor(() => expect(uploadSprite).toHaveBeenCalled());
     expect(downscaleSprite).toHaveBeenCalledWith(raw);
-    expect(uploadSprite).toHaveBeenCalledWith('def-leaf', 'default', downscaled);
+    expect(uploadSprite).toHaveBeenCalledWith('def-leaf-1', 'default', downscaled);
   });
 });
 
 describe('PetsTab — orphan-sprite cleanup on clear/replace', () => {
   // Seed Leaflet with a pre-existing stored sprite so clear/replace have an "old url".
   const OLD = 'https://download/old-default.webp';
+  beforeEach(() => setActivePetDefs(ROOTS)); // one unique "Leaflet" row
   function seedLeafletWithDefault() {
-    setActivePetDefs(BUILTIN_PET_DEFS.map((d) =>
-      d.id === 'def-leaf' ? { ...d, sprite: { default: OLD } } : d));
+    setActivePetDefs(ROOTS.map((d) =>
+      d.id === 'def-leaf-1' ? { ...d, sprite: { default: OLD } } : d));
   }
   async function openLeaflet() {
     render(<PetsTab />);
@@ -393,8 +413,8 @@ describe('PetsTab — orphan-sprite cleanup on clear/replace', () => {
   });
 
   it('clearing a variant with a url deletes the old variant file', async () => {
-    setActivePetDefs(BUILTIN_PET_DEFS.map((d) =>
-      d.id === 'def-leaf' ? { ...d, sprite: { variants: { baby: { happy: 'https://download/old-bh.webp' } } } } : d));
+    setActivePetDefs(ROOTS.map((d) =>
+      d.id === 'def-leaf-1' ? { ...d, sprite: { variants: { baby: { happy: 'https://download/old-bh.webp' } } } } : d));
     await openLeaflet();
     fireEvent.click(screen.getByRole('button', { name: /clear baby happy sprite/i }));
     await waitFor(() => expect(deleteSpriteByUrl).toHaveBeenCalledWith('https://download/old-bh.webp'));
@@ -403,6 +423,8 @@ describe('PetsTab — orphan-sprite cleanup on clear/replace', () => {
 });
 
 describe('PetsTab — gacha obtainable toggle', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // one unique "Leaflet" row
+
   it('toggling the obtainable checkbox patches gachaObtainable', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });
@@ -530,6 +552,8 @@ describe('PetsTab — block until live load', () => {
 });
 
 describe('PetsTab — master-detail layout', () => {
+  beforeEach(() => setActivePetDefs(ROOTS)); // one unique "Leaflet" row
+
   it('renders the editor in a detail panel beside the list when a pet is selected', async () => {
     render(<PetsTab />);
     await screen.findByRole('button', { name: /add pet/i });

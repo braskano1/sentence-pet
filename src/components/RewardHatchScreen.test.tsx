@@ -30,6 +30,13 @@ describe('RewardHatchScreen', () => {
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
 
+  it('returns to the journey map (pickDrill) after a reward hatch when a course is loaded', () => {
+    useGameStore.setState({ lastHatch: pet(), lastStageChange: null, currentCourseId: 'default', screen: 'rewardHatch' });
+    render(<RewardHatchScreen />);
+    fireEvent.click(screen.getByText('done'));
+    expect(useGameStore.getState().screen).toBe('pickDrill');
+  });
+
   it('routes to evolution when an active-pet stage change is pending', () => {
     useGameStore.setState({ lastHatch: pet(), lastStageChange: { from: 'baby', to: 'young' }, screen: 'rewardHatch' });
     render(<RewardHatchScreen />);

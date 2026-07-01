@@ -14,6 +14,7 @@
     "emulators": "node scripts/dev-emulators.mjs",
     "emulators:raw": "firebase emulators:start --only auth,firestore,storage",
     "seed:courses": "vite-node scripts/seed-courses-emulator.ts",
+    "dev:emulators": "node scripts/dev-emulators.mjs",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run src/firebase/rules.test.ts\"",
     "test:rules-storage": "firebase emulators:exec --only storage \"vitest run src/firebase/storage.rules.test.ts\"",
     "set-admin": "node scripts/set-admin-claim.mjs",

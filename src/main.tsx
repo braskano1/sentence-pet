@@ -35,7 +35,9 @@ if (!isAdmin) {
   // Fresh player (null) skips this and picks a course via CourseSelect.
   const currentCourseId = useGameStore.getState().currentCourseId
   if (currentCourseId) void hydrateCourse(currentCourseId) // swap + cache; failures keep fallback
-  void hydratePetDefs()                                     // player live-fetch; swap + cache
+  // player live-fetch; swap + cache. Reconcile after it settles (success, failure, or cache
+  // fallback) to heal any owned pet whose defId no longer exists in the active catalog.
+  void hydratePetDefs().finally(() => { useGameStore.getState().reconcilePetDefs() })
 }
 
 const root = isAdmin
