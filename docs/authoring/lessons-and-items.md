@@ -111,6 +111,8 @@ Example rows:
 | `front` | string | ✅ | Prompt side. |
 | `back` | string | ✅ | Answer side. |
 | `audio` | string (url) | – | Optional audio clip url. |
+| `image` | string (url) | – | Optional picture url, shown on the **back** face only. |
+| `imageCaption` | `true` / `false` | – | Default `true` → show the `back` word under the image; `false` → image only. Only `false` is meaningful. |
 | `l1_th` | string | – | Thai helper. |
 
 Example:
@@ -145,12 +147,21 @@ Example:
 
 | Column | Type | Required | Meaning |
 |---|---|---|---|
-| `pair1`, `pair2`, … | string cell `left\|right\|th` | ✅ (≥ 2) | One pair per `pairN` column. `left` and `right` required; `th` (Thai) optional. Separate the parts with a pipe `\|`. |
+| `pair1`, `pair2`, … | string cell `left\|right\|th` + optional image suffix | ✅ (≥ 2) | One pair per `pairN` column. `left` and `right` required; `th` (Thai) optional. Separate parts with a pipe `\|`. Append optional image fields as `key=value` segments (see below). |
 | `l1_th` | string | – | Thai helper for the whole item. |
 
 - Use as many `pairN` columns as you need pairs; **at least two**.
 - Each cell is `left|right|th`. Omit the trailing `|th` if no Thai:
   `dog|หมา`.
+- **Pair images (optional).** After the `left|right|th` core, append any of these
+  `key=value` segments, pipe-separated, in any order:
+  - `li=<url>` — left-side image; `ri=<url>` — right-side image.
+  - `lc=false` — hide the left caption (the `left` word); `rc=false` — hide the
+    right caption. Captions show by default; only `false` is meaningful, and a
+    caption only applies when its image side is present.
+  - Add only the segments you need — omit the rest. Unknown keys are ignored.
+  - Example: `dog|หมา|หมา|li=/img/dog.png|lc=false` — a pair with a left image and
+    its caption hidden. `dog|หมา||ri=/img/hma.png` — right image only, no Thai.
 
 Example (two pairs):
 
@@ -181,8 +192,7 @@ Lesson / journey:
   unit.** Group a unit's items together; put the mixed/review lesson last.
 - `node` values (lesson ids) unique across the whole course.
 
-Not supported (don't emit): grammar `traps`, matching images, any column not
-listed above.
+Not supported (don't emit): grammar `traps`, any column not listed above.
 
 ---
 
