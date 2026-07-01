@@ -232,3 +232,30 @@ describe('parseWorkbookSlices (tolerant)', () => {
     expect(parseWorkbookSlices(noUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(false);
   });
 });
+
+describe('flashcard image import (P3)', () => {
+  const items = (rows: unknown[][]) =>
+    parseWorkbookSlices(wb({ Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back', 'image', 'imageCaption'], ...rows] } as Record<string, unknown[][]>)).pool;
+
+  it('reads a non-empty image url', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/img/dog.png', '']]);
+    expect(p.f1).toMatchObject({ image: '/img/dog.png' });
+  });
+
+  it('omits image when the cell is blank', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '', '']]);
+    expect('image' in p.f1).toBe(false);
+  });
+
+  it('stores imageCaption:false only for the literal "false"', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', 'false']]);
+    expect(p.f1).toMatchObject({ imageCaption: false });
+  });
+
+  it('omits imageCaption when blank or "true" (default true)', () => {
+    const blank = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', '']]);
+    const t = items([['f2', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', 'true']]);
+    expect('imageCaption' in blank.f1).toBe(false);
+    expect('imageCaption' in t.f2).toBe(false);
+  });
+});
