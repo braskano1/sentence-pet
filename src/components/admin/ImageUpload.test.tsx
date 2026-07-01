@@ -44,9 +44,11 @@ describe('ImageUpload', () => {
   });
 
   it('does NOT delete when the new url equals the prior url', async () => {
-    const { remove } = setup({ value: 'https://download/new.png' }); // upload returns this same url
+    const { onUpload, remove } = setup({ value: 'https://download/new.png' }); // upload returns this same url
     pickFile();
-    await waitFor(() => expect(remove).not.toHaveBeenCalled());
+    // Wait for the full upload path to complete before asserting the absence of a delete.
+    await waitFor(() => expect(onUpload).toHaveBeenCalledWith('https://download/new.png'));
+    expect(remove).not.toHaveBeenCalled();
   });
 
   it('clears the value and best-effort deletes the prior object', async () => {
