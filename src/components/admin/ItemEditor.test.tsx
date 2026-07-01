@@ -3,6 +3,16 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ItemEditor } from './ItemEditor';
 import type { ContentItem } from '../../data/types';
 
+// Stub the Storage-backed uploader; assert ItemEditor wires item.id + slot + setter into it.
+vi.mock('./LessonImageUpload', () => ({
+  LessonImageUpload: ({ label, itemId, slot, onUpload }: {
+    label: string; itemId: string; slot: string; onUpload: (url: string) => void;
+  }) => (
+    <button type="button" aria-label={`${label} ${itemId} ${slot}`}
+      onClick={() => onUpload(`https://uploaded/${slot}.png`)} />
+  ),
+}));
+
 describe('ItemEditor by kind', () => {
   it('flashcard shows front/back inputs', () => {
     const item: ContentItem = { id: 'f1', kind: 'flashcard', level: 1, front: 'cat', back: 'แมว' };
@@ -54,5 +64,27 @@ describe('ItemEditor by kind', () => {
     fireEvent.change(screen.getAllByLabelText('left image (url)')[0], { target: { value: 'https://x/apple.png' } });
     const arg = onChange.mock.calls.at(-1)![0];
     expect(arg.pairs[0].leftImage).toBe('https://x/apple.png');
+  });
+
+  it('wires the flashcard image uploader to item.id + slot "image", storing the returned url', () => {
+    const onChange = vi.fn();
+    const item = { id: 'c0u1-fc-1', kind: 'flashcard', level: 1, front: 'A', back: 'apple' } as const;
+    render(<ItemEditor item={item as any} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'upload image c0u1-fc-1 image' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ image: 'https://uploaded/image.png' }));
+  });
+
+  it('wires the matching left/right uploaders to item.id + leftImage/rightImage slots', () => {
+    const onChange = vi.fn();
+    const item = { id: 'c0u1-mt-1', kind: 'matching', level: 1, pairs: [{ left: 'A', right: 'apple' }] } as const;
+    render(<ItemEditor item={item as any} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'upload left image c0u1-mt-1 leftImage' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      pairs: [expect.objectContaining({ leftImage: 'https://uploaded/leftImage.png' })],
+    }));
+    fireEvent.click(screen.getByRole('button', { name: 'upload right image c0u1-mt-1 rightImage' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      pairs: [expect.objectContaining({ rightImage: 'https://uploaded/rightImage.png' })],
+    }));
   });
 });
