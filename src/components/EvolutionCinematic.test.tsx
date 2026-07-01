@@ -14,6 +14,8 @@ import { EvolutionCinematic } from './EvolutionCinematic';
 import { useGameStore } from '../state/gameStore';
 import { SPRITES } from '../config/sprites';
 import { TIMINGS } from '../hooks/useEvolutionSequence';
+import { BUILTIN_PET_DEFS, setActivePetDefs } from '../domain/petDef';
+import type { PetDef } from '../data/types';
 
 beforeEach(() => {
   useGameStore.getState().resetForTest();
@@ -76,10 +78,15 @@ describe('EvolutionCinematic', () => {
 });
 
 describe('EvolutionCinematic mystery silhouette (hatch)', () => {
+  // Pin the catalog to the builtins so the mystery roll pool is deterministic and
+  // immune to cross-test registry mutation.
+  beforeEach(() => setActivePetDefs(BUILTIN_PET_DEFS));
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS));
+
   it('rolls a random BABY silhouette that does NOT reveal the real pet during the roll', () => {
     vi.useFakeTimers();
     try {
-      // rng 0.3 -> floor(0.3*4)=1 -> 'fire'; real species is 'leaf'
+      // rng 0.3 -> floor(0.3*4)=1 -> 2nd obtainable root (fire); real species is 'leaf'
       render(
         <EvolutionCinematic
           from="egg" to="baby" species="leaf"
@@ -105,6 +112,40 @@ describe('EvolutionCinematic mystery silhouette (hatch)', () => {
     );
     fireEvent.click(screen.getByTestId('evolution-stage')); // skip -> reveal
     expect(screen.getByTestId('evolution-stage').getAttribute('src')).toBe(SPRITES.water.baby.happy);
+  });
+
+  it('rolls REAL per-def baby art (not just the 4 element sprites)', () => {
+    vi.useFakeTimers();
+    // A 5th obtainable leaf-root def with its own baby sprite override. It sits
+    // last in obtainablePool([...builtins, mystery]) = [leaf,fire,air,water,mystery],
+    // so rng ~1 indexes to it: floor(0.999*5)=4.
+    const mystery: PetDef = {
+      id: 'def-mystery',
+      name: 'Mystery',
+      gen: 1,
+      dexNo: 99,
+      types: ['leaf'],
+      element: 'leaf',
+      statBands: BUILTIN_PET_DEFS[0].statBands,
+      enabled: true,
+      sprite: { variants: { baby: { happy: 'https://cdn.test/mystery-baby.webp', sad: 'https://cdn.test/mystery-baby-sad.webp' } } },
+    };
+    try {
+      setActivePetDefs([...BUILTIN_PET_DEFS, mystery]);
+      render(
+        <EvolutionCinematic
+          from="egg" to="baby" species="water"
+          mysterySilhouette rng={() => 0.999} onDone={() => {}}
+        />,
+      );
+      act(() => { vi.advanceTimersByTime(TIMINGS.announce); }); // -> silhouette
+      const img = screen.getByTestId('evolution-stage');
+      // The rolled silhouette is the def's OWN baby art — impossible under the old
+      // pickSpecies() code, which could only ever yield the 4 element sprites.
+      expect(img.getAttribute('src')).toBe('https://cdn.test/mystery-baby.webp');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('WITHOUT the prop (evolution) the silhouette uses the REAL species (regression guard)', () => {

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useGameStore } from '../state/gameStore';
+import { usePetDefs } from '../state/usePetDefs';
 import { spriteSrc } from '../config/sprites';
-import { pickSpecies } from '../domain/species';
+import { obtainablePool } from '../domain/petDef';
 import { STAGE_NAME } from '../domain/xp';
 import type { PetDef, PetStage, Species } from '../data/types';
 import { useEvolutionSequence } from '../hooks/useEvolutionSequence';
@@ -28,8 +29,18 @@ export function EvolutionCinematic({
   const toggleChannelMute = useGameStore((s) => s.toggleChannelMute);
   const reduced = !!useReducedMotion();
   const { phase, swap, skip } = useEvolutionSequence({ reduced });
-  // Slot-machine roll: a fresh random baby element each strobe tick (and on entry).
-  const [rolled, setRolled] = useState<Species>(() => pickSpecies(rng));
+  // Roll pool: chain-root obtainable baby defs from the live catalog, so the mystery
+  // silhouette can cycle ALL real baby shapes (not just the 4 element sprites). The
+  // `.evo-silhouette` filter renders a pure-white shape, so a real def's art can't
+  // leak identity. Never empty (fall back to the whole catalog).
+  const catalog = usePetDefs();
+  const pool = useMemo(() => {
+    const p = obtainablePool(catalog);
+    return p.length ? p : catalog;
+  }, [catalog]);
+  const pick = (r: number) => pool[Math.min(pool.length - 1, Math.floor(r * pool.length))];
+  // Slot-machine roll: a fresh random baby def each strobe tick (and on entry).
+  const [rolled, setRolled] = useState<PetDef>(() => pick(rng()));
   const sound = useRef(getEvolutionSound());
   const celebrated = useRef(false);
 
@@ -70,7 +81,7 @@ export function EvolutionCinematic({
 
   // Re-roll the mystery baby on each strobe tick (swap) and on entering the roll.
   useEffect(() => {
-    if (mysterySilhouette && isSil) setRolled(pickSpecies(rng));
+    if (mysterySilhouette && isSil) setRolled(pick(rng()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swap, phase, mysterySilhouette]);
 
@@ -78,7 +89,7 @@ export function EvolutionCinematic({
   // `def` — the real pet's custom art would leak). At flash/reveal we show the REAL pet.
   const rolling = mysterySilhouette && isSil;
   const src = rolling
-    ? spriteSrc(rolled, 'baby', 'happy')
+    ? spriteSrc(rolled.element, 'baby', 'happy', rolled)
     : spriteSrc(species, showNew ? to : from, 'happy', def);
 
   const finish = () => { sound.current.stop(); onDone(); };
