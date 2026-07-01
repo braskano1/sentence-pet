@@ -14,6 +14,24 @@ const young = { id: 'ln-young', name: 'Sapling', gen: 3, dexNo: 2, types: ['leaf
 const adult = { id: 'ln-adult', name: 'Timberon', gen: 3, dexNo: 3, types: ['leaf'], element: 'leaf' as const, statBands: bands, enabled: true, evolvesFromId: 'ln-young' };
 
 describe('DexGrid', () => {
+  it('uses a grid-rows layout with the pan viewport as a direct child of the root', () => {
+    // Layout regression guard: the pan world must sit in a strict 1fr grid track
+    // (not a flex-1 div, whose min-height:auto grows to content and zeroes the pan
+    // range). We can't exercise the pan itself under jsdom (PanViewport's measure
+    // no-ops — getBoundingClientRect returns 0), so this pins the structure only.
+    const { container } = render(<DexGrid />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('grid');
+    expect(root.className).toContain('grid-rows-[auto_1fr]');
+    // PanViewport's root is `relative h-full overflow-hidden`; assert it's a DIRECT
+    // child of the grid root (no intervening flex-1 wrapper).
+    const viewport = Array.from(root.children).find((el) =>
+      el.className.includes('overflow-hidden'),
+    ) as HTMLElement | undefined;
+    expect(viewport).toBeDefined();
+    expect(viewport!.className).toContain('h-full');
+  });
+
   it('shows a lines + forms count and renders a card per enabled line', () => {
     render(<DexGrid />);
     // built-in catalog has 4 single-form lines; starter (def-leaf) is caught.

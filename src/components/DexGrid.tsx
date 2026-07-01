@@ -100,7 +100,7 @@ export function DexGrid() {
   const elementChips: ElementFilter[] = ['all', ...SPECIES];
 
   return (
-    <div className="flex h-full flex-col bg-amber-50">
+    <div className="relative grid h-full grid-rows-[auto_1fr] bg-amber-50">
       {/* ── A) fixed control header (not pannable) ── */}
       <div className="shrink-0 border-b-2 border-amber-900/10 px-4 pb-2 pt-3">
         <p className="text-xs font-bold uppercase tracking-wide text-amber-900/60">
@@ -162,9 +162,10 @@ export function DexGrid() {
         </div>
       </div>
 
-      {/* ── B) pannable world (reuse the Journey camera) ── */}
-      <div className="relative flex-1">
-        <PanViewport currentId={focalId} contentClassName="px-4 pb-10 pt-3">
+      {/* ── B) pannable world (reuse the Journey camera). Rendered directly in the
+          strict 1fr grid track so the viewport is height-bounded (a flex child's
+          default min-height:auto grows to content, which zeroes the pan range). ── */}
+      <PanViewport currentId={focalId} contentClassName="px-4 pb-10 pt-3">
           {gens.length === 0 ? (
             <EmptyState element={element} progress={progress} />
           ) : (
@@ -201,8 +202,7 @@ export function DexGrid() {
               );
             })
           )}
-        </PanViewport>
-      </div>
+      </PanViewport>
 
       {selected && (
         <DexDetail def={selected} defs={allDefs} caught={caught} onClose={() => setSelected(null)} />
