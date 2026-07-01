@@ -9,6 +9,23 @@ import { resolvePetDef } from '../domain/petDef';
 /** Friendly, A1-readable pet name per species. */
 export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
 
+/** Kid-friendly one-liner about where each element likes to be (no battle jargon). */
+export const ELEMENT_FLAVOR: Record<Species, string> = {
+  leaf: 'Loves grassy places',
+  fire: 'Loves warm sunny spots',
+  air: 'Loves breezy skies',
+  water: 'Loves splashing around',
+};
+
+/** Battle-stat key → friendly single word for the "Best at …" hero line. */
+export const SPECIALTY_WORD: Record<keyof BattleStats, string> = {
+  hp: 'Health',
+  atk: 'Attack',
+  def: 'Defense',
+  spd: 'Speed',
+  luk: 'Luck',
+};
+
 /** Element glyph per species (UI flavor; species IS the element). */
 export const ELEMENT_EMOJI: Record<Species, string> = { leaf: '🍃', fire: '🔥', air: '💨', water: '💧' };
 
@@ -88,11 +105,21 @@ export function petDisplayName(pet: PetInstance): string {
   return pet.name.trim() || resolvePetDef(pet.defId).name;
 }
 
+/** A pet's displayed sprite stage (egg collapses to baby, matching petStageSprite). */
+export function petSpriteStage(pet: PetInstance): Exclude<PetStage, 'egg'> {
+  const stage = stageForXp(pet.xp, pet.hatched);
+  return stage === 'egg' ? 'baby' : stage;
+}
+
 /** A pet's happy sprite at its current stage (eggs fall back to the baby sprite).
  *  Routes through spriteSrc so an owned pet shows its def's real art (as in the Dex);
  *  spriteSrc's element guard rejects a mismatched/fallback def, yielding plain element art. */
 export function petStageSprite(pet: PetInstance): string {
-  const stage = stageForXp(pet.xp, pet.hatched);
-  const s = stage === 'egg' ? 'baby' : stage;
-  return spriteSrc(pet.species, s, 'happy', resolvePetDef(pet.defId));
+  return spriteSrc(pet.species, petSpriteStage(pet), 'happy', resolvePetDef(pet.defId));
+}
+
+/** Bundled element art at the pet's current stage (no def) — the onError fallback for a
+ *  dead sprite-override URL, so a broken image never shows on the hero or a roster tile. */
+export function petElementSprite(pet: PetInstance): string {
+  return spriteSrc(pet.species, petSpriteStage(pet), 'happy');
 }
