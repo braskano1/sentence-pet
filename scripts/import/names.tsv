@@ -1,0 +1,119 @@
+slug	srcFile	name	rarity	element	blobCount	flag
+air-001	146D3337-7810-4156-8AF1-16B077DBCEF1.png	Sapphire Phoenix	epic	air	7	0
+air-002	9391734E-6AEA-48E1-8153-1155E165E6F7.png	Celestial Pegasus	legendary	air	3	0
+air-003	BA6A8B78-DCD8-4F18-93E7-E143425618CB.png	Mist Sparrow	rare	air	3	0
+air-004	A6790544-1352-4904-A834-EBF7194D41AE.png	Storm Seraph	legendary	air	3	0
+air-005	8081335E-6CB6-4758-A59C-C2F591287E2D.png	Zephyr Owl	rare	air	3	0
+air-006	5E261A6C-C1DF-4D28-93A0-1920D9813933.png	Aether Dragon	legendary	air	4	0
+air-007	B4C661EC-8D9A-4192-83A1-E238B61A2E91.png	Gale Griffin	epic	air	3	0
+air-008	2EA59C26-0379-476D-B0E0-0A59E7CE8BC8.png	Cloud Bunny	rare	air	3	0
+air-009	08D4593D-8492-4ADB-A866-63F566EBF0A2.png	Crystal Roc	epic	air	5	0
+air-010	458B2759-B04E-481C-A738-90FD819B1F0A.png	Breeze Finch	rare	air	3	0
+air-011	09B932D9-9C4F-4852-8B5E-5725A3EEAE65.png	Heavenly Qilin	legendary	air	3	0
+air-012	F603C495-3FE5-4884-94F8-A6E14E310A37.png	Cirrus Serpent	rare	air	5	0
+air-013	80F13245-238B-47B5-8980-F3063A6BE3AC.png	Thunder Eagle	epic	air	3	0
+air-014	56A08D36-3486-4182-BD7D-56E0E961D81F.png	Sky Griffin	epic	air	4	0
+air-015	08565E73-9E9E-42FC-ACB8-4ACFE2E1148F.png	Cloud Deer	rare	air	3	0
+air-016	38A4EC5F-3971-4B26-85D6-B66B4EA464A9.png	Cloudwing Crane	rare	air	3	0
+air-017	F00A523F-1342-4B0E-9ED9-35B1C5170072.png	Empyrean Phoenix	legendary	air	3	0
+air-018	02827460-54B2-4C94-9F84-2953D02FC997.png	Tempest Falcon	rare	air	3	0
+air-019	296CF1A4-2D6F-45D4-9967-F03589A19859.png	Aurora Peacock	epic	air	3	0
+fire-001	A00BE967-F5D2-410A-A5BA-AB24B031B2CA.png	Cinder Lizard	rare	fire	3	0
+fire-002	201947CF-BBCA-4744-B949-22A25B39BB08.png	Blaze Fox	epic	fire	6	0
+fire-003	DB62F353-3046-484D-B1B5-42CC125EB2E6.png	Ember Pup	rare	fire	3	0
+fire-004	CF53E063-3EC4-43D2-81F6-835B7EAA10FC.png	Cinder Cub	rare	fire	3	0
+fire-005	391189B1-2704-43AE-BBD5-68E750C96E0B.png	Solar Kirin	legendary	fire	3	0
+fire-006	BA1BFCA4-A210-4AF6-9C39-5CB3DDF3778C.png	Flare Serpent	rare	fire	3	0
+fire-007	87069EDB-7997-4EA4-88FF-C6F5452CF08D.png	Magma Drake	epic	fire	3	0
+fire-008	870EF6DC-94A6-4208-969F-B24D3D785BA2.png	Inferno Tiger	epic	fire	4	0
+fire-009	E6A101FC-B172-4D31-A527-FAB9F5F3949D.png	Prism Koi	epic	fire	3	0
+fire-010	CEDAAB77-950F-44DF-942D-5B5F50C69AF3.png	Pyro Roc	epic	fire	3	0
+fire-011	C942AEA8-99B0-4F71-876D-EF71BEE4B9C0.png			fire	2	1
+fire-012	6A85B394-4569-4CA7-83ED-BCC707BDD880.png	Spark Imp	rare	fire	3	0
+fire-013	622C5808-BC1D-41BA-A020-CD1EAC9D5573.png	Astral Lion	legendary	fire	3	0
+fire-014	CA46FC96-B4CA-4EA0-ADD3-9DB3DFD981E8.png	Coal Salamander	rare	fire	3	0
+fire-015	BE546F64-09D5-4D39-BFE2-DCC843D0140E.png			fire	2	1
+fire-016	F02E334F-B2FD-4129-AD66-716DCA14AB8F.png	Ember Cerberus	epic	fire	4	0
+fire-017	C32ACF01-48BA-4010-8EA4-0D807226B290.png			fire	2	1
+fire-018	A9F3898B-1D29-40DB-A788-6E71FABF1E27.png	Sun Emperor Lion	legendary	fire	3	0
+fire-019	6CD85A0B-CDC5-4087-8A3A-FBE0351A360E.png			fire	2	1
+fire-020	8C337965-F5DB-4329-9F39-8CD666CE7E2F.png			fire	2	1
+fire-021	02E9E05D-2C1C-4C88-BC1E-BD668728E521.png			fire	2	1
+water-001	A428ED21-0063-471B-A82B-FB3CCFCDDFF0.png	Tide Serpent	rare	water	4	0
+water-002	AB67FB6B-54DE-4397-88A6-933C26816C8E.png	Coral Seal	rare	water	3	0
+water-003	A0A061E1-C13C-4E01-9032-310425F4DCF6.png	Pearl Otter	rare	water	3	0
+water-004	CFB1C872-758C-4531-BF6D-8A5DD0F2C81C.png	Brook Minnow	common	water	3	0
+water-005	C0AE00B1-D65E-4C58-B7AF-46BDC077F42E.png	Reef Manta	rare	water	3	0
+water-006	D2407F8C-B123-472A-B5AE-80B99AAFF61B.png	Kelp Turtle	rare	water	4	0
+water-007	7395815E-2B0E-4087-BB8A-17B38446292C.png	Moon Ray	epic	water	3	0
+water-008	E439B175-72F3-47DF-B527-42EA63BD280A.png	Frost Seahorse	rare	water	3	0
+water-009	D226BB22-BACC-42D7-A4F1-00E51F53DAE7.png	Ripple Seal	rare	water	3	0
+water-010	7E7C254E-85A5-4122-BC8B-740B45BDA887.png	Abyssal Orca	epic	water	3	0
+water-011	0D29964C-E26A-4387-966D-AE2F2C692F19.png	Azure Ray	rare	water	3	0
+water-012	AB0F5058-123C-4A5E-A24C-CA7498952E5B.png	Dew Newt	common	water	7	0
+water-013	9A9BCD33-D63D-4063-9130-8E3E51CBB43A.png	Dew Mouse	rare	water	4	0
+water-014	775F6C11-ECAE-44EC-BC2B-3707CEB1242D.png	Glacier Drake	rare	water	3	0
+water-015	D7F0B7EB-9F4C-433E-B758-EE41403CAEB1.png	Celestial Hippocampus	epic	water	3	0
+water-016	1B7B3EBC-BD03-4E0B-B403-ACFCD628763F.png	Mist Jelly	rare	water	3	0
+water-017	8EAE1F76-50C7-4702-9BC3-9B89D2F4E763.png	Bubble Sprite	rare	water	3	0
+water-018	57263C80-4ABF-4F67-9632-ECD185A9B10F.png	Storm Leviathan	epic	water	3	0
+water-019	2E219673-1FB6-4EE8-857C-BCD29442B62C.png	Snow Koi	rare	water	3	0
+water-020	A824B16D-D991-4DD0-8C10-96E46B15AD22.png	Abyss Dragon	legendary	water	3	0
+water-021	E02AE540-48BA-40A1-8DDB-4ED806A7BDC5.png	Frost Wisp	rare	water	3	0
+water-022	8EB7B1A4-3939-4C39-BE41-FAF8CD651DD1.png	Leviathan King	legendary	water	3	0
+water-023	466C29C9-EEE6-4E42-B2D0-7AD827ECA9AC.png	Aqua Dryad	epic	water	3	0
+water-024	DFFF6E19-EC0C-4673-BF39-FFF669109FAB.png	Tide Guardian	rare	water	3	0
+leaf-001	45A842B0-4749-4F0C-BE66-C174EF552F84.png	Sprout Sprite	rare	leaf	3	0
+leaf-002	AB95EB69-7421-4252-8E44-65C4951C51DD.png	Fern Fox	rare	leaf	3	0
+leaf-003	415436C4-1BAE-4072-B799-9021A714CD79.png	Moss Rabbit	rare	leaf	3	0
+leaf-004	4DC56D0A-9240-470B-AC25-579B97A4BE28.png	Bloom Bunny	rare	leaf	3	0
+leaf-005	DFEB24FE-7395-481F-B75C-F080D1E1EE83.png	Sakura Ferret	rare	leaf	3	0
+leaf-006	396BABDB-7BE2-4055-BE95-1143FCF02DB6.png	Peony Pangolin	rare	leaf	3	0
+leaf-007	9589637E-6F82-420A-8915-1CE4881605FC.png	Pebble Mole	common	leaf	3	0
+leaf-008	F3B626E4-8E3E-44E5-ABFC-D96072B0FA37.png	Groove Beaver	rare	leaf	3	0
+leaf-009	99350947-7C23-4700-A569-9292294A6F6D.png	Camellia Fox	epic	leaf	3	0
+leaf-010	2CF8D256-6DA9-4CC8-9E0C-D3F8D8C10199.png	Red Rose Fox	rare	leaf	4	0
+leaf-011	E9EEAED3-5418-4D86-8FDF-A4C4CE240E75.png	Verdant Stag	legendary	leaf	3	0
+leaf-012	8C11C90A-0BA6-4CAB-91A2-942A89B7D6BA.png	Rose Kit	rare	leaf	3	0
+leaf-013	34500944-93C4-48DB-ADDE-35E3DFB97147.png	Petal Lynx	epic	leaf	3	0
+leaf-014	D0A7B488-9AB2-42DF-85E7-3BB47C3FC893.png	Acorn Squirrel	common	leaf	3	0
+leaf-015	2C6AEA4C-A910-4241-A3B1-071DA13DC086.png	Crystal Blossom	epic	leaf	3	0
+leaf-016	C07D7386-CCCA-47AE-B2FB-1D51CA4CC7D2.png	Maple Saiga	legendary	leaf	3	0
+leaf-017	03028B16-D6A0-48DB-9EF1-73A3C8F02860.png	Autumn Elk	legendary	leaf	3	0
+leaf-018	B3C77E5F-7385-4415-9BC0-27D4A2193080.png	Harvest Golem	legendary	leaf	3	0
+leaf-019	1BFC700D-F003-4AEF-8CD7-EAB63BC5322C.png	Chanterelle Twins	rare	leaf	3	0
+leaf-020	E77BA3FD-FCD3-440E-BAE2-989F0B34E171.png	Ancient Treant	legendary	leaf	3	0
+leaf-021	50237D0B-0248-4AA8-803F-8203083B1650.png	Willow Wisp	rare	leaf	3	0
+leaf-022	01F5C2AE-761B-4E24-B3C2-DDFE179377B6.png	Elder Ent	legendary	leaf	3	0
+leaf-023	7C3924E1-DA4F-4A49-8596-DE828EC0C0B0.png	Bloom Titan	legendary	leaf	3	0
+leaf-024	5E86E822-9CE0-482A-9DD1-5C648A5DEDEE.png	Gaia Titan	legendary	leaf	3	0
+leaf-025	9E5E581C-D4F2-4982-9A9A-0FCA44C7A508.png	Thorn Beast	epic	leaf	3	0
+leaf-026	06770DD3-5F8A-478F-9646-2372CC04E61C.png	Vine Serpent	rare	leaf	3	0
+leaf-027	AD58429F-6922-48D5-BDCD-7D1981E85AC0.png	Leaf Deer	rare	leaf	3	0
+leaf-028	AB46333B-5842-40CF-B812-5DC154F887DA.png	Bramble Bear	epic	leaf	3	0
+leaf-029	77AD6095-73D2-4C95-AAE0-1C6DCA239D2F.png	Forest Guardian	legendary	leaf	3	0
+leaf-030	257D4449-5420-4B6D-87EA-E39DDCDCB7D2.png	Giant Nepenthes	epic	leaf	3	0
+leaf-031	15D05110-D6D3-424F-B08F-7C197763BB0B.png	Jewel Beetle	rare	leaf	6	0
+leaf-032	ACFF3A70-C1A4-4561-87E7-D59FA8C1ED5A.png	Orchid Mantis	rare	leaf	3	0
+leaf-033	77CECDF5-FA90-43D4-88E1-2466C969C537.png	Amber Firefly	rare	leaf	3	0
+leaf-034	2D4EEC3C-EF6D-4FFF-B948-910EFD0D5CF4.png	Dream Moss	epic	leaf	5	0
+leaf-035	401F9664-E036-4952-ACE4-26A87237A1A8.png	Monarch Bee	rare	leaf	3	0
+leaf-036	31844853-96FF-4CF4-B1CB-A83628628A4A.png			leaf	2	1
+leaf-037	99C91670-CAD5-44E7-8F3F-B645BC50907E.png	Sakura Deer	epic	leaf	3	0
+leaf-038	E006493A-8918-485F-95CB-49F27CFC32E5.png	Reed Frog	common	leaf	3	0
+leaf-039	A6A6E44D-8E6B-43D3-BCDB-A0108C04D71F (1).png	Ember Leaf Sprite	rare	leaf	3	0
+leaf-040	A60DE96C-A9EB-41AD-8A82-B85FE1FC9767 (1).png	Snow Owl	epic	leaf	3	0
+leaf-041	1679C231-8DD0-4B59-ABFC-5661F3426F15 (1).png	Sunflower Bear	rare	leaf	3	0
+leaf-042	5D4D5742-2414-452F-9798-942FBAC979A0.png	Frost Wolf	epic	leaf	3	0
+leaf-043	CF519B66-8DB3-445F-9036-F4AD8BBA115C.png	Dew Sprite	rare	leaf	3	0
+leaf-044	1E3DBF21-83B4-441C-A878-0B45E1E182B7.png	Seedling Wisp	rare	leaf	3	0
+leaf-045	D32C4DF4-4DAF-4CFE-9D17-7E5B6D0DDECA.png	Forest Hamster King	rare	leaf	3	0
+leaf-046	8962F464-7188-469A-BAF0-DE9BA11758B5.png	Pika Guardian	rare	leaf	3	0
+leaf-047	94E7F978-7B01-4632-8267-8698B454B38D.png	Bubble Otter	rare	leaf	3	0
+leaf-048	81B2A773-0EDF-4632-A444-62BE6A6FA8D0.png	Sugar Glider	common	leaf	3	0
+leaf-049	6DEBBD75-7B36-4915-9D4E-A6E23EFF60FF.png	Ghost Octopus	rare	leaf	3	0
+leaf-050	A0CB19E2-5B19-407A-BBC1-B8927C708D4F.png	Glass Frog	rare	leaf	3	0
+leaf-051	C3B5D822-CF1B-4FC7-814B-339EE6DAEB71.png	Meadow Hare	rare	leaf	3	0
+leaf-052	1733F6F1-B1E1-484B-AC8E-F9B8E4A0A300.png	Blossom Stag	epic	leaf	3	0
+leaf-053	14B54A48-2798-4A34-9C02-A62094B51919.png	Garden Fox	epic	leaf	3	0
+leaf-054	4C661805-00DD-463B-84DF-BC9AA0D7B02E.png	Sylvan Dragon	legendary	leaf	3	0
