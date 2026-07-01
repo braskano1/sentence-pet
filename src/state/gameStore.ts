@@ -105,6 +105,9 @@ export interface GameState {
   startBoss: (lessonId: string) => void;
   finishBoss: (won: boolean) => void;
   stage: () => PetStage;
+  /** Heal owned pets whose defId dangles (not in the active catalog) by remapping to the
+   *  element default root. Run once after the player catalog hydrates. */
+  reconcilePetDefs: () => void;
   // test helpers
   addXpForTest: (xp: number) => void;
   addCoinsForTest: (coins: number) => void;
@@ -112,7 +115,7 @@ export interface GameState {
 }
 
 /** Single source of truth for the persist schema version. */
-export const PERSIST_VERSION = 17;
+export const PERSIST_VERSION = 18;
 
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
@@ -480,6 +483,21 @@ export const useGameStore = create<GameState>()(
         return stageForXp(p.xp, p.hatched);
       },
 
+      reconcilePetDefs: () =>
+        set((s) => {
+          const cat = getActivePetDefs();
+          const has = (id: string) => cat.some((d) => d.id === id);
+          let changed = false;
+          const pets = s.pets.map((p) => {
+            if (has(p.defId)) return p;
+            const fallback = defaultDefForElement(p.species).id;
+            if (fallback === p.defId) return p;
+            changed = true;
+            return { ...p, defId: fallback };
+          });
+          return changed ? { pets } : {};
+        }),
+
       addXpForTest: (xp) =>
         set((s) => {
           let levelUp: GameState['lastLevelUp'] = null;
@@ -523,6 +541,7 @@ export const useGameStore = create<GameState>()(
       // v14->v15 backfills courseComplete (per-player completed-course map; default {}).
       // v15->v16: backfill defId (the authored creature) keyed off species/element; default 'def-<element>-1' (the chain root).
       // v16->v17: seed caughtDefIds (the def-chain dex) from owned pets' defIds.
+      // v17->v18: builtins became 3-stage chains; remap flat legacy element defIds (def-<el> -> def-<el>-1).
       migrate: (persisted: unknown) => {
         const st = persisted as
           | {
@@ -642,6 +661,25 @@ export const useGameStore = create<GameState>()(
             ? (base.pets as PetInstance[]).map((p) => p.defId)
             : [];
           (base as { caughtDefIds?: string[] }).caughtDefIds = Array.from(new Set(ids));
+        }
+
+        // v17->v18: builtins became 3-stage chains (def-<el> -> def-<el>-1). Remap any flat
+        // legacy element defId lingering in owned pets and the caught-dex to the new root id.
+        // Runs AFTER the v16->v17 caughtDefIds seeding so a dex seeded ['def-leaf'] becomes ['def-leaf-1'].
+        const FLAT_TO_ROOT: Record<string, string> = {
+          'def-leaf': 'def-leaf-1', 'def-fire': 'def-fire-1', 'def-air': 'def-air-1', 'def-water': 'def-water-1',
+        };
+        if (Array.isArray(base.pets)) {
+          base.pets = (base.pets as PetInstance[]).map((p) => ({
+            ...p,
+            defId: FLAT_TO_ROOT[p.defId] ?? p.defId,
+          }));
+        }
+        const caught = (base as { caughtDefIds?: string[] }).caughtDefIds;
+        if (Array.isArray(caught)) {
+          (base as { caughtDefIds?: string[] }).caughtDefIds = [
+            ...new Set(caught.map((id) => FLAT_TO_ROOT[id] ?? id)),
+          ];
         }
 
         // Drop any stale legacy `pet` key (e.g. a hand-edited save with both shapes).

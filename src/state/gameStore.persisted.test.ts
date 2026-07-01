@@ -20,7 +20,7 @@ describe('selectPersisted', () => {
   });
 
   it('PERSIST_VERSION matches the persisted store version', () => {
-    expect(PERSIST_VERSION).toBe(17);
+    expect(PERSIST_VERSION).toBe(18);
   });
 
   it('includes audio, defaulting to a 70% unmuted mixer', () => {

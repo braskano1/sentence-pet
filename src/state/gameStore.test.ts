@@ -945,10 +945,10 @@ describe('persist migrate v15->16 (defId backfill)', () => {
       bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
       stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
       growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
-      rarity: 'common', name: '', defId: 'def-water',
+      rarity: 'common', name: '', defId: 'def-water-1',
     };
     const migrated = getMigrate()({ pets: [legacyPet], activePetId: 'p1' }, 15) as { pets: { defId: string }[] };
-    expect(migrated.pets[0].defId).toBe('def-water');
+    expect(migrated.pets[0].defId).toBe('def-water-1');
   });
 });
 
@@ -968,32 +968,92 @@ describe('persist migrate v16->17 (caughtDefIds backfill)', () => {
 
   it('seeds caughtDefIds from the unique set of pets[].defId on a v16 save', () => {
     const v16 = {
-      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-fire')],
+      pets: [makePetV16('p1', 'def-leaf-1'), makePetV16('p2', 'def-fire-1')],
       activePetId: 'p1',
     };
     const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
-    expect(out.caughtDefIds).toContain('def-leaf');
-    expect(out.caughtDefIds).toContain('def-fire');
+    expect(out.caughtDefIds).toContain('def-leaf-1');
+    expect(out.caughtDefIds).toContain('def-fire-1');
     expect(out.caughtDefIds).toHaveLength(2);
   });
 
   it('deduplicates when multiple pets share the same defId', () => {
     const v16 = {
-      pets: [makePetV16('p1', 'def-leaf'), makePetV16('p2', 'def-leaf')],
+      pets: [makePetV16('p1', 'def-leaf-1'), makePetV16('p2', 'def-leaf-1')],
       activePetId: 'p1',
     };
     const out = getMigrate()(v16, 16) as { caughtDefIds: string[] };
-    expect(out.caughtDefIds).toEqual(['def-leaf']);
+    expect(out.caughtDefIds).toEqual(['def-leaf-1']);
   });
 
-  it('leaves an already-present caughtDefIds untouched (idempotent)', () => {
+  it('leaves an already-present caughtDefIds untouched, but remaps flat legacy ids (v17->v18)', () => {
     const v17 = {
-      pets: [makePetV16('p1', 'def-leaf')],
+      pets: [makePetV16('p1', 'def-leaf-1')],
       activePetId: 'p1',
-      caughtDefIds: ['def-leaf', 'def-water'],
+      caughtDefIds: ['def-leaf-1', 'def-water-1'],
     };
     const out = getMigrate()(v17, 17) as { caughtDefIds: string[] };
-    expect(out.caughtDefIds).toEqual(['def-leaf', 'def-water']);
+    expect(out.caughtDefIds).toEqual(['def-leaf-1', 'def-water-1']);
+  });
+});
+
+describe('persist migrate v17->18 (remap flat legacy element ids to chain roots)', () => {
+  const getMigrate = () =>
+    (useGameStore as unknown as {
+      persist: { getOptions: () => { migrate: (s: unknown, v: number) => unknown } };
+    }).persist.getOptions().migrate;
+
+  const makePet = (id: string, defId: string, species = 'leaf') => ({
+    id, defId, species, hatched: true, xp: 0, happiness: 50,
+    bars: { protein: 0, veggie: 0, vitamin: 0, treat: 0 },
+    stats: { hp: 1, atk: 1, def: 1, spd: 1, luk: 1 },
+    growth: { hp: 0, atk: 0, def: 0, spd: 0, luk: 0 },
+    rarity: 'common', name: '',
+  });
+
+  it('remaps a flat legacy defId on owned pets and in the caught-dex', () => {
+    const v17 = {
+      pets: [makePet('p1', 'def-leaf')],
+      activePetId: 'p1',
+      caughtDefIds: ['def-leaf'],
+    };
+    const out = getMigrate()(v17, 17) as { pets: { defId: string }[]; caughtDefIds: string[] };
+    expect(out.pets[0].defId).toBe('def-leaf-1');
+    expect(out.caughtDefIds).toEqual(['def-leaf-1']);
+  });
+
+  it('remaps a flat id seeded into caughtDefIds by the v16->v17 step, then de-dupes', () => {
+    // A v16 save (no caughtDefIds): the dex is seeded from the pet's flat defId,
+    // and the v17->v18 remap must run AFTER the seeding.
+    const v16 = {
+      pets: [makePet('p1', 'def-leaf')],
+      activePetId: 'p1',
+    };
+    const out = getMigrate()(v16, 16) as { pets: { defId: string }[]; caughtDefIds: string[] };
+    expect(out.pets[0].defId).toBe('def-leaf-1');
+    expect(out.caughtDefIds).toEqual(['def-leaf-1']);
+  });
+
+  it('de-dupes when the caught list holds BOTH the flat and root form', () => {
+    const v17 = {
+      pets: [makePet('p1', 'def-leaf-1')],
+      activePetId: 'p1',
+      caughtDefIds: ['def-leaf', 'def-leaf-1'],
+    };
+    const out = getMigrate()(v17, 17) as { caughtDefIds: string[] };
+    expect(out.caughtDefIds).toEqual(['def-leaf-1']);
+  });
+
+  it('passes non-flat ids through unchanged (imported / already-chained defs)', () => {
+    const v17 = {
+      pets: [makePet('p1', 'def-air-007-1', 'air'), makePet('p2', 'def-fire-2', 'fire')],
+      activePetId: 'p1',
+      caughtDefIds: ['def-air-007-1', 'def-fire-2'],
+    };
+    const out = getMigrate()(v17, 17) as { pets: { defId: string }[]; caughtDefIds: string[] };
+    expect(out.pets[0].defId).toBe('def-air-007-1');
+    expect(out.pets[1].defId).toBe('def-fire-2');
+    expect(out.caughtDefIds).toEqual(['def-air-007-1', 'def-fire-2']);
   });
 });
 
@@ -1028,8 +1088,8 @@ describe('caught dex set', () => {
     expect(s.caughtDefIds).toContain(egg!.defId);
   });
 
-  it('PERSIST_VERSION is 17', () => {
-    expect(PERSIST_VERSION).toBe(17);
+  it('PERSIST_VERSION is 18', () => {
+    expect(PERSIST_VERSION).toBe(18);
   });
 });
 
@@ -1267,5 +1327,43 @@ describe('finishBoss reward rarity override', () => {
     useGameStore.getState().finishBoss(true);
     const granted = useGameStore.getState().pets.at(-1)!;
     expect(granted.rarity).toBe('common');
+  });
+});
+
+describe('reconcilePetDefs (hydration heal for dangling pet defIds)', () => {
+  beforeEach(() => useGameStore.getState().resetForTest());
+  afterEach(() => setActivePetDefs(BUILTIN_PET_DEFS)); // restore registry after any mutation
+
+  it('remaps a pet whose defId is not in the active catalog to its element default root', () => {
+    setActivePetDefs([...BUILTIN_PET_DEFS]); // catalog lacks the bogus id below
+    const seed = useGameStore.getState().pets[0];
+    useGameStore.setState({
+      pets: [{ ...seed, species: 'water', defId: 'def-gone-forever' }],
+    });
+    useGameStore.getState().reconcilePetDefs();
+    expect(useGameStore.getState().pets[0].defId).toBe(defaultDefForElement('water').id);
+    // sanity: the element root really is the chain root, not a flat id
+    expect(useGameStore.getState().pets[0].defId).toBe('def-water-1');
+  });
+
+  it('leaves a pet with a valid (present) defId unchanged', () => {
+    setActivePetDefs([...BUILTIN_PET_DEFS]);
+    const seed = useGameStore.getState().pets[0];
+    useGameStore.setState({
+      pets: [{ ...seed, species: 'fire', defId: 'def-fire-1' }],
+    });
+    useGameStore.getState().reconcilePetDefs();
+    expect(useGameStore.getState().pets[0].defId).toBe('def-fire-1');
+  });
+
+  it('does not touch caughtDefIds even when it holds a dangling id', () => {
+    setActivePetDefs([...BUILTIN_PET_DEFS]);
+    const seed = useGameStore.getState().pets[0];
+    useGameStore.setState({
+      pets: [{ ...seed, species: 'water', defId: 'def-gone-forever' }],
+      caughtDefIds: ['def-gone-forever', 'def-leaf-1'],
+    });
+    useGameStore.getState().reconcilePetDefs();
+    expect(useGameStore.getState().caughtDefIds).toEqual(['def-gone-forever', 'def-leaf-1']);
   });
 });
