@@ -22,10 +22,10 @@ u2-next-steps\tNext Steps\t🌱\t2\ttrue`;
 
 // All 4 item kinds. Each unit's LAST node group is its checkpoint.
 const ITEMS = `id\tkind\tunit\tnode\tlevel\tvariant\tthaiHint\tslots\tanswer\tdistractors\tfront\tback\ttemplate\talternates\tl1_th\tpair1\tpair2
-l1-1\tdragdrop\tu1-basics\tu1-pattern\t1\tpattern\tฉันวิ่ง\tPronoun,Verb\tI,run\t\t\t\t\t\t\t\t
-wc-l1-1\tdragdrop\tu1-basics\tu1-wordchoice\t1\twordChoice\tฉันวิ่ง\tPronoun,Verb\tI,run\truns,running\t\t\t\t\t\t\t
+l1-1\tdragdrop\tu1-basics\tu1-pattern\t1\tpattern\tฉันวิ่ง\tSubject,Verb\tI,run\t\t\t\t\t\t\t\t
+wc-l1-1\tdragdrop\tu1-basics\tu1-wordchoice\t1\twordChoice\tฉันวิ่ง\tSubject,Verb\tI,run\truns,running\t\t\t\t\t\t\t
 fc-1\tflashcard\tu1-basics\tu1-checkpoint\t1\t\t\t\t\t\tdog\tหมา\t\t\tหมา\t\t
-l2-1\tdragdrop\tu2-next-steps\tu2-pattern\t2\tpattern\tฉันกินข้าว\tPronoun,Verb,Object\tI,eat,rice\t\t\t\t\t\t\t\t
+l2-1\tdragdrop\tu2-next-steps\tu2-pattern\t2\tpattern\tฉันกินข้าว\tSubject,Verb,Object\tI,eat,rice\t\t\t\t\t\t\t\t
 fb-1\tfillblank\tu2-next-steps\tu2-fill\t2\t\t\t\teat\t\t\t\tI ___ rice every day\teats\tฉันกินข้าว\t\t
 mt-1\tmatching\tu2-next-steps\tu2-checkpoint\t1\t\t\t\t\t\t\t\t\t\t\tdog|หมา|หมา\tcat|แมว|แมว`;
 

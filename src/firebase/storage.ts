@@ -34,3 +34,16 @@ export async function uploadSprite(defId: string, slot: SpriteSlot, file: File):
 export async function deleteSpriteByUrl(url: string): Promise<void> {
   await deleteObject(ref(storage, url));
 }
+
+export type LessonImageSlot = 'image' | 'leftImage' | 'rightImage';
+
+/** Upload a lesson image raw and return its download URL. Path: lessonImages/{itemId}/{slot}.{ext}. */
+export async function uploadLessonImage(itemId: string, slot: LessonImageSlot, file: File): Promise<string> {
+  const objRef = ref(storage, `lessonImages/${itemId}/${slot}.${extOf(file)}`);
+  await uploadBytes(objRef, file);
+  return getDownloadURL(objRef);
+}
+
+/** Neutral alias — lesson code reads honestly. deleteSpriteByUrl already deletes any object by its
+ *  download URL, so lesson images reuse it verbatim. Keep the sprite export for SpriteUpload. */
+export const deleteByUrl = deleteSpriteByUrl;

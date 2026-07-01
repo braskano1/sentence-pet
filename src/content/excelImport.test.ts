@@ -17,7 +17,7 @@ function validBook(): XLSX.WorkBook {
     Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'Unit One', '🐣', 1, false]],
     Items: [
       ['id', 'kind', 'level', 'unit', 'node', 'l1_th', 'front', 'back', 'audio', 'template', 'answer', 'alternates', 'variant', 'slots', 'distractors', 'hidePos', 'thaiHint'],
-      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Pronoun,Verb', '', false, 'ฉันวิ่ง'],
+      ['d1', 'dragdrop', 1, 'u1', 'u1-n1', '', '', '', '', '', 'I,run', '', 'pattern', 'Subject,Verb', '', false, 'ฉันวิ่ง'],
       ['c1card', 'flashcard', 1, 'u1', 'u1-n1', 'แมว', 'cat', 'แมว', '', '', '', '', '', '', '', '', ''],
     ],
     Bosses: [
@@ -132,6 +132,25 @@ describe('parseWorkbookToCourse', () => {
     expect(errors.some((e) => /spans units/.test(e))).toBe(true);
   });
 
+  it('reads the optional dragdrop punct column into endPunct (omitting leaves it undefined)', () => {
+    const book = wb({
+      Course: [['id', 'title'], ['c1', 'C']],
+      Units: [['id', 'title', 'emoji', 'order', 'l1Enabled'], ['u1', 'U', '🐣', 1, false]],
+      Items: [
+        ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'slots', 'answer', 'punct'],
+        ['q1', 'dragdrop', 1, 'u1', 'u1-n1', 'hint', 'Helper,Subject,Verb,Object', 'do,you,like,fish', '?'],
+        ['s1', 'dragdrop', 1, 'u1', 'u1-n2', 'hint', 'Subject,Verb', 'he,eats', ''],
+      ],
+      Bosses: [['id', 'scope', 'reviewsUnits', 'reviewCount'], ['f1', 'final', 'u1', 6]],
+    });
+    const { course } = parseWorkbookToCourse(book);
+    const q1 = course!.pool.q1;
+    const s1 = course!.pool.s1;
+    expect(q1.kind).toBe('dragdrop');
+    if (q1.kind === 'dragdrop') expect(q1.endPunct).toBe('?');
+    if (s1.kind === 'dragdrop') expect(s1.endPunct).toBeUndefined();
+  });
+
   it('parses rewardPetDefId from a Bosses row (blank omits it)', () => {
     const book = wb({
       Course: [['id', 'title'], ['c1', 'C']],
@@ -163,7 +182,7 @@ describe('parseWorkbookSlices (tolerant)', () => {
     const wb = bookWith({
       Items: [
         ['id', 'kind', 'level', 'unit', 'node', 'thaiHint', 'variant', 'slots', 'answer'],
-        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Pronoun,Verb', 'I,run'],
+        ['d1', 'dragdrop', 1, 'u1', 'u1-n1', 'ฉันวิ่ง', 'pattern', 'Subject,Verb', 'I,run'],
       ],
     });
     const slices = parseWorkbookSlices(wb);
@@ -211,5 +230,88 @@ describe('parseWorkbookSlices (tolerant)', () => {
         ['f1', 'flashcard', 1, 'u9', 'u9-n1', 'a', 'b']],
     });
     expect(parseWorkbookSlices(noUnits).errors.some((e) => /unknown unit/i.test(e))).toBe(false);
+  });
+});
+
+describe('flashcard image import (P3)', () => {
+  const items = (rows: unknown[][]) =>
+    parseWorkbookSlices(wb({ Items: [['id', 'kind', 'level', 'unit', 'node', 'front', 'back', 'image', 'imageCaption'], ...rows] } as Record<string, unknown[][]>)).pool;
+
+  it('reads a non-empty image url', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/img/dog.png', '']]);
+    expect(p.f1).toMatchObject({ image: '/img/dog.png' });
+  });
+
+  it('omits image when the cell is blank', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '', '']]);
+    expect('image' in p.f1).toBe(false);
+  });
+
+  it('stores imageCaption:false only for the literal "false"', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', 'false']]);
+    expect(p.f1).toMatchObject({ imageCaption: false });
+  });
+
+  it('omits imageCaption when blank or "true" (default true)', () => {
+    const blank = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', '']]);
+    const t = items([['f2', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '/i.png', 'true']]);
+    expect('imageCaption' in blank.f1).toBe(false);
+    expect('imageCaption' in t.f2).toBe(false);
+  });
+
+  it('omits imageCaption:false when there is no image (no orphan)', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '', 'false']]);
+    expect('imageCaption' in p.f1).toBe(false);
+  });
+});
+
+describe('matching pair image suffix (P3)', () => {
+  const firstPair = (pairCell: string) =>
+    (parseWorkbookSlices(wb({
+      Items: [['id', 'kind', 'level', 'unit', 'node', 'pair1', 'pair2'],
+        ['m1', 'matching', 1, 'u1', 'u1-n1', pairCell, 'cat|แมว']],
+    } as Record<string, unknown[][]>)).pool.m1 as unknown as { pairs: Record<string, unknown>[] }).pairs[0];
+
+  it('keeps the positional core unchanged (backward compatible)', () => {
+    expect(firstPair('dog|หมา|หมา')).toEqual({ left: 'dog', right: 'หมา', l1: { th: 'หมา' } });
+  });
+
+  it('reads li=/ri= into leftImage/rightImage', () => {
+    expect(firstPair('dog|หมา|หมา|li=/l.png|ri=/r.png')).toMatchObject({
+      leftImage: '/l.png', rightImage: '/r.png',
+    });
+  });
+
+  it('parses an image suffix with empty th (double pipe)', () => {
+    const p = firstPair('dog|หมา||li=/l.png');
+    expect(p).toMatchObject({ left: 'dog', right: 'หมา', leftImage: '/l.png' });
+    expect('l1' in p).toBe(false);
+  });
+
+  it('supports a partial suffix (only li=)', () => {
+    const p = firstPair('dog|หมา|หมา|li=/l.png');
+    expect(p.leftImage).toBe('/l.png');
+    expect('rightImage' in p).toBe(false);
+  });
+
+  it('stores lc/rc:false only for literal false, else omits (default true)', () => {
+    expect(firstPair('dog|หมา|หมา|li=/l.png|lc=false')).toMatchObject({ leftImageCaption: false });
+    expect('leftImageCaption' in firstPair('dog|หมา|หมา|li=/l.png|lc=true')).toBe(false);
+    expect('rightImageCaption' in firstPair('dog|หมา|หมา|ri=/r.png')).toBe(false);
+  });
+
+  it('does not store a caption without its image side (no orphan)', () => {
+    expect('leftImageCaption' in firstPair('dog|หมา|หมา|lc=false')).toBe(false);
+    expect('rightImageCaption' in firstPair('dog|หมา|หมา|rc=false')).toBe(false);
+  });
+
+  it('ignores unknown keys and stray non-kv segments', () => {
+    const p = firstPair('dog|หมา|หมา|xx=1|garbage|li=/l.png');
+    expect(p.leftImage).toBe('/l.png');
+    expect('xx' in p).toBe(false);
+  });
+
+  it('preserves a url containing = (splits on first = only)', () => {
+    expect(firstPair('dog|หมา|หมา|li=https://cdn/x?w=1&h=2').leftImage).toBe('https://cdn/x?w=1&h=2');
   });
 });

@@ -20,7 +20,7 @@ const IMPORTED_COURSE: Course = {
   id: 'imported-1',
   title: 'Imported',
   pool: {
-    'i1': { id: 'i1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] },
+    'i1': { id: 'i1', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject'], answer: ['I'] },
   },
   units: [
     { id: 'u1', title: 'Unit 1', emoji: '🐣', order: 1, l1Enabled: false,

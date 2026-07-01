@@ -10,7 +10,8 @@ interface TemplateSpec {
 // Items header is the UNION of all per-kind columns; each row fills only its kind's cells.
 const ITEM_COLUMNS = [
   'id', 'kind', 'unit', 'node', 'level', 'variant', 'thaiHint', 'slots', 'answer',
-  'distractors', 'front', 'back', 'template', 'alternates', 'l1_th', 'pair1', 'pair2',
+  'distractors', 'punct', 'front', 'back', 'template', 'alternates', 'l1_th', 'pair1', 'pair2',
+  'image', 'imageCaption',
 ];
 
 // One coherent mini course shared by the standalone Items/Units/Bosses templates AND the
@@ -31,12 +32,13 @@ export const SURFACE_TEMPLATES: Record<TemplateSurface, TemplateSpec> = {
     columns: ITEM_COLUMNS,
     // Order matters: per unit, the checkpoint node must be the LAST node group to appear.
     examples: [
-      ['it1', 'dragdrop', 'u1-basics', 'u1-pattern', '1', 'pattern', 'ฉันวิ่ง', 'Pronoun,Verb', 'I,run', '', '', '', '', '', '', '', ''],
-      ['it2', 'flashcard', 'u1-basics', 'u1-words', '1', '', '', '', '', '', 'dog', 'หมา', '', '', 'หมา', '', ''],
-      ['it3', 'fillblank', 'u1-basics', 'u1-words', '1', '', '', '', 'eat', '', '', '', 'I ___ rice every day', 'eats', 'ฉันกินข้าว', '', ''],
-      ['it4', 'dragdrop', 'u1-basics', 'u1-checkpoint', '1', 'mixed', 'ฉันกินข้าว', 'Pronoun,Verb,Object', 'I,eat,rice', 'bread', '', '', '', '', '', '', ''],
-      ['it5', 'matching', 'u2-next-steps', 'u2-pattern', '1', '', '', '', '', '', '', '', '', '', '', 'dog|หมา|หมา', 'cat|แมว|แมว'],
-      ['it6', 'dragdrop', 'u2-next-steps', 'u2-checkpoint', '2', 'pattern', 'เธอเดิน', 'Pronoun,Verb', 'she,walks', '', '', '', '', '', '', '', ''],
+      ['it1', 'dragdrop', 'u1-basics', 'u1-pattern', '1', 'pattern', 'ฉันวิ่ง', 'Subject,Verb', 'I,run', '', '', '', '', '', '', '', '', '', '', ''],
+      ['it2', 'flashcard', 'u1-basics', 'u1-words', '1', '', '', '', '', '', '', 'dog', 'หมา', '', '', 'หมา', '', '', '/img/dog.png', ''],
+      ['it3', 'fillblank', 'u1-basics', 'u1-words', '1', '', '', '', 'eat', '', '', '', '', 'I ___ rice every day', 'eats', 'ฉันกินข้าว', '', '', '', ''],
+      ['it4', 'dragdrop', 'u1-basics', 'u1-checkpoint', '1', 'mixed', 'ฉันกินข้าว', 'Subject,Verb,Object', 'I,eat,rice', 'bread', '', '', '', '', '', '', '', '', '', ''],
+      ['it5', 'matching', 'u2-next-steps', 'u2-pattern', '1', '', '', '', '', '', '', '', '', '', '', '', 'dog|หมา|หมา|li=/img/dog.png|lc=false', 'cat|แมว|แมว', '', ''],
+      ['it6', 'dragdrop', 'u2-next-steps', 'u2-pattern', '2', 'pattern', 'เธอเดิน', 'Subject,Verb', 'she,walks', '', '', '', '', '', '', '', '', '', '', ''],
+      ['it7', 'dragdrop', 'u2-next-steps', 'u2-checkpoint', '2', 'pattern', 'คุณชอบปลาไหม', 'Helper,Subject,Verb,Object', 'do,you,like,fish', '', '?', '', '', '', '', '', '', '', '', ''],
     ],
   },
   Bosses: {

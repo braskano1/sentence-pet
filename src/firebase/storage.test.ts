@@ -14,7 +14,7 @@ vi.mock('firebase/storage', () => ({
 }));
 vi.mock('./app', () => ({ firebaseApp: {} }));
 
-import { uploadSprite, deleteSpriteByUrl } from './storage';
+import { uploadSprite, deleteSpriteByUrl, uploadLessonImage, deleteByUrl } from './storage';
 
 beforeEach(() => { ref.mockClear(); uploadBytes.mockClear(); getDownloadURL.mockClear(); deleteObject.mockClear(); });
 
@@ -52,5 +52,38 @@ describe('deleteSpriteByUrl', () => {
   it('propagates a delete failure (callers decide whether to swallow)', async () => {
     deleteObject.mockRejectedValueOnce(new Error('not found'));
     await expect(deleteSpriteByUrl('https://download/gone.webp')).rejects.toThrow('not found');
+  });
+});
+
+describe('uploadLessonImage', () => {
+  it('uploads to lessonImages/{itemId}/{slot}.{ext} and returns the download URL', async () => {
+    const file = new File(['x'], 'apple.png', { type: 'image/png' });
+    const url = await uploadLessonImage('c0u1-fc-1', 'image', file);
+    expect(ref).toHaveBeenCalledWith(expect.anything(), 'lessonImages/c0u1-fc-1/image.png');
+    expect(uploadBytes).toHaveBeenCalledWith({ path: 'lessonImages/c0u1-fc-1/image.png' }, file);
+    expect(url).toBe('https://download/url');
+  });
+
+  it('uses the leftImage / rightImage slots in the path', async () => {
+    await uploadLessonImage('c0u1-mt-1', 'leftImage', new File(['x'], 'a.webp', { type: 'image/webp' }));
+    expect(ref).toHaveBeenCalledWith(expect.anything(), 'lessonImages/c0u1-mt-1/leftImage.webp');
+    await uploadLessonImage('c0u1-mt-1', 'rightImage', new File(['x'], 'b.jpg', { type: 'image/jpeg' }));
+    expect(ref).toHaveBeenCalledWith(expect.anything(), 'lessonImages/c0u1-mt-1/rightImage.jpg');
+  });
+
+  it('falls back to the mime subtype, then "img", when the filename has no extension', async () => {
+    await uploadLessonImage('c0u1-fc-2', 'image', new File(['x'], 'noext', { type: 'image/png' }));
+    expect(ref).toHaveBeenCalledWith(expect.anything(), 'lessonImages/c0u1-fc-2/image.png');
+    await uploadLessonImage('c0u1-fc-3', 'image', new File(['x'], 'noext', { type: '' }));
+    expect(ref).toHaveBeenCalledWith(expect.anything(), 'lessonImages/c0u1-fc-3/image.img');
+  });
+});
+
+describe('deleteByUrl', () => {
+  it('is the same delete-by-download-URL helper as deleteSpriteByUrl', async () => {
+    expect(deleteByUrl).toBe(deleteSpriteByUrl);
+    const url = 'https://firebasestorage.googleapis.com/v0/b/x/o/lessonImages%2Fc0u1-fc-1%2Fimage.png?alt=media';
+    await deleteByUrl(url);
+    expect(deleteObject).toHaveBeenCalledWith({ path: url });
   });
 });

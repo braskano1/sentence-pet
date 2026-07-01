@@ -25,4 +25,10 @@ describe('renderSentence', () => {
   it('returns empty string for no words', () => {
     expect(renderSentence([])).toBe('');
   });
+  it('uses the given end punctuation and capitalizes the first word', () => {
+    expect(renderSentence(['do', 'you', 'like', 'fish'], '?')).toBe('Do you like fish?');
+  });
+  it('defaults to a period when endPunct is omitted', () => {
+    expect(renderSentence(['he', 'eats'])).toBe('He eats.');
+  });
 });

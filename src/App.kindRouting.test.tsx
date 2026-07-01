@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { screenKeyAndNode } from './App';
 import type { DrillItem } from './data/types';
 
-const items: DrillItem[] = [{ id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Pronoun'], answer: ['I'] }];
+const items: DrillItem[] = [{ id: 'a', kind: 'dragdrop', drill: 'pattern', level: 1, thaiHint: 'x', slots: ['Subject'], answer: ['I'] }];
 
 describe('kind-routed lesson rendering', () => {
   it('routes pickCourse to the CourseSelect screen', () => {

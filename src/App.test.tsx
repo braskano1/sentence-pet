@@ -50,7 +50,7 @@ describe('screenKeyAndNode — empty-items guard', () => {
       drill: DRILL,
       level: 1,
       thaiHint: 'test',
-      slots: ['Pronoun' as PosLabel],
+      slots: ['Subject' as PosLabel],
       answer: ['I'],
     };
     const result = screenKeyAndNode('drill', true, DRILL, 1, [item], 'dragdrop');

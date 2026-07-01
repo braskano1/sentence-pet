@@ -15,16 +15,14 @@ import { SentenceSlots } from './SentenceSlots';
 import { WordTray } from './WordTray';
 import { useRoundFeedback } from './useRoundFeedback';
 import { useAudio } from '../hooks/useAudio';
-import { DrillHeader } from './drill/DrillHeader';
+import { LessonShell } from './lesson/LessonShell';
 import { DrillPet, type PetReaction } from './drill/DrillPet';
 import { WhyTip } from './drill/WhyTip';
 import { HintButton } from './drill/HintButton';
 import { SubmitBar } from './drill/SubmitBar';
-import { PressButton } from './PressButton';
 
 export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill: DrillType; level: number }) {
   const finishRound = useGameStore((s) => s.finishRound);
-  const setScreen = useGameStore((s) => s.setScreen);
   const pet = useGameStore(selectActivePet);
 
   const [index, setIndex] = useState(0);
@@ -36,7 +34,6 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
   const [why, setWhy] = useState<string | null>(null);
   const [reaction, setReaction] = useState<PetReaction>('idle');
   const [activeWord, setActiveWord] = useState<string | null>(null);
-  const [confirmExit, setConfirmExit] = useState(false);
   const { feedback, play, locked } = useRoundFeedback();
   const { play: playAudio } = useAudio(); // `play` is taken by useRoundFeedback
   const speak = useSpeech();
@@ -170,9 +167,8 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="flex h-full flex-col gap-3 bg-gradient-to-b from-sky-100 via-indigo-50 to-amber-50 p-4">
-        <DrillHeader streak={streak} index={index} total={items.length} onExit={() => setConfirmExit(true)} />
-
+      <LessonShell title="Build the sentence" streak={streak} index={index} total={items.length}>
+      <div className="flex h-full flex-col gap-3 p-4">
         <DrillPet species={pet.species} stage={stage} happiness={pet.happiness} reaction={reaction} line={line} defId={pet.defId} />
 
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm">
@@ -211,35 +207,8 @@ export function DrillScreen({ items, drill, level }: { items: DrillItem[]; drill
         <div className="pb-2">
           <WordTray tiles={tiles} used={used} onTapPlace={onTapPlace} />
         </div>
-
-        {confirmExit && (
-          <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-6">
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Leave drill?"
-              className="w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-xl"
-            >
-              <p className="text-base font-extrabold text-slate-800">Leave drill?</p>
-              <p className="mt-1 text-sm text-slate-500">Your progress won't be saved.</p>
-              <div className="mt-4 flex gap-2">
-                <PressButton
-                  onClick={() => setConfirmExit(false)}
-                  className="min-h-11 flex-1 rounded-xl bg-slate-100 px-3 py-2 text-sm font-extrabold text-slate-700"
-                >
-                  Stay
-                </PressButton>
-                <PressButton
-                  onClick={() => setScreen('pickDrill')}
-                  className="min-h-11 flex-1 rounded-xl bg-rose-500 px-3 py-2 text-sm font-extrabold text-white"
-                >
-                  Leave
-                </PressButton>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+      </LessonShell>
       <DragOverlay>
         {activeWord ? (
           <div className="min-h-12 rounded-xl bg-indigo-600 px-5 py-3 text-lg font-semibold text-white shadow">{activeWord}</div>

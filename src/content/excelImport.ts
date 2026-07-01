@@ -91,6 +91,7 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
         const distractors = csv(r.distractors);
         if (distractors.length) ddItem.distractors = distractors;
         if (bool(r.hidePos)) ddItem.hidePos = true;
+        if (str(r.punct) === '?') ddItem.endPunct = '?';
         item = ddItem;
         break;
       }
@@ -103,6 +104,8 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
           front: str(r.front),
           back: str(r.back),
           ...(str(r.audio) ? { audio: str(r.audio) } : {}),
+          ...(str(r.image) ? { image: str(r.image) } : {}),
+          ...(str(r.image) && str(r.imageCaption).toLowerCase() === 'false' ? { imageCaption: false } : {}),
         };
         break;
       case 'fillblank': {
@@ -124,11 +127,23 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
           .map((k) => str(r[k]))
           .filter(Boolean)
           .map((cell) => {
-            const [left, right, th] = cell.split('|');
+            const [left, right, th, ...rest] = cell.split('|');
+            // Segments 3+ are `key=value` (images/captions). Split on the FIRST
+            // `=` so urls containing `=` survive; segments without `=` are ignored.
+            const kv: Record<string, string> = {};
+            for (const seg of rest) {
+              const eq = seg.indexOf('=');
+              if (eq === -1) continue;
+              kv[seg.slice(0, eq).trim()] = seg.slice(eq + 1).trim();
+            }
             return {
               left: str(left),
               right: str(right),
               ...(str(th) ? { l1: { th: str(th) } } : {}),
+              ...(kv.li ? { leftImage: kv.li } : {}),
+              ...(kv.ri ? { rightImage: kv.ri } : {}),
+              ...(kv.li && kv.lc?.toLowerCase() === 'false' ? { leftImageCaption: false } : {}),
+              ...(kv.ri && kv.rc?.toLowerCase() === 'false' ? { rightImageCaption: false } : {}),
             };
           });
         item = { id, kind: 'matching', level, ...l1, pairs };

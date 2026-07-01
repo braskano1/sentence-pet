@@ -79,9 +79,10 @@ the others blank.
 |---|---|---|---|
 | `variant` | `pattern` / `wordChoice` / `grammar` / `mixed` | – | The drill style. Defaults to `pattern`. |
 | `thaiHint` | string | – | The Thai scaffold shown to the learner (drag-drop's L1 text — **not** `l1_th`). |
-| `slots` | CSV of `Pronoun` / `Verb` / `Object` | ✅ | The sentence frame, in order. |
+| `slots` | CSV of `Subject` / `Verb` / `Object` / `Be` / `Adjective` / `Not` / `Helper` / `Question` / `Place` | ✅ | The sentence frame, in order. |
 | `answer` | CSV | ✅ | The correct word per slot, **same length and order as `slots`**. |
 | `distractors` | CSV | – | Extra wrong tiles to mix in (used by `wordChoice` / `mixed`). |
+| `punct` | `.` / `?` | – | Display sentence-ending punctuation. Defaults to `.`; use `?` for questions. Display-only — never affects grading. |
 | `hidePos` | `true` / `false` | – | Hide the part-of-speech labels on the slots. |
 
 - `variant` meanings: `pattern` = arrange the right words; `wordChoice` = pick
@@ -94,11 +95,12 @@ the others blank.
 
 Example rows:
 
-| id | kind | unit | node | level | variant | thaiHint | slots | answer | distractors |
-|---|---|---|---|---|---|---|---|---|---|
-| l1-1 | dragdrop | u1-basics | u1-pattern | 1 | pattern | ฉันวิ่ง | Pronoun,Verb | I,run | |
-| wc-l1-1 | dragdrop | u1-basics | u1-wordchoice | 1 | wordChoice | ฉันวิ่ง | Pronoun,Verb | I,run | runs,running |
-| l2-1 | dragdrop | u2-next-steps | u2-pattern | 2 | pattern | ฉันกินข้าว | Pronoun,Verb,Object | I,eat,rice | |
+| id | kind | unit | node | level | variant | thaiHint | slots | answer | distractors | punct |
+|---|---|---|---|---|---|---|---|---|---|---|
+| l1-1 | dragdrop | u1-basics | u1-pattern | 1 | pattern | ฉันวิ่ง | Subject,Verb | I,run | | |
+| wc-l1-1 | dragdrop | u1-basics | u1-wordchoice | 1 | wordChoice | ฉันวิ่ง | Subject,Verb | I,run | runs,running | |
+| l2-1 | dragdrop | u2-next-steps | u2-pattern | 2 | pattern | ฉันกินข้าว | Subject,Verb,Object | I,eat,rice | | |
+| q-l2-1 | dragdrop | u2-next-steps | u2-pattern | 2 | pattern | คุณชอบปลาไหม | Helper,Subject,Verb,Object | do,you,like,fish | | ? |
 
 ---
 
@@ -109,6 +111,8 @@ Example rows:
 | `front` | string | ✅ | Prompt side. |
 | `back` | string | ✅ | Answer side. |
 | `audio` | string (url) | – | Optional audio clip url. |
+| `image` | string (url) | – | Optional picture url, shown on the **back** face only. |
+| `imageCaption` | `true` / `false` | – | Default `true` → show the `back` word under the image; `false` → image only. Only `false` is meaningful. |
 | `l1_th` | string | – | Thai helper. |
 
 Example:
@@ -143,12 +147,21 @@ Example:
 
 | Column | Type | Required | Meaning |
 |---|---|---|---|
-| `pair1`, `pair2`, … | string cell `left\|right\|th` | ✅ (≥ 2) | One pair per `pairN` column. `left` and `right` required; `th` (Thai) optional. Separate the parts with a pipe `\|`. |
+| `pair1`, `pair2`, … | string cell `left\|right\|th` + optional image suffix | ✅ (≥ 2) | One pair per `pairN` column. `left` and `right` required; `th` (Thai) optional. Separate parts with a pipe `\|`. Append optional image fields as `key=value` segments (see below). |
 | `l1_th` | string | – | Thai helper for the whole item. |
 
 - Use as many `pairN` columns as you need pairs; **at least two**.
 - Each cell is `left|right|th`. Omit the trailing `|th` if no Thai:
   `dog|หมา`.
+- **Pair images (optional).** After the `left|right|th` core, append any of these
+  `key=value` segments, pipe-separated, in any order:
+  - `li=<url>` — left-side image; `ri=<url>` — right-side image.
+  - `lc=false` — hide the left caption (the `left` word); `rc=false` — hide the
+    right caption. Captions show by default; only `false` is meaningful, and a
+    caption only applies when its image side is present.
+  - Add only the segments you need — omit the rest. Unknown keys are ignored.
+  - Example: `dog|หมา|หมา|li=/img/dog.png|lc=false` — a pair with a left image and
+    its caption hidden. `dog|หมา||ri=/img/hma.png` — right image only, no Thai.
 
 Example (two pairs):
 
@@ -165,7 +178,8 @@ Per item:
 - `unit` matches a unit id; `level` ≥ 1.
 - `l1_th` (if present) is non-empty.
 - **dragdrop:** `answer` count == `slots` count; `slots` only uses
-  `Pronoun`/`Verb`/`Object`.
+  `Subject`/`Verb`/`Object`/`Be`/`Adjective`/`Not`/`Helper`/`Question`/`Place`.
+  Set `punct` to `?` for question frames (defaults to `.`).
 - **flashcard:** `front` and `back` both non-empty.
 - **fillblank:** `template` has exactly one `___`; `answer` non-empty.
 - **matching:** at least two `pairN` cells; each has a non-empty `left` and
@@ -178,8 +192,7 @@ Lesson / journey:
   unit.** Group a unit's items together; put the mixed/review lesson last.
 - `node` values (lesson ids) unique across the whole course.
 
-Not supported (don't emit): grammar `traps`, matching images, any column not
-listed above.
+Not supported (don't emit): grammar `traps`, any column not listed above.
 
 ---
 
@@ -193,12 +206,12 @@ cell; the table itself is tab-separated on emit.
 
 | id | kind | unit | node | level | variant | thaiHint | slots | answer | distractors |
 |---|---|---|---|---|---|---|---|---|---|
-| l1-1 | dragdrop | u1-basics | u1-pattern | 1 | pattern | ฉันวิ่ง | Pronoun,Verb | I,run | |
-| l1-2 | dragdrop | u1-basics | u1-pattern | 1 | pattern | เขากิน | Pronoun,Verb | he,eats | |
-| wc-l1-1 | dragdrop | u1-basics | u1-wordchoice | 1 | wordChoice | ฉันวิ่ง | Pronoun,Verb | I,run | runs,running |
-| gr-l1-1 | dragdrop | u1-basics | u1-grammar | 1 | grammar | เขากิน | Pronoun,Verb | he,eats | |
-| mx-l1-1 | dragdrop | u1-basics | u1-checkpoint | 1 | mixed | ฉันกินข้าว | Pronoun,Verb,Object | I,eat,rice | bread |
-| mx-l1-2 | dragdrop | u1-basics | u1-checkpoint | 1 | mixed | เขาดื่มน้ำ | Pronoun,Verb,Object | he,drinks,water | juice |
+| l1-1 | dragdrop | u1-basics | u1-pattern | 1 | pattern | ฉันวิ่ง | Subject,Verb | I,run | |
+| l1-2 | dragdrop | u1-basics | u1-pattern | 1 | pattern | เขากิน | Subject,Verb | he,eats | |
+| wc-l1-1 | dragdrop | u1-basics | u1-wordchoice | 1 | wordChoice | ฉันวิ่ง | Subject,Verb | I,run | runs,running |
+| gr-l1-1 | dragdrop | u1-basics | u1-grammar | 1 | grammar | เขากิน | Subject,Verb | he,eats | |
+| mx-l1-1 | dragdrop | u1-basics | u1-checkpoint | 1 | mixed | ฉันกินข้าว | Subject,Verb,Object | I,eat,rice | bread |
+| mx-l1-2 | dragdrop | u1-basics | u1-checkpoint | 1 | mixed | เขาดื่มน้ำ | Subject,Verb,Object | he,drinks,water | juice |
 
 `u1-checkpoint` is last → it becomes the unit's checkpoint.
 
@@ -215,9 +228,9 @@ header; leave a cell blank when a row doesn't use that column.
 ```
 === Sheet: Items ===
 id<TAB>kind<TAB>unit<TAB>node<TAB>level<TAB>variant<TAB>thaiHint<TAB>slots<TAB>answer<TAB>distractors
-l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-pattern<TAB>1<TAB>pattern<TAB>ฉันวิ่ง<TAB>Pronoun,Verb<TAB>I,run<TAB>
-wc-l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-wordchoice<TAB>1<TAB>wordChoice<TAB>ฉันวิ่ง<TAB>Pronoun,Verb<TAB>I,run<TAB>runs,running
-mx-l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-checkpoint<TAB>1<TAB>mixed<TAB>ฉันกินข้าว<TAB>Pronoun,Verb,Object<TAB>I,eat,rice<TAB>bread
+l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-pattern<TAB>1<TAB>pattern<TAB>ฉันวิ่ง<TAB>Subject,Verb<TAB>I,run<TAB>
+wc-l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-wordchoice<TAB>1<TAB>wordChoice<TAB>ฉันวิ่ง<TAB>Subject,Verb<TAB>I,run<TAB>runs,running
+mx-l1-1<TAB>dragdrop<TAB>u1-basics<TAB>u1-checkpoint<TAB>1<TAB>mixed<TAB>ฉันกินข้าว<TAB>Subject,Verb,Object<TAB>I,eat,rice<TAB>bread
 ```
 
 `<TAB>` = one literal Tab character. Never the text "<TAB>", never spaces. Drop

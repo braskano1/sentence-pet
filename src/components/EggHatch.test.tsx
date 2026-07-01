@@ -24,7 +24,7 @@ describe('EggHatch', () => {
   it('renders the egg prompt, hint, and POS slots', () => {
     render(<EggHatch />);
     expect(screen.getByText(/Build the sentence to hatch/)).toBeInTheDocument();
-    expect(screen.getAllByText('Pronoun').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Subject').length).toBeGreaterThan(0);
     expect(screen.getByRole('img', { name: 'egg' })).toBeTruthy();
   });
 

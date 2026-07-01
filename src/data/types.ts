@@ -1,4 +1,4 @@
-export type PosLabel = 'Pronoun' | 'Verb' | 'Object';
+export type PosLabel = 'Subject' | 'Verb' | 'Object' | 'Be' | 'Adjective' | 'Not' | 'Helper' | 'Question' | 'Place';
 
 export type DrillType = 'pattern' | 'wordChoice' | 'grammar' | 'mixed';
 
@@ -30,6 +30,8 @@ export interface FlashcardItem extends BaseContentItem {
   front: string;
   back: string;
   audio?: string;
+  image?: string;          // optional picture URL, shown on the BACK face only
+  imageCaption?: boolean;  // default true → show the `back` word under the image; false → image only
   // speaking?: SpeakingCheck;  // RESERVED — pronunciation check, built later
 }
 
@@ -42,9 +44,11 @@ export interface FlashcardItem extends BaseContentItem {
 export interface MatchingPair {
   left: string;
   right: string;
-  l1?: L1Helper;        // per-pair Thai
-  leftImage?: string;   // RESERVED
-  rightImage?: string;  // RESERVED
+  l1?: L1Helper;             // per-pair Thai
+  leftImage?: string;        // optional picture URL for the left (prompt) side
+  rightImage?: string;       // optional picture URL for the right (target) side
+  leftImageCaption?: boolean;  // default true → show the `left` word with the image; false → image only
+  rightImageCaption?: boolean; // default true → show the `right` word with the image; false → image only
 }
 
 /** ② Matching — drag each prompt tile into its target slot. */
@@ -63,6 +67,7 @@ export interface DragDropItem extends BaseContentItem {
   distractors?: string[];
   traps?: GrammarTrap[];
   hidePos?: boolean;       // difficulty: hide POS label/tint in slots
+  endPunct?: '.' | '?';    // display sentence-ending punctuation (default '.', '?' for questions). Display-only — answer-check unaffected.
 }
 
 /** ④ Fill-blank — typed, strict trimmed match. */

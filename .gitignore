@@ -51,6 +51,8 @@ sentencepet.mp4
 *.serviceAccount.json
 serviceAccountKey.json
 .firebase/
+.emulator-data/
+firebase-export-*/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log

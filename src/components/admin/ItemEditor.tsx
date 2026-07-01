@@ -8,8 +8,9 @@ import type {
   PosLabel,
 } from '../../data/types';
 import { Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
+import { LessonImageUpload } from './LessonImageUpload';
 
-const POS: PosLabel[] = ['Pronoun', 'Verb', 'Object'];
+const POS: PosLabel[] = ['Subject', 'Verb', 'Object'];
 const KINDS: ContentItem['kind'][] = ['flashcard', 'matching', 'dragdrop', 'fillblank'];
 
 const csv = (s: string) => s.split(',').map((w) => w.trim()).filter(Boolean);
@@ -71,6 +72,15 @@ function FlashcardForm({ item, onChange }: { item: FlashcardItem; onChange: (i: 
         <TextInput value={item.audio ?? ''}
           onChange={(e) => set({ audio: e.target.value.trim() ? e.target.value : undefined })} />
       </Field>
+      <Field label="image (url)">
+        <TextInput value={item.image ?? ''}
+          onChange={(e) => set({ image: e.target.value.trim() ? e.target.value : undefined })} />
+      </Field>
+      <Checkbox label="image caption" checked={item.imageCaption !== false}
+        onChange={(e) => set({ imageCaption: e.target.checked ? undefined : false })} />
+      <LessonImageUpload label="upload image" itemId={item.id} slot="image"
+        value={item.image} onUpload={(url) => set({ image: url })}
+        onClear={() => set({ image: undefined })} />
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => set({ l1: th.trim() ? { th } : undefined })} />
     </>
   );
@@ -86,15 +96,37 @@ function MatchingForm({ item, onChange }: { item: MatchingItem; onChange: (i: Co
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => onChange({ ...item, l1: th.trim() ? { th } : undefined })} />
       <div className="flex flex-col gap-2">
         {item.pairs.map((p, i) => (
-          <div key={i} className="flex items-end gap-2">
-            <Field label="left"><TextInput value={p.left} onChange={(e) => setPair(i, { left: e.target.value })} /></Field>
-            <Field label="right"><TextInput value={p.right} onChange={(e) => setPair(i, { right: e.target.value })} /></Field>
-            <Field label="th">
-              <TextInput value={p.l1?.th ?? ''}
-                onChange={(e) => setPair(i, { l1: e.target.value.trim() ? { th: e.target.value } : undefined })} />
-            </Field>
-            <Button variant="danger" aria-label={`remove pair ${i + 1}`}
-              onClick={() => setPairs(item.pairs.filter((_, idx) => idx !== i))}>×</Button>
+          <div key={i} className="flex flex-col gap-1 border-b border-slate-200 pb-2">
+            <div className="flex items-end gap-2">
+              <Field label="left"><TextInput value={p.left} onChange={(e) => setPair(i, { left: e.target.value })} /></Field>
+              <Field label="right"><TextInput value={p.right} onChange={(e) => setPair(i, { right: e.target.value })} /></Field>
+              <Field label="th">
+                <TextInput value={p.l1?.th ?? ''}
+                  onChange={(e) => setPair(i, { l1: e.target.value.trim() ? { th: e.target.value } : undefined })} />
+              </Field>
+              <Button variant="danger" aria-label={`remove pair ${i + 1}`}
+                onClick={() => setPairs(item.pairs.filter((_, idx) => idx !== i))}>×</Button>
+            </div>
+            <div className="flex items-end gap-2">
+              <Field label="left image (url)">
+                <TextInput value={p.leftImage ?? ''}
+                  onChange={(e) => setPair(i, { leftImage: e.target.value.trim() ? e.target.value : undefined })} />
+              </Field>
+              <Checkbox label="left cap" checked={p.leftImageCaption !== false}
+                onChange={(e) => setPair(i, { leftImageCaption: e.target.checked ? undefined : false })} />
+              <Field label="right image (url)">
+                <TextInput value={p.rightImage ?? ''}
+                  onChange={(e) => setPair(i, { rightImage: e.target.value.trim() ? e.target.value : undefined })} />
+              </Field>
+              <Checkbox label="right cap" checked={p.rightImageCaption !== false}
+                onChange={(e) => setPair(i, { rightImageCaption: e.target.checked ? undefined : false })} />
+              <LessonImageUpload label="upload left image" itemId={item.id} slot="leftImage"
+                value={p.leftImage} onUpload={(url) => setPair(i, { leftImage: url })}
+                onClear={() => setPair(i, { leftImage: undefined })} />
+              <LessonImageUpload label="upload right image" itemId={item.id} slot="rightImage"
+                value={p.rightImage} onUpload={(url) => setPair(i, { rightImage: url })}
+                onClear={() => setPair(i, { rightImage: undefined })} />
+            </div>
           </div>
         ))}
       </div>
