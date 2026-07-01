@@ -3,7 +3,8 @@
 // concerns here so a new species/rarity is a one-file change.
 import type { BattleStats, PetInstance, PetStage, Rarity, Species } from '../data/types';
 import { levelForXp, stageForXp } from '../domain/xp';
-import { SPRITES } from './sprites';
+import { spriteSrc } from './sprites';
+import { resolvePetDef } from '../domain/petDef';
 
 /** Friendly, A1-readable pet name per species. */
 export const PET_NAME: Record<Species, string> = { leaf: 'Sprout', fire: 'Ember', air: 'Breeze', water: 'Bubble' };
@@ -86,8 +87,11 @@ export function petDisplayName(pet: PetInstance): string {
   return pet.name.trim() || PET_NAME[pet.species];
 }
 
-/** A pet's happy sprite at its current stage (eggs fall back to the baby sprite). */
+/** A pet's happy sprite at its current stage (eggs fall back to the baby sprite).
+ *  Routes through spriteSrc so an owned pet shows its def's real art (as in the Dex);
+ *  spriteSrc's element guard rejects a mismatched/fallback def, yielding plain element art. */
 export function petStageSprite(pet: PetInstance): string {
   const stage = stageForXp(pet.xp, pet.hatched);
-  return SPRITES[pet.species][stage === 'egg' ? 'baby' : stage].happy;
+  const s = stage === 'egg' ? 'baby' : stage;
+  return spriteSrc(pet.species, s, 'happy', resolvePetDef(pet.defId));
 }
