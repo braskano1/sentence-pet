@@ -8,6 +8,7 @@ import type {
   PosLabel,
 } from '../../data/types';
 import { Field, TextInput, NumberInput, Select, Checkbox, Button } from './ui';
+import { LessonImageUpload } from './LessonImageUpload';
 
 const POS: PosLabel[] = ['Subject', 'Verb', 'Object'];
 const KINDS: ContentItem['kind'][] = ['flashcard', 'matching', 'dragdrop', 'fillblank'];
@@ -77,6 +78,9 @@ function FlashcardForm({ item, onChange }: { item: FlashcardItem; onChange: (i: 
       </Field>
       <Checkbox label="image caption" checked={item.imageCaption !== false}
         onChange={(e) => set({ imageCaption: e.target.checked ? undefined : false })} />
+      <LessonImageUpload label="upload image" itemId={item.id} slot="image"
+        value={item.image} onUpload={(url) => set({ image: url })}
+        onClear={() => set({ image: undefined })} />
       <L1Input value={item.l1?.th ?? ''} onChange={(th) => set({ l1: th.trim() ? { th } : undefined })} />
     </>
   );
@@ -116,6 +120,12 @@ function MatchingForm({ item, onChange }: { item: MatchingItem; onChange: (i: Co
               </Field>
               <Checkbox label="right cap" checked={p.rightImageCaption !== false}
                 onChange={(e) => setPair(i, { rightImageCaption: e.target.checked ? undefined : false })} />
+              <LessonImageUpload label="upload left image" itemId={item.id} slot="leftImage"
+                value={p.leftImage} onUpload={(url) => setPair(i, { leftImage: url })}
+                onClear={() => setPair(i, { leftImage: undefined })} />
+              <LessonImageUpload label="upload right image" itemId={item.id} slot="rightImage"
+                value={p.rightImage} onUpload={(url) => setPair(i, { rightImage: url })}
+                onClear={() => setPair(i, { rightImage: undefined })} />
             </div>
           </div>
         ))}

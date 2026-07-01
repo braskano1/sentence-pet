@@ -8,5 +8,9 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /lessonImages/{itemId}/{file=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
