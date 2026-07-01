@@ -117,7 +117,7 @@ export const PERSIST_VERSION = 17;
 /** The persisted data fields (the cloud-save payload) — excludes transient + actions. */
 export type PersistedState = Pick<
   GameState,
-  | 'screen' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
+  | 'screen' | 'currentCourseId' | 'pets' | 'activePetId' | 'coins' | 'courseComplete' | 'inventory' | 'selectedDrill'
   | 'selectedLevel' | 'lastReward' | 'lastPull' | 'owned' | 'activeBackground' | 'activeTrack' | 'journey' | 'audio' | 'l1Mode'
   | 'caughtDefIds'
 >;
@@ -126,6 +126,9 @@ export type PersistedState = Pick<
 export function selectPersisted(s: GameState): PersistedState {
   return {
     screen: s.screen,
+    // Persist the active course so a restored `screen: 'pickDrill'` has its course
+    // to re-hydrate on load; without it the journey falls back to the seed course.
+    currentCourseId: s.currentCourseId ?? null,
     pets: s.pets,
     activePetId: s.activePetId,
     coins: s.coins,
@@ -499,15 +502,16 @@ export const useGameStore = create<GameState>()(
       name: 'sentence-pet',
       version: PERSIST_VERSION,
       partialize: (s) => {
-        const { lastLevelUp, lastStageChange, lastHatch, currentLessonId, currentCourseId, currentBossLessonId, pendingStinger, ...rest } = s;
+        const { lastLevelUp, lastStageChange, lastHatch, currentLessonId, currentBossLessonId, pendingStinger, ...rest } = s;
         void lastLevelUp; // transient — not persisted
         void lastStageChange; // transient — not persisted
         void lastHatch; // transient — not persisted
         void currentLessonId; // transient — not persisted
-        void currentCourseId; // transient — not persisted
         void currentBossLessonId; // transient — not persisted
         void pendingStinger; // transient — not persisted
-        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'lastHatch' | 'currentLessonId' | 'currentCourseId' | 'currentBossLessonId' | 'pendingStinger'>;
+        // currentCourseId IS persisted (see selectPersisted): a saved pickDrill screen
+        // needs its course, else the journey reverts to the seed fallback on reload.
+        return rest as Omit<GameState, 'lastLevelUp' | 'lastStageChange' | 'lastHatch' | 'currentLessonId' | 'currentBossLessonId' | 'pendingStinger'>;
       },
       // v1->v2 inventory groups; v2->v3 pet.species; v3->v4 owned[]+activeBackground;
       // v4->v5 single `pet` (+pet.coins) restructured into pets[]+activePetId+wallet.

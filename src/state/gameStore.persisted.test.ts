@@ -8,13 +8,13 @@ describe('selectPersisted', () => {
     const keys = Object.keys(snap).sort();
     expect(keys).toEqual(
       [
-        'activeBackground', 'activeTrack', 'activePetId', 'audio', 'caughtDefIds', 'coins', 'courseComplete', 'inventory', 'journey',
+        'activeBackground', 'activeTrack', 'activePetId', 'audio', 'caughtDefIds', 'coins', 'courseComplete', 'currentCourseId', 'inventory', 'journey',
         'l1Mode', 'lastPull', 'lastReward', 'owned', 'pets', 'screen', 'selectedDrill', 'selectedLevel',
       ].sort(),
     );
     expect(snap).not.toHaveProperty('lastLevelUp');
     expect(snap).not.toHaveProperty('currentLessonId');
-    expect(snap).not.toHaveProperty('currentCourseId');
+    expect(snap).toHaveProperty('currentCourseId'); // persisted: a saved pickDrill screen needs its course
     expect(snap).not.toHaveProperty('pendingStinger');
     for (const v of Object.values(snap)) expect(typeof v).not.toBe('function');
   });
@@ -35,7 +35,7 @@ describe('selectPersisted', () => {
     // drops the action functions. So the persisted DATA keys are:
     const persistedDataKeys = Object.keys(full)
       .filter((k) => typeof full[k] !== 'function')
-      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'lastHatch' && k !== 'currentLessonId' && k !== 'currentCourseId' && k !== 'currentBossLessonId' && k !== 'pendingStinger')
+      .filter((k) => k !== 'lastLevelUp' && k !== 'lastStageChange' && k !== 'lastHatch' && k !== 'currentLessonId' && k !== 'currentBossLessonId' && k !== 'pendingStinger')
       .sort();
     const selectedKeys = Object.keys(selectPersisted(useGameStore.getState())).sort();
     expect(selectedKeys).toEqual(persistedDataKeys);

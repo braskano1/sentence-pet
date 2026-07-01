@@ -28,8 +28,14 @@ const isAdmin = isAdminEntry(window.location.hash)
 setActivePetDefs(cachedPetDefs() ?? [...BUILTIN_PET_DEFS])
 
 if (!isAdmin) {
-  void hydrateCourse('default') // live fetch the default course → swap + cache; failures keep fallback
-  void hydratePetDefs()         // player live-fetch; swap + cache
+  // Restore the player's actual course (persist rehydrates synchronously), not a
+  // hardcoded 'default' — the content store is not persisted, so on every reload/
+  // remount it resets to the seed fallback; without this, a returning player whose
+  // currentCourseId points at a real course sees the fallback journey instead.
+  // Fresh player (null) skips this and picks a course via CourseSelect.
+  const currentCourseId = useGameStore.getState().currentCourseId
+  if (currentCourseId) void hydrateCourse(currentCourseId) // swap + cache; failures keep fallback
+  void hydratePetDefs()                                     // player live-fetch; swap + cache
 }
 
 const root = isAdmin
