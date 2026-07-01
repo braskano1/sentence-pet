@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { SURFACE_TEMPLATES, COURSE_WORKBOOK_SURFACES, buildWorkbook } from './importTemplates';
 import { importItems, importBosses, importUnits } from './surfaceImport';
 import { importPets } from './petImport';
-import { parseWorkbookToCourse } from './excelImport';
+import { parseWorkbookToCourse, parseWorkbookSlices } from './excelImport';
 import { validateCourse, validatePetDefs } from './validate';
 import { BUILTIN_PET_DEFS } from '../domain/petDef';
 import { mergeById } from './mergeById';
@@ -40,5 +40,16 @@ describe('buildWorkbook', () => {
     expect(errors).toEqual([]);
     expect(course).not.toBeNull();
     expect(validateCourse(course!)).toEqual({ ok: true, errors: [] });
+  });
+
+  it('Items template carries flashcard + matching image fields through import', () => {
+    const pool = parseWorkbookSlices(buildWorkbook(['Items'])).pool;
+    const card = Object.values(pool).find((i) => i.kind === 'flashcard') as { image?: string };
+    expect(card.image).toBeTruthy();
+    const match = Object.values(pool).find((i) => i.kind === 'matching') as {
+      pairs: { leftImage?: string; leftImageCaption?: boolean }[];
+    };
+    expect(match.pairs[0].leftImage).toBeTruthy();
+    expect(match.pairs[0].leftImageCaption).toBe(false);
   });
 });
