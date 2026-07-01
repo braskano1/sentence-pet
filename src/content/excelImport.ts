@@ -105,7 +105,7 @@ export function parseWorkbookSlices(wb: XLSX.WorkBook): WorkbookSlices {
           back: str(r.back),
           ...(str(r.audio) ? { audio: str(r.audio) } : {}),
           ...(str(r.image) ? { image: str(r.image) } : {}),
-          ...(str(r.imageCaption).toLowerCase() === 'false' ? { imageCaption: false } : {}),
+          ...(str(r.image) && str(r.imageCaption).toLowerCase() === 'false' ? { imageCaption: false } : {}),
         };
         break;
       case 'fillblank': {

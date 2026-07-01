@@ -258,4 +258,9 @@ describe('flashcard image import (P3)', () => {
     expect('imageCaption' in blank.f1).toBe(false);
     expect('imageCaption' in t.f2).toBe(false);
   });
+
+  it('omits imageCaption:false when there is no image (no orphan)', () => {
+    const p = items([['f1', 'flashcard', 1, 'u1', 'u1-n1', 'dog', 'หมา', '', 'false']]);
+    expect('imageCaption' in p.f1).toBe(false);
+  });
 });
