@@ -8,14 +8,22 @@ import type { PetDef } from '../data/types';
 const base = () => makePet({ id: 'x', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common' });
 
 describe('petDisplayName', () => {
-  it('returns the species name when name is blank', () => {
-    expect(petDisplayName(base())).toBe('Ember'); // fire -> Ember
+  afterEach(() => setActivePetDefs([...BUILTIN_PET_DEFS]));
+
+  it("returns the def's authored Dex name when name is blank", () => {
+    // Seed a def with a known authored name; an unnamed pet with that defId shows it.
+    const fire: PetDef = { ...BUILTIN_PET_DEFS[1], name: 'Sapphire Phoenix' };
+    setActivePetDefs([BUILTIN_PET_DEFS[0], fire, ...BUILTIN_PET_DEFS.slice(2)]);
+    const pet = makePet({ id: 'x', species: 'fire', stats: rollStats(() => 0.5), rarity: 'common', defId: fire.id });
+    // CHANGED: was 'Ember' (PET_NAME element name); now the def's authored name.
+    expect(petDisplayName(pet)).toBe('Sapphire Phoenix');
   });
   it('returns the custom name when set', () => {
     expect(petDisplayName({ ...base(), name: 'Blaze' })).toBe('Blaze');
   });
-  it('falls back to species name for whitespace-only names', () => {
-    expect(petDisplayName({ ...base(), name: '   ' })).toBe('Ember');
+  it("falls back to the def's authored name for whitespace-only names", () => {
+    // CHANGED: was 'Ember'; the builtin fire def's authored name is 'Embers'.
+    expect(petDisplayName({ ...base(), name: '   ' })).toBe('Embers');
   });
 });
 

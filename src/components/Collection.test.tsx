@@ -20,8 +20,9 @@ describe('Collection', () => {
     useGameStore.getState().hatch();
     render(<Collection />);
     expect(screen.getByRole('img', { name: /battle stat radar/i })).toBeInTheDocument();
-    // the active starter is a leaf -> Sprout (appears in detail + roster)
-    expect(screen.getAllByText('Sprout').length).toBeGreaterThan(0);
+    // CHANGED (Bug 2): an unnamed pet now shows its def's authored Dex name, not the
+    // PET_NAME element name. The leaf starter's def (def-leaf) is authored 'Leaflet'.
+    expect(screen.getAllByText('Leaflet').length).toBeGreaterThan(0);
   });
 
   it('lists every owned pet in the roster and switches active on tap', () => {

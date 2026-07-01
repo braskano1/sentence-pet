@@ -82,9 +82,10 @@ export function petLevel(pet: PetInstance): number {
   return levelForXp(pet.xp);
 }
 
-/** Display name: the custom name if set, otherwise the species name. */
+/** Display name: the custom name if set, otherwise the pet's authored Dex name.
+ *  resolvePetDef reads the active catalog and never returns null (unknown id -> starter). */
 export function petDisplayName(pet: PetInstance): string {
-  return pet.name.trim() || PET_NAME[pet.species];
+  return pet.name.trim() || resolvePetDef(pet.defId).name;
 }
 
 /** A pet's happy sprite at its current stage (eggs fall back to the baby sprite).
