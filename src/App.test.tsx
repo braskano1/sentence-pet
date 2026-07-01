@@ -142,3 +142,10 @@ describe('App — zone wiring pushes the current screen zone to the music engine
     expect(getByRole('dialog')).toBeInTheDocument();
   });
 });
+
+describe('screenKeyAndNode nameEntry', () => {
+  it('routes nameEntry to the NameEntry screen when hatched', () => {
+    const { key } = screenKeyAndNode('nameEntry', true, 'pattern', 1, [], 'dragdrop');
+    expect(key).toBe('nameEntry');
+  });
+});
