@@ -162,6 +162,20 @@ export const selectActivePet = (s: { pets: PetInstance[]; activePetId: string })
 export const selectCaughtSet = (s: { caughtDefIds: string[] }): Set<string> =>
   new Set(s.caughtDefIds);
 
+/**
+ * Where a finished lesson's post-round cinematic chain (reward → evolution/hatch →
+ * terminal) should land. In a journey/lesson context (a course is loaded) we return
+ * to the journey map ('pickDrill'); otherwise — e.g. the intro egg hatch, which fires
+ * before any course is selected — we go to the pet room.
+ *
+ * We key off currentCourseId, not currentLessonId: finishRound() clears
+ * currentLessonId before the reward screen mounts, whereas currentCourseId is set by
+ * selectCourse() and persists through the whole lesson round.
+ */
+export function postCinematicScreen(currentCourseId: string | null): Screen {
+  return currentCourseId != null ? 'pickDrill' : 'petRoom';
+}
+
 /** Immutably replace the active pet via a transform. */
 function updateActive(s: GameState, fn: (p: PetInstance) => PetInstance): PetInstance[] {
   return s.pets.map((p) => (p.id === s.activePetId ? fn(p) : p));

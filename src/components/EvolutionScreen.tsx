@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useGameStore, selectActivePet } from '../state/gameStore';
+import { useGameStore, selectActivePet, postCinematicScreen } from '../state/gameStore';
 import { resolvePetDef } from '../domain/petDef';
 import { usePetDefs } from '../state/usePetDefs';
 import { EvolutionCinematic } from './EvolutionCinematic';
@@ -9,14 +9,20 @@ import { EvolutionCinematic } from './EvolutionCinematic';
 export function EvolutionScreen() {
   const change = useGameStore((s) => s.lastStageChange);
   const pet = useGameStore(selectActivePet);
+  const screen = useGameStore((s) => s.screen);
   const clearStageChange = useGameStore((s) => s.clearStageChange);
   const setScreen = useGameStore((s) => s.setScreen);
+  const currentCourseId = useGameStore((s) => s.currentCourseId);
   const defs = usePetDefs();
 
-  // No stage change to show (e.g. reload while on this screen) -> leave.
+  // No stage change to show (e.g. a genuine reload landing here) -> leave.
+  // Gate on `screen === 'evolution'` so this does NOT fire after onDone routes away:
+  // clearStageChange() nulls `change` and re-renders this still-mounted node, but by
+  // then `screen` is already the post-cinematic target, so the guard self-suppresses
+  // (mirrors RewardHatchScreen).
   useEffect(() => {
-    if (!change) setScreen('petRoom');
-  }, [change, setScreen]);
+    if (!change && screen === 'evolution') setScreen('petRoom');
+  }, [change, screen, setScreen]);
 
   if (!change) return null;
 
@@ -31,7 +37,7 @@ export function EvolutionScreen() {
       mysterySilhouette={change.from === 'egg'}
       onDone={() => {
         clearStageChange();
-        setScreen('petRoom');
+        setScreen(postCinematicScreen(currentCourseId));
       }}
     />
   );

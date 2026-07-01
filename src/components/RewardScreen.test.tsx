@@ -42,6 +42,16 @@ describe('RewardScreen', () => {
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
 
+  it('returns to the journey map (pickDrill) after a lesson when a course is loaded', async () => {
+    useGameStore.setState({
+      lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },
+      currentCourseId: 'default',
+    });
+    render(<RewardScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('pickDrill');
+  });
+
   it('routes to the evolution screen when a stage change is pending', async () => {
     useGameStore.setState({
       lastReward: { level: 1, stars: 3, food: 5, coins: 25, group: 'protein' },

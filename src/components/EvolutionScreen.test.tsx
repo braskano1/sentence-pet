@@ -37,6 +37,23 @@ describe('EvolutionScreen', () => {
     expect(useGameStore.getState().screen).toBe('petRoom');
   });
 
+  it('returns to the journey map (pickDrill) after a lesson evolution when a course is loaded', () => {
+    useGameStore.setState({ lastStageChange: { from: 'baby', to: 'young' }, currentCourseId: 'default', screen: 'evolution' });
+    render(<EvolutionScreen />);
+    fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('pickDrill');
+  });
+
+  it('intro egg hatch (no course loaded) still routes to petRoom on Continue', () => {
+    // currentCourseId stays null (resetForTest) — the intro-hatch case must not go to the journey.
+    useGameStore.setState({ lastStageChange: { from: 'egg', to: 'baby' }, screen: 'evolution' });
+    render(<EvolutionScreen />);
+    fireEvent.click(screen.getByTestId('evolution-stage'));   // tap to skip
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    expect(useGameStore.getState().screen).toBe('petRoom');
+  });
+
   it('mystery-rolls the intro egg hatch (from egg -> baby): silhouette is the rolling egg, not the real pet', () => {
     vi.useFakeTimers();
     try {

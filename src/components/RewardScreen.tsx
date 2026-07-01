@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PressButton } from './PressButton';
-import { useGameStore } from '../state/gameStore';
+import { useGameStore, postCinematicScreen } from '../state/gameStore';
 import { fireConfetti, buzz } from '../effects/celebrate';
 import { useCountUp } from '../effects/useCountUp';
 import { FOOD_META } from '../data/food';
@@ -19,6 +19,7 @@ export function RewardScreen() {
   const lastHatch = useGameStore((s) => s.lastHatch);
   const pendingStinger = useGameStore((s) => s.pendingStinger);
   const clearPendingStinger = useGameStore((s) => s.clearPendingStinger);
+  const currentCourseId = useGameStore((s) => s.currentCourseId);
   const { play, playStinger } = useAudio();
 
   // Boss (checkpoint) outcome: fire the queued win/lose stinger once, then clear.
@@ -117,7 +118,7 @@ export function RewardScreen() {
         )}
       </motion.div>
       <PressButton
-        onClick={() => setScreen(lastHatch ? 'rewardHatch' : lastStageChange ? 'evolution' : 'petRoom')}
+        onClick={() => setScreen(lastHatch ? 'rewardHatch' : lastStageChange ? 'evolution' : postCinematicScreen(currentCourseId))}
         className="min-h-12 w-full rounded-xl bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow"
       >
         Continue

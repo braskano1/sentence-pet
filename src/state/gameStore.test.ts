@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useGameStore, selectActivePet, selectCaughtSet, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
+import { useGameStore, selectActivePet, selectCaughtSet, postCinematicScreen, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
 import type { PetDef } from '../data/types';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
@@ -1259,6 +1259,16 @@ describe('P4d def-chain evolution in the store', () => {
     expect(useGameStore.getState().lastStageChange).toEqual({ from: 'baby', to: 'young' });
     expect(p.defId).toBe('p4d-solo');
     expect(useGameStore.getState().caughtDefIds).toEqual(['p4d-solo']);
+  });
+});
+
+describe('postCinematicScreen', () => {
+  it('returns to the journey map (pickDrill) when a course is loaded (lesson context)', () => {
+    expect(postCinematicScreen('default')).toBe('pickDrill');
+  });
+
+  it('returns to the pet room when no course is loaded (intro-hatch context)', () => {
+    expect(postCinematicScreen(null)).toBe('petRoom');
   });
 });
 
