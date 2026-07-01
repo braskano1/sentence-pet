@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useGameStore, selectActivePet, selectCaughtSet, postCinematicScreen, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
+import { useGameStore, selectActivePet, selectCaughtSet, selectPersisted, postCinematicScreen, STARTER_ID, PERSIST_VERSION, type GameState } from './gameStore';
 import type { PetDef } from '../data/types';
 import { defaultAudioSettings } from '../audio/mixer';
 import { GAME_CONFIG } from '../config/gameConfig';
@@ -1088,8 +1088,8 @@ describe('caught dex set', () => {
     expect(s.caughtDefIds).toContain(egg!.defId);
   });
 
-  it('PERSIST_VERSION is 18', () => {
-    expect(PERSIST_VERSION).toBe(18);
+  it('PERSIST_VERSION is 19', () => {
+    expect(PERSIST_VERSION).toBe(19);
   });
 });
 
@@ -1375,5 +1375,19 @@ describe('reconcilePetDefs (hydration heal for dangling pet defIds)', () => {
     });
     useGameStore.getState().reconcilePetDefs();
     expect(useGameStore.getState().caughtDefIds).toEqual(['def-gone-forever', 'def-leaf-1']);
+  });
+});
+
+describe('displayName', () => {
+  it('defaults to empty and setDisplayName updates + persists it', () => {
+    useGameStore.getState().resetForTest();
+    expect(useGameStore.getState().displayName).toBe('');
+    useGameStore.getState().setDisplayName('Ava');
+    expect(useGameStore.getState().displayName).toBe('Ava');
+    expect(selectPersisted(useGameStore.getState()).displayName).toBe('Ava');
+  });
+
+  it('PERSIST_VERSION is 19', () => {
+    expect(PERSIST_VERSION).toBe(19);
   });
 });
