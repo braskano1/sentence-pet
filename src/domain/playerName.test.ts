@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanitizeName, NAME_MIN, NAME_MAX } from './playerName';
+import { needsNameEntry } from './playerName';
 
 describe('sanitizeName', () => {
   it('accepts a normal name and trims/collapses whitespace', () => {
@@ -39,5 +40,19 @@ describe('sanitizeName', () => {
 
   it('NAME_MIN/NAME_MAX are 2 and 16', () => {
     expect([NAME_MIN, NAME_MAX]).toEqual([2, 16]);
+  });
+});
+
+describe('needsNameEntry', () => {
+  it('true only for the intro egg hatch with no name yet', () => {
+    expect(needsNameEntry('egg', '')).toBe(true);
+    expect(needsNameEntry('egg', '   ')).toBe(true);
+  });
+  it('false when a name already exists', () => {
+    expect(needsNameEntry('egg', 'Ava')).toBe(false);
+  });
+  it('false for real evolutions (not the egg hatch)', () => {
+    expect(needsNameEntry('baby', '')).toBe(false);
+    expect(needsNameEntry('young', '')).toBe(false);
   });
 });

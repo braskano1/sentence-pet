@@ -1,3 +1,5 @@
+import type { PetStage } from '../data/types';
+
 /** Bounds for a player display name (inclusive). */
 export const NAME_MIN = 2;
 export const NAME_MAX = 16;
@@ -24,4 +26,11 @@ export function sanitizeName(raw: string, opts: { blocklist?: string[] } = {}): 
   const lower = name.toLowerCase();
   if ((opts.blocklist ?? []).some((w) => lower.includes(w.toLowerCase()))) return { ok: false, name, reason: 'blocked' };
   return { ok: true, name };
+}
+
+/** The intro egg-hatch is the one place we capture a name: the cinematic that just
+ *  finished came from the egg (from === 'egg') and no name is set yet. Real
+ *  evolutions (baby/young start) and already-named players are never gated. */
+export function needsNameEntry(fromStage: PetStage, displayName: string): boolean {
+  return fromStage === 'egg' && displayName.trim() === '';
 }
