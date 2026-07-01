@@ -14,6 +14,7 @@ import { beforeAll, afterAll, beforeEach, describe, it } from 'vitest';
 const run = process.env.FIREBASE_STORAGE_EMULATOR_HOST ? describe : describe.skip;
 
 const PATH = 'petDefs/def-test/default.webp';
+const LESSON_PATH = 'lessonImages/c0u1-fc-1/image.png';
 const bytes = new Uint8Array([1, 2, 3]);
 const meta = { contentType: 'image/webp' };
 
@@ -55,5 +56,23 @@ run('storage security rules', () => {
   it('an admin writing outside petDefs/ is denied', async () => {
     const s = env.authenticatedContext('admin1', { admin: true }).storage();
     await assertFails(uploadBytes(ref(s, 'other/x.webp'), bytes, meta));
+  });
+
+  it('an admin can write a lessonImages file', async () => {
+    const s = env.authenticatedContext('admin1', { admin: true }).storage();
+    await assertSucceeds(uploadBytes(ref(s, LESSON_PATH), bytes, { contentType: 'image/png' }));
+  });
+
+  it('a non-admin authed client cannot write a lessonImages file', async () => {
+    const s = env.authenticatedContext('user1', {}).storage();
+    await assertFails(uploadBytes(ref(s, LESSON_PATH), bytes, { contentType: 'image/png' }));
+  });
+
+  it('anyone can read a lessonImages file', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await uploadBytes(ref(ctx.storage(), LESSON_PATH), bytes, { contentType: 'image/png' });
+    });
+    const anon = env.unauthenticatedContext().storage();
+    await assertSucceeds(getBytes(ref(anon, LESSON_PATH)));
   });
 });
